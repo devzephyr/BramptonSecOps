@@ -1,0 +1,418 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  supplier
+  manager
+  driver
+  receiver
+  admin
+}
+
+enum CaseStatus {
+  draft
+  flagged
+  oob_pending
+  pending_approval
+  pending_second
+  fully_approved
+  rejected
+  revoked
+}
+
+enum RequestType {
+  bank_change
+  destination_change
+  credential_request
+  new_carrier
+  ot_remote
+  first_order_credit
+  truck_status_update
+  schedule_only
+  bol_pod_alter
+}
+
+model Org {
+  id               String                 @id @default(cuid())
+  name             String
+  slug             String                 @unique
+  city             String
+  province         String
+  createdAt        DateTime               @default(now())
+  users            User[]
+  contacts         DirectoryContact[]
+  cases            VerifyCase[]
+  loads            Load[]
+  trucks           Truck[]
+  notifications    Notification[]
+  mailbox          MailboxConnection[]
+  partnerAccounts  PartnerPortalAccount[]
+  evidence         EvidenceAsset[]
+  callLogs         CallLog[]
+}
+
+model User {
+  id            String               @id @default(cuid())
+  orgId         String
+  org           Org                  @relation(fields: [orgId], references: [id])
+  clerkId       String?              @unique
+  username      String?
+  email         String
+  name          String
+  role          Role
+  numberOnFile  String?
+  title         String?
+  createdAt     DateTime             @default(now())
+  credentials   WebAuthnCredential[]
+  decisions     VerifyDecision[]
+  ceremonies    PendingCeremony[]
+  attestations  ApprovalAttestation[]
+  notifications Notification[]
+  callLogs      CallLog[]
+  messages      Message[]
+  signalIdentity SignalIdentity?
+  signalSignedPreKeys SignalSignedPreKey[]
+  signalOneTimePreKeys SignalOneTimePreKey[]
+
+  @@unique([orgId, email])
+  @@unique([orgId, username])
+  @@index([orgId])
+}
+
+model WebAuthnCredential {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  credentialId String   @unique
+  publicKey    String
+  counter      Int      @default(0)
+  transports   String?
+  aaguid       String?
+  deviceType   String?
+  backedUp     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model WebAuthnChallenge {
+  id        String    @id @default(cuid())
+  userId    String?
+  kind      String
+  challenge String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, kind])
+}
+
+model DirectoryContact {
+  id            String       @id @default(cuid())
+  orgId         String
+  org           Org          @relation(fields: [orgId], references: [id])
+  seedKey       String?      @unique
+  name          String
+  company       String
+  roleLabel     String
+  email         String
+  numberOnFile  String
+  domain        String
+  bankOnFile    Json?
+  dockOnFile    String?
+  carrierOnFile String?
+  city          String
+  createdAt     DateTime     @default(now())
+  cases         VerifyCase[]
+
+  @@index([orgId])
+}
+
+model PartnerPortalAccount {
+  id        String   @id @default(cuid())
+  orgId     String
+  org       Org      @relation(fields: [orgId], references: [id])
+  label     String
+  createdAt DateTime @default(now())
+
+  @@index([orgId])
+}
+
+model VerifyCase {
+  id               String                @id @default(cuid())
+  orgId            String
+  org              Org                   @relation(fields: [orgId], references: [id])
+  seedKey          String?               @unique
+  createdById      String
+  contactId        String?
+  contact          DirectoryContact?     @relation(fields: [contactId], references: [id])
+  requestType      RequestType
+  counterparty     String
+  rawText          String
+  onFileJson       Json
+  requestedJson    Json
+  flagsJson        Json
+  oobStepsJson     Json
+  oobAckJson       Json?
+  payloadCanonical String
+  payloadHash      String
+  status           CaseStatus
+  dualControl      Boolean
+  matchesUploaded  Boolean               @default(false)
+  publicToken      String?               @unique
+  revokedAt        DateTime?
+  jevJson          Json?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  decisions        VerifyDecision[]
+  ceremonies       PendingCeremony[]
+  attestations     ApprovalAttestation[]
+  receipts         VerifyReceipt[]
+  messages         Message[]
+
+  @@index([orgId, status])
+}
+
+model VerifyDecision {
+  id        String     @id @default(cuid())
+  orgId     String
+  caseId    String
+  case      VerifyCase @relation(fields: [caseId], references: [id])
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  action    String
+  note      String?
+  createdAt DateTime   @default(now())
+
+  @@index([orgId, caseId])
+}
+
+model PendingCeremony {
+  id          String     @id @default(cuid())
+  orgId       String
+  caseId      String
+  case        VerifyCase @relation(fields: [caseId], references: [id])
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  nonce       String
+  challenge   String
+  payloadHash String
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime   @default(now())
+
+  @@index([orgId, caseId, userId])
+}
+
+model ApprovalAttestation {
+  id                String   @id @default(cuid())
+  orgId             String
+  caseId            String
+  case              VerifyCase @relation(fields: [caseId], references: [id])
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+  payloadHash       String
+  challenge         String
+  credentialId      String
+  clientDataJSON    String
+  authenticatorData String
+  signature         String
+  aaguid            String?
+  signCount         Int
+  uv                Boolean
+  assertionHash     String
+  verifiedAt        DateTime @default(now())
+  peerAttestationId String?
+
+  @@index([orgId, caseId, payloadHash])
+}
+
+model VerifyReceipt {
+  id         String     @id @default(cuid())
+  orgId      String
+  caseId     String
+  case       VerifyCase @relation(fields: [caseId], references: [id])
+  token      String     @unique
+  jws        String
+  jwksKid    String
+  claimsJson Json
+  revokedAt  DateTime?
+  createdAt  DateTime   @default(now())
+
+  @@index([orgId, caseId])
+}
+
+model EvidenceAsset {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Org      @relation(fields: [orgId], references: [id])
+  caseId      String?
+  loadId      String?
+  r2Key       String
+  contentHash String
+  contentType String
+  label       String
+  byteSize    Int
+  createdAt   DateTime @default(now())
+
+  @@index([orgId])
+}
+
+model Truck {
+  id          String  @id @default(cuid())
+  orgId       String
+  org         Org     @relation(fields: [orgId], references: [id])
+  plate       String
+  trailer     String
+  carrierName String
+  loads       Load[]
+
+  @@index([orgId])
+}
+
+model Load {
+  id                              String          @id @default(cuid())
+  orgId                           String
+  org                             Org             @relation(fields: [orgId], references: [id])
+  seedKey                         String?         @unique
+  truckId                         String?
+  truck                           Truck?          @relation(fields: [truckId], references: [id])
+  loadRef                         String
+  carrierName                     String
+  plate                           String
+  trailer                         String
+  currentStatus                   String
+  lastKnown                       String
+  reeferSetpoint                  String?
+  sealNumber                      String?
+  scheduledDock                   String?
+  approvedDock                    String?
+  approvedDestination             String?
+  origin                          String
+  destination                     String
+  commodity                       String
+  eta                             DateTime?
+  payloadHashOfLastApprovedChange String?
+  driverUserId                    String?
+  lat                             Float?
+  lng                             Float?
+  positionAt                      DateTime?
+  createdAt                       DateTime        @default(now())
+  events                          TrackingEvent[]
+
+  @@unique([orgId, loadRef])
+  @@index([orgId])
+}
+
+model TrackingEvent {
+  id                     String   @id @default(cuid())
+  orgId                  String
+  loadId                 String
+  load                   Load     @relation(fields: [loadId], references: [id])
+  eventType              String
+  rawNote                String?
+  evidenceAssetIds       String[]
+  requiresApproval       Boolean  @default(false)
+  approvalAttestationIds String[]
+  actorId                String
+  createdAt              DateTime @default(now())
+
+  @@index([orgId, loadId])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  orgId       String
+  org         Org       @relation(fields: [orgId], references: [id])
+  seedKey     String?   @unique
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  role        Role?
+  kind        String
+  title       String
+  body        String
+  href        String?
+  emailTo     String?
+  emailStatus String?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([orgId, userId])
+}
+
+model MailboxConnection {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Org      @relation(fields: [orgId], references: [id])
+  provider    String
+  mailbox     String
+  tokenCipher String?
+  createdAt   DateTime @default(now())
+
+  @@index([orgId])
+}
+
+model CallLog {
+  id           String   @id @default(cuid())
+  orgId        String
+  org          Org      @relation(fields: [orgId], references: [id])
+  caseId       String?
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  numberOnFile String
+  spokeWith    String
+  note         String
+  calledAt     DateTime @default(now())
+
+  @@index([orgId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  orgId     String
+  caseId    String
+  case      VerifyCase @relation(fields: [caseId], references: [id])
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  envelopes Json
+  bodyHash  String
+  createdAt DateTime @default(now())
+
+  @@index([orgId, caseId])
+}
+
+model SignalIdentity {
+  userId         String   @id
+  user           User     @relation(fields: [userId], references: [id])
+  registrationId Int
+  identityKey    String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model SignalSignedPreKey {
+  userId    String
+  user      User   @relation(fields: [userId], references: [id])
+  keyId     Int
+  publicKey String
+  signature String
+  createdAt DateTime @default(now())
+
+  @@id([userId, keyId])
+}
+
+model SignalOneTimePreKey {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  keyId     Int
+  publicKey String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, keyId])
+  @@index([userId])
+}
