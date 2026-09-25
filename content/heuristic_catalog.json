@@ -1,0 +1,77 @@
+{
+  "note": "These entries are heuristics for triage and training. They are not a mail-authentication oracle. A message can pass technical mail checks and still be fraud.",
+  "freeEmailDomains": [
+    "gmail.com",
+    "yahoo.com",
+    "hotmail.com",
+    "outlook.com",
+    "icloud.com"
+  ],
+  "codes": [
+    {
+      "code": "FREE_EMAIL_DOMAIN",
+      "meaning": "The sender uses a free webmail domain instead of the partner domain you expect for business freight or payments.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "LOOKALIKE_DOMAIN",
+      "meaning": "The domain looks similar to one on file but is not an exact match. This is a spelling and typosquatting check, not proof of mail authenticity.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "HOMOGLYPH",
+      "meaning": "The text may use letters from another alphabet that look like normal Latin letters.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "URGENCY_OR_SECRECY",
+      "meaning": "The message pushes speed, same-day action, or tells the reader not to call.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "PAYMENT_DETAIL_CHANGE",
+      "meaning": "Banking, EFT, Interac, or other payment instructions appear in the request.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "ON_FILE_MISMATCH",
+      "meaning": "A value in the request does not match what your directory or TMS already stores.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "DOMAIN_NOT_ON_FILE",
+      "meaning": "The email domain is not the partner domain you have on file.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "CREDENTIAL_ASK",
+      "meaning": "The message asks for a link click, sign-in, or sharing of access codes.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "OT_REMOTE_ACCESS",
+      "meaning": "The message asks for remote access to plant, refrigeration, or OT-related systems.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "NEW_CARRIER",
+      "meaning": "A carrier or broker not on your approved list is being introduced for a load.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "DESTINATION_OR_DOCK_CHANGE",
+      "meaning": "Dock, yard, or delivery destination may be changing away from the planned cold store or DC.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "DOCUMENT_OR_SEAL_CHANGE",
+      "meaning": "Bill of lading, proof of delivery, or seal details may be altered.",
+      "kind": "heuristic"
+    },
+    {
+      "code": "MAIL_AUTH_NOT_CHECKED",
+      "meaning": "SupplyChek does not treat SPF, DKIM, or DMARC results as proof that a payment, dock, or access request is legitimate. A passing mail check is not proof the sender meant what the message says.",
+      "kind": "heuristic"
+    }
+  ]
+}
