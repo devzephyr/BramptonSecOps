@@ -1,0 +1,49 @@
+.dock {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent 180px),
+    #d7e2e8;
+  color: #1a242b;
+  font-family: "IBM Plex Sans", sans-serif;
+}
+
+.dock h1,
+.dock h2,
+.dock .stencil {
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.hazard {
+  height: 12px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #f0a202 0 14px,
+    #1a242b 14px 28px
+  );
+}
+
+.bol {
+  background: #f7fafb;
+  border: 1px solid #1a242b;
+  box-shadow: 6px 6px 0 #1a242b;
+}
+
+.bay {
+  border: 1px solid #1a242b;
+  background: #f7fafb;
+  min-height: 7.5rem;
+}
+
+.bay strong {
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hash {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
