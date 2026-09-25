@@ -1,0 +1,210 @@
+{
+  "requestTypes": {
+    "bank_change": {
+      "title": "Bank or payment detail change",
+      "summary": "Someone asks to send money to new banking or Interac details. This matches RCMP Scheme #2 style supplier payment redirection. Treat every change as suspicious until you speak with accounts payable using the number already on file.",
+      "redFlagPatterns": [
+        "New transit, institution, or account numbers in email",
+        "Interac e-Transfer details that differ from what finance has on file",
+        "Sender domain close to a known supplier name but not exact",
+        "Urgent tone or a request not to call the usual contact",
+        "Attachment labeled void cheque or updated banking letter"
+      ],
+      "oobSteps": [
+        "Stop. Do not change anything in your payment system.",
+        "Find the supplier or customer phone number in your own directory or last paid invoice—not in this message.",
+        "Call that number and ask for accounts payable or the manager who handles banking.",
+        "Read back only the digits you already have on file and ask whether any change was requested.",
+        "If they confirm a change, have them send updated details through your normal secure channel and require a second manager sign-off before saving."
+      ],
+      "doNot": [
+        "Do not trust a phone number, link, or PDF inside the email",
+        "Do not reply to the message to confirm banking details",
+        "Do not mark an invoice paid to new details without dual control"
+      ],
+      "dualControl": true
+    },
+    "destination_change": {
+      "title": "Destination, dock, or yard change",
+      "summary": "A load headed to or from a Mississauga or Peel cold store may be sent to a different dock, yard, or address. Criminals use this to grab high-value food and beverage freight.",
+      "redFlagPatterns": [
+        "New address or dock door sent close to pickup or delivery time",
+        "Change comes from a free webmail address",
+        "Message says the regular dock is full or closed without a name you recognize",
+        "Driver or carrier was not told through dispatch on file"
+      ],
+      "oobSteps": [
+        "Do not tell the driver to divert yet.",
+        "Call the shipper or receiver using the number in your TMS or partner list—not in the email.",
+        "Confirm dock, yard gate, and appointment with whoever runs receiving.",
+        "If the change is real, update the load in your system and notify the driver by your normal dispatch line.",
+        "Have a second person review high-value or temperature-controlled loads before release."
+      ],
+      "doNot": [
+        "Do not release cargo to an unknown yard based on email alone",
+        "Do not share seal numbers with someone who only emailed",
+        "Do not skip calling because the message sounds urgent"
+      ],
+      "dualControl": true
+    },
+    "credential_request": {
+      "title": "Portal, link, or access request",
+      "summary": "The message asks you to open a link, share a code, or reset access. Legitimate IT or partner access is arranged through known channels, not surprise email.",
+      "redFlagPatterns": [
+        "Sign-in link that does not match your usual portal address",
+        "Request to forward a one-time code",
+        "Sender not on your approved domain list",
+        "Pressure to act before a shipment cutoff"
+      ],
+      "oobSteps": [
+        "Do not click links or open attachments from this message.",
+        "Call your IT help desk or the partner manager using the number already on file.",
+        "Ask whether they sent any access request today.",
+        "If access is needed, create it through your normal identity process with a second approver when policy requires.",
+        "Log what you verified and who approved it."
+      ],
+      "doNot": [
+        "Do not type credentials into a page linked from email",
+        "Do not share multi-factor codes with anyone who calls or writes in",
+        "Do not install remote tools from an unsolicited link"
+      ],
+      "dualControl": true
+    },
+    "new_carrier": {
+      "title": "New carrier or coverage offer",
+      "summary": "An unknown carrier or broker offers to cover a load, sometimes as a sister company. Double brokering is a known problem in Canadian trucking.",
+      "redFlagPatterns": [
+        "Carrier name not in your approved list or insurance file",
+        "Rate far below market with no prior relationship",
+        "MC or CVOR numbers that do not match the company name",
+        "Message from a personal mailbox instead of dispatch"
+      ],
+      "oobSteps": [
+        "Do not assign the load until the carrier is verified.",
+        "Call your regular broker or the customer contact on file.",
+        "Check insurance, authority, and past loads in your own records.",
+        "If you must use a new carrier, complete your onboarding checklist and get dual approval.",
+        "Tell the driver only after dispatch confirms in your system."
+      ],
+      "doNot": [
+        "Do not book from a reply address you have never seen",
+        "Do not skip insurance verification because the load is hot",
+        "Do not pay a new factoring company without finance review"
+      ],
+      "dualControl": true
+    },
+    "ot_remote": {
+      "title": "Plant or warehouse remote access",
+      "summary": "Someone wants remote access to refrigeration controls, PLCs, or office systems tied to the cold store. OT changes can affect product safety and security.",
+      "redFlagPatterns": [
+        "Vendor name you do not recognize for controls or refrigeration",
+        "Request to install remote support software quickly",
+        "After-hours urgency without a ticket number you can verify",
+        "Mix of IT and plant floor access in one email"
+      ],
+      "oobSteps": [
+        "Do not install software or open firewall rules from this message.",
+        "Call the vendor or internal maintenance lead using the number on your asset list or last work order.",
+        "Ask for a ticket or change number and match it to your system.",
+        "If access is approved, schedule it with maintenance present and log the session.",
+        "Review logs after the session ends."
+      ],
+      "doNot": [
+        "Do not share VPN or jump box details by email",
+        "Do not let a caller bypass your change-control process",
+        "Do not assume a logo in the signature proves identity"
+      ],
+      "dualControl": false
+    },
+    "first_order_credit": {
+      "title": "First order on credit terms",
+      "summary": "A new buyer wants product on credit before you have a payment history. Fraudsters mimic real distributors in the GTA food chain.",
+      "redFlagPatterns": [
+        "Large first order with rush delivery",
+        "Credit application only by email",
+        "Trade references that go to mobile mailboxes",
+        "Billing address different from delivery cold store without explanation"
+      ],
+      "oobSteps": [
+        "Pause shipment until credit is approved through your normal process.",
+        "Call trade references using numbers you look up—not numbers in the application.",
+        "Confirm the business with your sales manager using contacts already on file.",
+        "Start with prepay or COD if policy allows until credit is established.",
+        "Document who approved any exception."
+      ],
+      "doNot": [
+        "Do not ship high-value pallets on email promises alone",
+        "Do not skip credit checks because the brand name looks familiar",
+        "Do not send product to a one-time dock without verification"
+      ],
+      "dualControl": false
+    },
+    "truck_status_update": {
+      "title": "Truck status or location update",
+      "summary": "A message claims a truck is loaded, delayed, or arrived. Use this to sync with dispatch, not as proof of identity or cargo release.",
+      "redFlagPatterns": [
+        "Status change that does not match your GPS or TMS",
+        "Request to close the load or sign POD from email only",
+        "Unknown sender for a load you are tracking"
+      ],
+      "oobSteps": [
+        "Check your TMS or tracker first.",
+        "Call the driver or carrier dispatch on the number already on file.",
+        "Confirm location, seal, and temperature if the load is refrigerated.",
+        "Update your board only after verbal confirmation on your known line.",
+        "Keep the email as a record but do not treat it as authorization."
+      ],
+      "doNot": [
+        "Do not release lumper or gate fees based on email alone",
+        "Do not change payment status because someone said delivered",
+        "Do not share the next load plan with an unverified contact"
+      ],
+      "dualControl": false
+    },
+    "schedule_only": {
+      "title": "Appointment or schedule change only",
+      "summary": "Pickup or delivery window changes at a cold store or DC. Lower risk than payment or diversion, but still verify through dispatch.",
+      "redFlagPatterns": [
+        "Schedule change from a domain not on file",
+        "Last-minute change on a high-value lane",
+        "Conflicting times in the body and subject line"
+      ],
+      "oobSteps": [
+        "Compare the request to your existing appointment in the system.",
+        "Call receiving or the carrier on the number already on file.",
+        "Confirm date, time, dock door, and PO reference.",
+        "Update the slot in your scheduling tool after verbal OK.",
+        "Notify the driver through your normal channel."
+      ],
+      "doNot": [
+        "Do not cancel a confirmed slot without speaking to the facility",
+        "Do not assume a calendar invite is from the real partner",
+        "Do not mix schedule changes with new payment instructions in one reply"
+      ],
+      "dualControl": false
+    },
+    "bol_pod_alter": {
+      "title": "Bill of lading or POD change",
+      "summary": "Someone wants seal numbers, weights, or proof of delivery edited. This can hide theft or support false claims.",
+      "redFlagPatterns": [
+        "Revised BOL attached after pickup",
+        "Request to backdate delivery",
+        "Seal number different from what the driver reported",
+        "POD without matching receiver name"
+      ],
+      "oobSteps": [
+        "Do not accept altered documents until verified.",
+        "Call the shipper and receiver using numbers on the original BOL or your directory.",
+        "Compare seal, piece count, and temperature readings with driver notes.",
+        "If a correction is legitimate, have the partner reissue through your document portal or fax on file.",
+        "Scan and attach the verified version to the load file."
+      ],
+      "doNot": [
+        "Do not reprint POD to match a fraudulent claim",
+        "Do not share blank BOL templates by email",
+        "Do not sign for short or damaged goods without receiver confirmation on your known line"
+      ],
+      "dualControl": false
+    }
+  }
+}
