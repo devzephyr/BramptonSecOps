@@ -1,0 +1,467 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+
+export type Lang = "en" | "fr";
+
+const STORAGE_KEY = "sc_lang";
+
+export type Messages = {
+  brand: string;
+  place: string;
+  demoOrg: string;
+  sealedNote: string;
+  flags: string;
+  onFile: string;
+  asked: string;
+  oob: string;
+  reviewed: string;
+  approve: string;
+  away: string;
+  loaded: string;
+  rolling: string;
+  arrived: string;
+  delayed: string;
+  warning: string;
+  matches: string;
+  notGov: string;
+  jevNote: string;
+  empty: string;
+  dual: string;
+  signIn: string;
+  signOut: string;
+  createPasskey: string;
+  supplier: string;
+  manager: string;
+  driver: string;
+  receiver: string;
+  admin: string;
+  directory: string;
+  scenarios: string;
+  sendToManager: string;
+  reviewBytes: string;
+  passkeyStopped: string;
+  whoSpoke: string;
+  back: string;
+  open: string;
+  loads: string;
+  incoming: string;
+  pod: string;
+  partnerCheck: string;
+  dualControl: string;
+  print: string;
+  alerts: string;
+  holdCall: string;
+  notApproval: string;
+  signedInAs: string;
+  noSession: string;
+  signInWithPasskey: string;
+  username: string;
+  orgLabel: string;
+  orgPlaceholder: string;
+  accountHint: string;
+  identityRequired: string;
+  requests: string;
+  who: string;
+  type: string;
+  status: string;
+  hash: string;
+  load: string;
+  goods: string;
+  dock: string;
+  seal: string;
+  eta: string;
+  company: string;
+  city: string;
+  domain: string;
+  numberOnFile: string;
+  scenariosHint: string;
+  sealedNoteHint: string;
+  loadsHint: string;
+  incomingHint: string;
+  podHint: string;
+  podSaved: string;
+  pickLoad: string;
+  liveLocation: string;
+  liveLocationHint: string;
+  noLive: string;
+  simulated: string;
+  startTrip: string;
+  stopTrip: string;
+  noLoads: string;
+  noLoadsHint: string;
+  messages: string;
+  messagesHint: string;
+  noMessages: string;
+  messagePlaceholder: string;
+  send: string;
+  sending: string;
+  lockedMessage: string;
+  safetyNumber: string;
+  keyChanged: string;
+  documents: string;
+  documentsHint: string;
+  uploading: string;
+  toastSent: string;
+  toastDocSaved: string;
+  toastTrip: string;
+  toastTripStopped: string;
+  directoryHint: string;
+  emptyManager: string;
+  emptyCase: string;
+  confirmBytes: string;
+  signedSoFar: string;
+  nobody: string;
+  openPartnerPage: string;
+  bytesLocked: string;
+  bytesLockedBody: string;
+  userVerification: string;
+  yes: string;
+  no: string;
+  noPartnerPage: string;
+  noPartnerPageBody: string;
+  oobHint: string;
+  backToBoard: string;
+  noRequestOpen: string;
+  pickFromBoard: string;
+  serverDown: string;
+  serverDownBody: string;
+  passkeyCreated: string;
+  creatingPasskey: string;
+  signingIn: string;
+};
+
+const en: Messages = {
+  brand: "SupplyChek",
+  place: "A platform for food-chain organizations",
+  demoOrg: "Demo organization: Lake Ontario Cold Storage",
+  sealedNote: "Write a sealed note",
+  flags: "Flags",
+  onFile: "On file",
+  asked: "Asked for",
+  oob: "Call the number on file",
+  reviewed: "I reviewed these bytes",
+  approve: "Approve with passkey",
+  away: "15 minutes away",
+  loaded: "Loaded",
+  rolling: "Rolling",
+  arrived: "Arrived",
+  delayed: "Delayed",
+  warning: "Driver is 15 minutes away",
+  matches: "Matches uploaded content",
+  notGov: "SupplyChek attestation — not a government certification",
+  jevNote: "Jev labeled this text. It did not approve it.",
+  empty: "Nothing here yet.",
+  dual: "Two different people must each use a passkey.",
+  signIn: "Sign in",
+  signOut: "Sign out",
+  createPasskey: "Create passkey",
+  supplier: "Supplier",
+  manager: "Manager",
+  driver: "Driver",
+  receiver: "Receiver",
+  admin: "Admin",
+  directory: "Directory",
+  scenarios: "Scenarios",
+  sendToManager: "Send to the manager desk",
+  reviewBytes: "Review the bytes",
+  passkeyStopped: "Passkey stopped",
+  whoSpoke: "Who you spoke with, and when",
+  back: "Back",
+  open: "Open",
+  loads: "Loads",
+  incoming: "Incoming",
+  pod: "Proof of delivery",
+  partnerCheck: "Partner check",
+  dualControl: "Dual control",
+  print: "Print",
+  alerts: "alerts",
+  holdCall: "Approve stays off until every step is checked and you name who you called.",
+  notApproval: "Uploading a photo does not approve a change.",
+  signedInAs: "Signed in as",
+  noSession: "No active session. Sign in with a passkey tied to one account.",
+  signInWithPasskey: "Sign in with passkey",
+  username: "Username",
+  orgLabel: "Organization",
+  orgPlaceholder: "Organization name or slug",
+  accountHint: "Enter your own username and organization. Accounts are not listed here.",
+  identityRequired: "Enter your username and organization first.",
+  requests: "Requests",
+  who: "Who",
+  type: "Type",
+  status: "Status",
+  hash: "Hash",
+  load: "Load",
+  goods: "Goods",
+  dock: "Dock",
+  seal: "Seal",
+  eta: "ETA",
+  company: "Company",
+  city: "City",
+  domain: "Domain",
+  numberOnFile: "Number on file",
+  scenariosHint: "Five sealed-thread drills from the demo pack, plus a mid-haul change.",
+  sealedNoteHint: "Write the change here for the verified counterparty. Never paste email text. The note seals to a hash at send.",
+  loadsHint: "Approved dock and seal stay on the board until a new ceremony changes them.",
+  incomingHint:
+    "You see the dock on the board. A destination change does not move it until it is fully approved.",
+  podHint: "A photo stays with its own hash.",
+  podSaved: "Photo saved with its hash.",
+  pickLoad: "Pick a load",
+  liveLocation: "Live location",
+  liveLocationHint: "Driver positions update every few seconds while a trip runs.",
+  noLive: "No driver is sharing a live position right now.",
+  simulated: "simulated",
+  startTrip: "Simulate live trip",
+  stopTrip: "Stop sharing",
+  noLoads: "No loads assigned",
+  noLoadsHint: "Dispatch assigns loads to your username. Nothing is assigned yet.",
+  messages: "Messages",
+  messagesHint: "End-to-end encrypted with the Signal protocol. The server only sees ciphertext.",
+  noMessages: "No messages yet. Say what changed.",
+  messagePlaceholder: "Write to the people on this case…",
+  send: "Send",
+  sending: "Sending…",
+  lockedMessage: "Locked. Your device cannot open this message.",
+  safetyNumber: "Safety number",
+  keyChanged: "key changed",
+  documents: "Documents",
+  documentsHint: "Files are hash-recorded. Anyone can re-check the hash later.",
+  uploading: "Uploading…",
+  toastSent: "Message sent sealed.",
+  toastDocSaved: "Document saved with its hash.",
+  toastTrip: "Live trip running. The receiver sees you move.",
+  toastTripStopped: "Stopped sharing position.",
+  directoryHint: "Numbers already on file. Do not use a number that arrives inside a request.",
+  emptyManager: "Write a sealed note on the supplier desk.",
+  emptyCase: "Pick one from the manager desk.",
+  confirmBytes: "Confirm these bytes",
+  signedSoFar: "Signed so far",
+  nobody: "nobody",
+  openPartnerPage: "Open partner page",
+  bytesLocked: "Bytes locked",
+  bytesLockedBody:
+    "The passkey step required user verification. The partner page shows who signed and when.",
+  userVerification: "User verification",
+  yes: "Yes",
+  no: "No",
+  noPartnerPage: "No partner page yet",
+  noPartnerPageBody: "A page appears after the required passkeys sign the same hash.",
+  oobHint: "Approve stays off until every step is checked and you name who you called.",
+  backToBoard: "Back to board",
+  noRequestOpen: "No request open",
+  pickFromBoard: "Pick one from the manager desk.",
+  serverDown: "Server not reachable",
+  serverDownBody: "Start the Next server on port 3000. Passkeys need the API. There is no pretend login.",
+  passkeyCreated: "Passkey created for this account.",
+  creatingPasskey: "Creating passkey…",
+  signingIn: "Signing in…",
+};
+
+const fr: Messages = {
+  brand: "SupplyChek",
+  place: "Une plateforme pour les organisations de la chaîne alimentaire",
+  demoOrg: "Organisation de démonstration : Lake Ontario Cold Storage",
+  sealedNote: "Rédigez une note scellée",
+  flags: "Signaux",
+  onFile: "Au dossier",
+  asked: "Demandé",
+  oob: "Appelez le numéro au dossier",
+  reviewed: "J’ai lu ces octets",
+  approve: "Approuver avec une clé d’accès",
+  away: "Dans 15 minutes",
+  loaded: "Chargé",
+  rolling: "En route",
+  arrived: "Arrivé",
+  delayed: "En retard",
+  warning: "Le chauffeur est à 15 minutes",
+  matches: "Correspond au contenu déposé",
+  notGov: "Attestation SupplyChek — ce n’est pas un sceau du gouvernement",
+  jevNote: "Jev a étiqueté ce texte. Il ne l’a pas approuvé.",
+  empty: "Rien ici pour le moment.",
+  dual: "Deux personnes différentes doivent chacune utiliser une clé d’accès.",
+  signIn: "Connexion",
+  signOut: "Déconnexion",
+  createPasskey: "Créer une clé d’accès",
+  supplier: "Fournisseur",
+  manager: "Gestionnaire",
+  driver: "Chauffeur",
+  receiver: "Réception",
+  admin: "Administration",
+  directory: "Répertoire",
+  scenarios: "Scénarios",
+  sendToManager: "Envoyer au bureau du gestionnaire",
+  reviewBytes: "Relire les octets",
+  passkeyStopped: "Clé d’accès interrompue",
+  whoSpoke: "Avec qui vous avez parlé, et quand",
+  back: "Retour",
+  open: "Ouvrir",
+  loads: "Chargements",
+  incoming: "En arrivée",
+  pod: "Preuve de livraison",
+  partnerCheck: "Vérification partenaire",
+  dualControl: "Double contrôle",
+  print: "Imprimer",
+  alerts: "alertes",
+  holdCall:
+    "L’approbation reste désactivée tant que chaque étape n’est pas cochée et que vous n’avez pas nommé la personne appelée.",
+  notApproval: "Envoyer une photo n’approuve pas un changement.",
+  signedInAs: "Connecté en tant que",
+  noSession: "Aucune session active. Connectez-vous avec une clé d’accès liée à un seul compte.",
+  signInWithPasskey: "Connexion avec clé d’accès",
+  username: "Nom d’utilisateur",
+  orgLabel: "Organisation",
+  orgPlaceholder: "Nom ou identifiant de l’organisation",
+  accountHint: "Saisissez votre nom d’utilisateur et votre organisation. Aucun compte n’est listé ici.",
+  identityRequired: "Saisissez d’abord votre nom d’utilisateur et votre organisation.",
+  requests: "Demandes",
+  who: "Qui",
+  type: "Type",
+  status: "État",
+  hash: "Empreinte",
+  load: "Chargement",
+  goods: "Marchandise",
+  dock: "Quai",
+  seal: "Sceau",
+  eta: "Heure prévue",
+  company: "Entreprise",
+  city: "Ville",
+  domain: "Domaine",
+  numberOnFile: "Numéro au dossier",
+  scenariosHint: "Cinq messages d’attaque du jeu de démo, plus un changement en route.",
+  sealedNoteHint: "Décrivez le changement ici pour la contrepartie vérifiée. Ne collez jamais de courriel. La note est scellée en empreinte à l’envoi.",
+  loadsHint:
+    "Quai et sceau approuvés restent au tableau jusqu’à ce qu’une nouvelle cérémonie les change.",
+  incomingHint:
+    "Vous voyez le quai au tableau. Un changement de destination ne le déplace pas tant que tout n’est pas approuvé.",
+  podHint: "Une photo garde sa propre empreinte.",
+  podSaved: "Photo enregistrée avec son empreinte.",
+  pickLoad: "Choisir un chargement",
+  liveLocation: "Position en direct",
+  liveLocationHint: "Les positions du conducteur s’actualisent toutes les quelques secondes pendant un trajet.",
+  noLive: "Aucun conducteur ne partage sa position pour l’instant.",
+  simulated: "simulé",
+  startTrip: "Simuler un trajet en direct",
+  stopTrip: "Arrêter le partage",
+  noLoads: "Aucun chargement assigné",
+  noLoadsHint: "La répartition assigne les chargements à votre nom d’utilisateur. Rien n’est assigné pour l’instant.",
+  messages: "Messages",
+  messagesHint: "Chiffrement de bout en bout avec le protocole Signal. Le serveur ne voit que du chiffré.",
+  noMessages: "Aucun message. Dites ce qui a changé.",
+  messagePlaceholder: "Écrivez aux personnes de ce dossier…",
+  send: "Envoyer",
+  sending: "Envoi…",
+  lockedMessage: "Verrouillé. Votre appareil ne peut pas ouvrir ce message.",
+  safetyNumber: "Numéro de sécurité",
+  keyChanged: "clé changée",
+  documents: "Documents",
+  documentsHint: "Les fichiers sont enregistrés avec empreinte. Chacun peut revérifier plus tard.",
+  uploading: "Téléversement…",
+  toastSent: "Message scellé envoyé.",
+  toastDocSaved: "Document enregistré avec son empreinte.",
+  toastTrip: "Trajet en direct. Le réceptionnaire vous voit bouger.",
+  toastTripStopped: "Partage de position arrêté.",
+  emptyManager: "Rédigez une note scellée au bureau fournisseur.",
+  directoryHint:
+    "Numéros déjà au dossier. N’utilisez pas un numéro qui arrive dans une demande.",
+  emptyCase: "Choisissez-en une au bureau du gestionnaire.",
+  confirmBytes: "Confirmer ces octets",
+  signedSoFar: "Signé jusqu’ici",
+  nobody: "personne",
+  openPartnerPage: "Ouvrir la page partenaire",
+  bytesLocked: "Octets verrouillés",
+  bytesLockedBody:
+    "L’étape de clé d’accès exigeait une vérification de l’utilisateur. La page partenaire montre qui a signé et quand.",
+  userVerification: "Vérification de l’utilisateur",
+  yes: "Oui",
+  no: "Non",
+  noPartnerPage: "Pas encore de page partenaire",
+  noPartnerPageBody:
+    "Une page apparaît après que les clés d’accès requises ont signé la même empreinte.",
+  oobHint:
+    "L’approbation reste désactivée tant que chaque étape n’est pas cochée et que vous n’avez pas nommé la personne appelée.",
+  backToBoard: "Retour au tableau",
+  noRequestOpen: "Aucune demande ouverte",
+  pickFromBoard: "Choisissez-en une au bureau du gestionnaire.",
+  serverDown: "Serveur injoignable",
+  serverDownBody:
+    "Démarrez le serveur Next sur le port 3000. Les clés d’accès ont besoin de l’API. Il n’y a pas de connexion fictive.",
+  passkeyCreated: "Clé d’accès créée pour ce compte.",
+  creatingPasskey: "Création de la clé d’accès…",
+  signingIn: "Connexion…",
+};
+
+const MAP = { en, fr } as const;
+
+type I18nContextValue = {
+  lang: Lang;
+  setLang: (lang: Lang) => void;
+  t: Messages;
+};
+
+const I18nContext = createContext<I18nContextValue | null>(null);
+
+function readStoredLang(): Lang {
+  if (typeof window === "undefined") return "en";
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored === "fr" ? "fr" : "en";
+}
+
+export function I18nProvider({ children }: { children: ReactNode }) {
+  const [lang, setLangState] = useState<Lang>("en");
+
+  useEffect(() => {
+    setLangState(readStoredLang());
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    localStorage.setItem(STORAGE_KEY, lang);
+  }, [lang]);
+
+  const setLang = useCallback((next: Lang) => {
+    setLangState(next);
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      lang,
+      setLang,
+      t: MAP[lang],
+    }),
+    [lang, setLang],
+  );
+
+  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+}
+
+export function useI18n() {
+  const ctx = useContext(I18nContext);
+  if (!ctx) throw new Error("Missing I18nProvider");
+  return ctx;
+}
+
+export function roleTitle(role: string, t: Messages): string {
+  switch (role) {
+    case "supplier":
+      return t.supplier;
+    case "manager":
+      return t.manager;
+    case "driver":
+      return t.driver;
+    case "receiver":
+      return t.receiver;
+    case "admin":
+      return t.admin;
+    default:
+      return role;
+  }
+}
