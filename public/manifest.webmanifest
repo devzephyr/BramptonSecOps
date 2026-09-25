@@ -1,0 +1,18 @@
+{
+  "name": "SupplyChek",
+  "short_name": "SupplyChek",
+  "description": "Check the request before the dock moves.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "en-CA",
+  "icons": [
+    {
+      "src": "/globe.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
