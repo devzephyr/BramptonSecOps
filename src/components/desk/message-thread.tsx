@@ -26,7 +26,6 @@ import {
   localIdentityPublicKey,
   peerKeyChanged,
   resetSignalKeys,
-  type PeerDevice,
 } from "@/lib/signal-client";
 import { sha256Hex } from "@/preview/hash";
 
@@ -63,7 +62,7 @@ export function MessageThread({ caseId, userId }: Props) {
   const [fingerprints, setFingerprints] = useState<Record<string, string>>({});
   const [ownFingerprint, setOwnFingerprint] = useState<string | null>(null);
 
-  async function heal(peers: Participant[]) {
+  const heal = useCallback(async (peers: Participant[]) => {
     const self = peers.find((peer) => peer.userId === userId);
     const mine = self?.devices.find((row) => row.deviceId === getDeviceId());
     if (!mine) {
@@ -78,7 +77,7 @@ export function MessageThread({ caseId, userId }: Props) {
       resetSignalKeys(userId);
       await ensureSignalKeys(userId);
     }
-  }
+  }, [userId]);
 
   const decryptAll = useCallback(
     async (rows: CaseMessage[], peers: Participant[]) => {
@@ -146,7 +145,7 @@ export function MessageThread({ caseId, userId }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load messages.");
     }
-  }, [caseId, userId, decryptAll]);
+  }, [caseId, userId, decryptAll, heal]);
 
   useEffect(() => {
     void refresh();

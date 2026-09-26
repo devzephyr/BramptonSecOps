@@ -206,7 +206,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
       ready,
       submitError,
     };
-  }, [caseId, cases, draft, loads, managerTab, notes, passkeyError, receiptToken, refreshRemote, submitError, user]);
+  }, [caseId, cases, draft, loads, managerTab, notes, passkeyError, ready, receiptToken, refreshRemote, submitError, user]);
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }
