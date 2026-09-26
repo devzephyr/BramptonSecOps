@@ -36,6 +36,8 @@ Org **Brampton Cross-Dock Freight** (slug `brampton-cross-dock`): `noah` (manage
 
 Each account needs one passkey enrollment first: enter username + organization, click **Create a passkey**, approve the browser prompt, then **Sign in with passkey**. (`DEMO_ENROLL=true` must be set.)
 
+Nobody can enroll on someone else's account. First-time setup needs an **enrollment code**: the org admin opens Team → Issue code next to the new member and reads it to them once (it never shows again). The member enters it in the Enrollment code field when creating their passkey. Codes expire after 24 hours and burn on use. Lost device? An admin revokes the old passkey from the same Team panel, issues a fresh code, and the member re-enrolls.
+
 ### Five-minute tour
 
 1. As `jordan`: supplier desk → write a sealed note → submit.

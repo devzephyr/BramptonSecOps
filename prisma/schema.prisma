@@ -68,6 +68,8 @@ model User {
   role          Role
   numberOnFile  String?
   title         String?
+  enrollmentTokenHash String?
+  enrollmentTokenExpires DateTime?
   createdAt     DateTime             @default(now())
   credentials   WebAuthnCredential[]
   decisions     VerifyDecision[]

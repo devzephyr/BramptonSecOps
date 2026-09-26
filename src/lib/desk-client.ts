@@ -65,7 +65,7 @@ async function failMessage(res: Response, fallback: string) {
   return body?.error || fallback;
 }
 
-export type SignInIdentity = { username: string; org: string };
+export type SignInIdentity = { username: string; org: string; enrollmentToken?: string };
 
 export async function createPasskey(identity: SignInIdentity) {
   const optRes = await fetch("/api/webauthn/register-options", {
@@ -551,6 +551,7 @@ export async function patchOob(  id: string,
 export type NewOrg = {
   org: { id: string; slug: string; name: string };
   username: string;
+  enrollmentToken: string;
 };
 
 export async function createOrg(input: {
@@ -593,8 +594,7 @@ export async function addTeammate(input: {
   username: string;
   name: string;
   role: string;
-}): Promise<TeamMember> {
-  const res = await fetch("/api/orgs/users", {
+}): Promise<TeamMember> {  const res = await fetch("/api/orgs/users", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -604,4 +604,44 @@ export async function addTeammate(input: {
     throw new DeskApiError(res.status, await failMessage(res, "Could not add teammate"));
   }
   return (await parseJson(res)) as TeamMember;
+}
+
+export type MemberCredential = {
+  id: string;
+  createdAt: string;
+  transports: string | null;
+  deviceType: string | null;
+  backedUp: boolean;
+};
+
+export async function fetchCredentials(userId: string): Promise<MemberCredential[]> {
+  const res = await fetch(`/api/orgs/users/${encodeURIComponent(userId)}/credentials`, {
+    credentials: "include",
+  });
+  if (!res.ok) return [];
+  const body = (await parseJson(res)) as { credentials?: MemberCredential[] } | null;
+  return body?.credentials ?? [];
+}
+
+export async function issueEnrollmentCode(userId: string): Promise<{ username: string | null; code: string }> {
+  const res = await fetch(`/api/orgs/users/${encodeURIComponent(userId)}/enrollment`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not issue code"));
+  }
+  return (await parseJson(res)) as { username: string | null; code: string };
+}
+
+export async function revokeCredential(userId: string, credentialId: string): Promise<void> {
+  const res = await fetch(`/api/orgs/users/${encodeURIComponent(userId)}/credentials`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ credentialId }),
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not revoke credential"));
+  }
 }
