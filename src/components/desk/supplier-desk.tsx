@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CallLink } from "@/components/desk/call-link";
 import type { Contact } from "@/lib/desk-client";
 import { useI18n } from "@/lib/i18n";
-import { REQUEST_FIELDS, REQUESTS, SCENARIOS, deskFlags } from "@/preview/data";
+import { NEW_REQUEST_TYPES, REQUEST_FIELDS, REQUESTS, SCENARIOS, deskFlags } from "@/preview/data";
 import { Input } from "@/components/ui/input";
 import { sha256Hex } from "@/preview/hash";
 import { useDesk } from "@/preview/store";
@@ -144,7 +144,7 @@ export function SupplierDesk() {
               </SelectValue>
             </SelectTrigger>
             <SelectPopup>
-              {REQUESTS.map((item) => (
+              {NEW_REQUEST_TYPES.map((item) => (
                 <SelectItem key={item.id} value={item.id}>
                   {lang === "fr" ? item.fr : item.en}
                 </SelectItem>

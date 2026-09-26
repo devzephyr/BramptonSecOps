@@ -125,6 +125,9 @@ export const REQUESTS: { id: string; dual: boolean; en: string; fr: string }[] =
     },
   ];
 
+/** Types a person can raise as a new request. Truck status comes from driver taps, not requests. */
+export const NEW_REQUEST_TYPES = REQUESTS.filter((item) => item.id !== "truck_status_update");
+
 /** Fields a request of each type changes; the composer asks for them and the payload records them. */
 export const REQUEST_FIELDS: Record<string, ("institution" | "transit" | "account" | "dock" | "destination" | "carrier" | "seal")[]> = {
   bank_change: ["institution", "transit", "account"],
