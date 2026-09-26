@@ -204,3 +204,47 @@ export function serializeCase(
     })),
   };
 }
+
+const REQUEST_LABEL: Record<string, string> = {
+  bank_change: "Bank change",
+  destination_change: "Destination change",
+  credential_request: "Access request",
+  new_carrier: "New carrier",
+  ot_remote: "Plant remote access",
+  first_order_credit: "First-order credit",
+  truck_status_update: "Truck status",
+  schedule_only: "Schedule",
+  bol_pod_alter: "Bill or seal change",
+};
+
+/** One row per approver so each person reads and dismisses their own alert. */
+export async function notifyApprovers(
+  db: Pick<Prisma.TransactionClient, "user" | "notification">,
+  input: {
+    orgId: string;
+    exclude: string[];
+    kind: string;
+    requestType: string;
+    counterparty: string;
+    body: string;
+  },
+) {
+  const approvers = await db.user.findMany({
+    where: { orgId: input.orgId, role: { in: ["manager", "admin"] }, id: { notIn: input.exclude } },
+    select: { id: true, role: true },
+  });
+  if (approvers.length === 0) return;
+  const label = REQUEST_LABEL[input.requestType] ?? "Request";
+  await db.notification.createMany({
+    data: approvers.map((person) => ({
+      orgId: input.orgId,
+      userId: person.id,
+      role: person.role,
+      kind: input.kind,
+      title: `${label} from ${input.counterparty}`,
+      body: input.body,
+      href: "/manager",
+      emailStatus: "in-app",
+    })),
+  });
+}

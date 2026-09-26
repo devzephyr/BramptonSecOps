@@ -8,6 +8,7 @@ import {
   caseCreateData,
   parseOobAck,
   caseInclude,
+  notifyApprovers,
   serializeCase,
 } from "@/lib/cases";
 import type { PayloadFields } from "@/lib/payload";
@@ -129,6 +130,17 @@ export async function POST(request: Request) {
       payloadHash: payload.payloadHash,
     },
     include: caseInclude,
+  });
+
+  await notifyApprovers(prisma, {
+    orgId: user.orgId,
+    exclude: [user.id],
+    kind: "case_submitted",
+    requestType,
+    counterparty,
+    body: meta.dualControl
+      ? `${user.name} opened it. It needs two different managers. Nothing is approved yet.`
+      : `${user.name} opened it. It needs one manager to approve.`,
   });
 
   return json(serializeCase(updated, { includeRawText: true }), 201);
