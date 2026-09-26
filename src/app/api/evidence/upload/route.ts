@@ -1,5 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import {
+  isOrgEvidenceKey,
+  MAX_EVIDENCE_BYTES,
   putObject,
   sha256Buffer,
   storageMode,
@@ -13,12 +15,15 @@ export async function POST(request: Request) {
 
   const url = new URL(request.url);
   const key = url.searchParams.get("key");
-  if (!key || !key.startsWith(`${user.orgId}/`)) {
+  if (!isOrgEvidenceKey(key, user.orgId)) {
     return forbidden("Invalid evidence key.");
   }
+  const declared = Number(request.headers.get("content-length") ?? 0);
+  if (declared > MAX_EVIDENCE_BYTES) return badRequest("File is larger than 10 MB.");
 
   const buffer = Buffer.from(await request.arrayBuffer());
   if (!buffer.length) return badRequest("Empty upload.");
+  if (buffer.length > MAX_EVIDENCE_BYTES) return badRequest("File is larger than 10 MB.");
 
   const contentType =
     request.headers.get("content-type") ?? "application/octet-stream";

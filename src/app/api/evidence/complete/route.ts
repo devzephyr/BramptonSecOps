@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { badRequest, json, unauthorized } from "@/lib/http";
+import { isOrgEvidenceKey, MAX_EVIDENCE_BYTES } from "@/lib/evidence-storage";
 
 export async function POST(request: Request) {
   const user = await requireUser();
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
 
   const key = body.key;
   const contentHash = body.contentHash;
-  const label = typeof body.label === "string" ? body.label : "evidence";
+  const label = typeof body.label === "string" ? body.label.slice(0, 200) : "evidence";
   const contentType =
     typeof body.contentType === "string"
       ? body.contentType
@@ -24,8 +25,11 @@ export async function POST(request: Request) {
   const caseId = typeof body.caseId === "string" ? body.caseId : null;
   const loadId = typeof body.loadId === "string" ? body.loadId : null;
 
-  if (typeof key !== "string" || !key.startsWith(`${user.orgId}/`)) {
+  if (!isOrgEvidenceKey(key, user.orgId)) {
     return badRequest("key is required.");
+  }
+  if (!Number.isInteger(byteSize) || byteSize <= 0 || byteSize > MAX_EVIDENCE_BYTES) {
+    return badRequest("byteSize must be between 1 byte and 10 MB.");
   }
   if (typeof contentHash !== "string" || !/^[a-f0-9]{64}$/.test(contentHash)) {
     return badRequest("contentHash must be a sha256 hex digest.");

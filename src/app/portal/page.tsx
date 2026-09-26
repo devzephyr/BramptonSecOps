@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import Link from "next/link";
 import {
   Empty,
@@ -17,49 +16,28 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClipboardList } from "lucide-react";
+import { requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { requestTitle } from "@/preview/data";
 
-type PortalReceipt = {
-  token: string;
-  createdAt: string;
-  case: {
-    requestType: string;
-    counterparty: string;
-    payloadHash: string;
-    publicToken: string | null;
-    createdAt: string;
-  };
-};
-
-async function appOrigin() {
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  if (!host) {
-    return process.env.WEBAUTHN_ORIGIN ?? "http://localhost:3000";
-  }
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  return `${proto}://${host}`;
-}
-
-async function loadHistory(): Promise<
-  | { kind: "signed_out" }
-  | { kind: "ok"; receipts: PortalReceipt[] }
-  | { kind: "error" }
-> {
-  const h = await headers();
-  const cookie = h.get("cookie") ?? "";
-  const origin = await appOrigin();
-  const res = await fetch(`${origin}/api/portal/history`, {
-    headers: { cookie },
-    cache: "no-store",
+async function loadHistory() {
+  const user = await requireUser();
+  if (!user) return { kind: "signed_out" as const };
+  const receipts = await prisma.verifyReceipt.findMany({
+    where: {
+      orgId: user.orgId,
+      revokedAt: null,
+      case: { status: "fully_approved", revokedAt: null },
+    },
+    select: {
+      token: true,
+      createdAt: true,
+      case: { select: { requestType: true, counterparty: true, payloadHash: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
   });
-  if (res.status === 401) return { kind: "signed_out" };
-  if (!res.ok) return { kind: "error" };
-  const body = (await res.json()) as { receipts: PortalReceipt[] };
-  return { kind: "ok", receipts: body.receipts ?? [] };
-}
-
-function humanRequestType(value: string) {
-  return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return { kind: "ok" as const, receipts };
 }
 
 function shortHash(hash: string) {
@@ -67,7 +45,7 @@ function shortHash(hash: string) {
   return `${hash.slice(0, 16)}…`;
 }
 
-function formatToronto(iso: string) {
+function formatToronto(when: Date) {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Toronto",
     year: "numeric",
@@ -77,7 +55,7 @@ function formatToronto(iso: string) {
     minute: "2-digit",
     hour12: false,
     timeZoneName: "shortOffset",
-  }).format(new Date(iso));
+  }).format(when);
 }
 
 function HistoryEmpty({
@@ -116,11 +94,10 @@ export default async function PortalPage() {
               description="Passkey sign-in is required to see your organization’s approved verification receipts."
             />
           ) : null}
-          {result.kind === "error" ? (
-            <HistoryEmpty
-              title="History unavailable"
-              description="We could not load verify history right now. Try again in a moment."
-            />
+          {result.kind === "signed_out" ? (
+            <Link className="text-primary underline-offset-4 hover:underline" href="/sign-in">
+              Sign in
+            </Link>
           ) : null}
           {result.kind === "ok" && result.receipts.length === 0 ? (
             <HistoryEmpty
@@ -144,7 +121,7 @@ export default async function PortalPage() {
                   <TableRow key={row.token}>
                     <TableCell>{formatToronto(row.createdAt)}</TableCell>
                     <TableCell>
-                      {humanRequestType(row.case.requestType)}
+                      {requestTitle(row.case.requestType, "en")}
                     </TableCell>
                     <TableCell>{row.case.counterparty}</TableCell>
                     <TableCell className="font-mono text-xs">
