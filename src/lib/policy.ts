@@ -3,6 +3,35 @@ import type { Role } from "@prisma/client";
 /** Roles that may read or act on verify cases, their threads, documents, and the directory. */
 export const CASE_STAFF: Role[] = ["supplier", "manager", "admin"];
 
+/** Mirrors the DocType enum in prisma/schema.prisma; the client needs it without importing Prisma. */
+export const DOC_TYPES = [
+  "bill_of_lading",
+  "proof_of_delivery",
+  "invoice",
+  "receipt",
+  "rate_confirmation",
+  "packing_list",
+  "customs",
+  "insurance",
+  "other",
+] as const;
+export type DocTypeName = (typeof DOC_TYPES)[number];
+
+export function isDocType(value: string | null): value is DocTypeName {
+  return value !== null && (DOC_TYPES as readonly string[]).includes(value);
+}
+
+export const CURRENCIES = ["CAD", "USD"] as const;
+
+/** "1,234.50" -> 123450. Returns null for blank, undefined for anything that is not a non-negative amount with up to 2 decimals. */
+export function parseAmountCents(raw: string | null): number | null | undefined {
+  const text = (raw ?? "").replace(/[,\s$]/g, "");
+  if (!text) return null;
+  if (!/^\d{1,9}(\.\d{1,2})?$/.test(text)) return undefined;
+  const [whole, fraction = ""] = text.split(".");
+  return Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
+}
+
 export const DUAL_CONTROL_TYPES = new Set([
   "bank_change",
   "destination_change",
