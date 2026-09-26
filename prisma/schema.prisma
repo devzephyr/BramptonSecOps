@@ -76,7 +76,7 @@ model User {
   notifications Notification[]
   callLogs      CallLog[]
   messages      Message[]
-  signalIdentity SignalIdentity?
+  signalIdentity SignalIdentity[]
   signalSignedPreKeys SignalSignedPreKey[]
   signalOneTimePreKeys SignalOneTimePreKey[]
 
@@ -386,33 +386,38 @@ model Message {
 }
 
 model SignalIdentity {
-  userId         String   @id
+  userId         String
   user           User     @relation(fields: [userId], references: [id])
+  deviceId       Int      @default(1)
   registrationId Int
   identityKey    String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@id([userId, deviceId])
 }
 
 model SignalSignedPreKey {
   userId    String
   user      User   @relation(fields: [userId], references: [id])
+  deviceId  Int    @default(1)
   keyId     Int
   publicKey String
   signature String
   createdAt DateTime @default(now())
 
-  @@id([userId, keyId])
+  @@id([userId, deviceId, keyId])
 }
 
 model SignalOneTimePreKey {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id])
+  deviceId  Int      @default(1)
   keyId     Int
   publicKey String
   createdAt DateTime @default(now())
 
-  @@unique([userId, keyId])
+  @@unique([userId, deviceId, keyId])
   @@index([userId])
 }

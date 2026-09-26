@@ -20,10 +20,13 @@ import {
   encryptForPeers,
   ensureSession,
   ensureSignalKeys,
+  envelopeId,
   fingerprintFor,
+  getDeviceId,
   localIdentityPublicKey,
   peerKeyChanged,
   resetSignalKeys,
+  type PeerDevice,
 } from "@/lib/signal-client";
 import { sha256Hex } from "@/preview/hash";
 
@@ -34,6 +37,23 @@ type Props = {
 
 type Decrypted = CaseMessage & { text: string | null; unlockError?: string };
 
+type Participant = {
+  userId: string;
+  name: string;
+  role: string;
+  devices: { deviceId: number; hasKeys: boolean; identityKey: string }[];
+};
+
+async function fetchPeers(caseId: string): Promise<Participant[]> {
+  const peers = await fetch("/api/signal/participants?caseId=" + encodeURIComponent(caseId), {
+    credentials: "include",
+  })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((body) => (body?.participants ?? []) as Participant[])
+    .catch(() => []);
+  return peers;
+}
+
 export function MessageThread({ caseId, userId }: Props) {
   const { t } = useI18n();
   const [messages, setMessages] = useState<Decrypted[]>([]);
@@ -43,42 +63,50 @@ export function MessageThread({ caseId, userId }: Props) {
   const [fingerprints, setFingerprints] = useState<Record<string, string>>({});
   const [ownFingerprint, setOwnFingerprint] = useState<string | null>(null);
 
-  async function heal(userId: string, peers: { userId: string; hasKeys: boolean; identityKey: string | null }[]) {
+  async function heal(peers: Participant[]) {
     const self = peers.find((peer) => peer.userId === userId);
-    if (self && !self.hasKeys) {
+    const mine = self?.devices.find((row) => row.deviceId === getDeviceId());
+    if (!mine) {
       resetSignalKeys(userId);
       await ensureSignalKeys(userId);
-    } else if (self?.identityKey) {
-      const local = localIdentityPublicKey(userId);
-      if (!local) {
-        await ensureSignalKeys(userId);
-      } else if (local !== self.identityKey) {
-        resetSignalKeys(userId);
-        await ensureSignalKeys(userId);
-      }
+      return;
+    }
+    const local = localIdentityPublicKey(userId);
+    if (!local) {
+      await ensureSignalKeys(userId);
+    } else if (local !== mine.identityKey) {
+      resetSignalKeys(userId);
+      await ensureSignalKeys(userId);
     }
   }
 
   const decryptAll = useCallback(
-    async (rows: CaseMessage[]) => {
+    async (rows: CaseMessage[], peers: Participant[]) => {
+      const deviceId = getDeviceId();
       const out: Decrypted[] = [];
       for (const row of rows) {
-        const mine = (row.envelopes as Record<string, { type: number; body: string }>)?.[userId];
+        const mine = (row.envelopes as Record<string, { type: number; body: string }>)?.[
+          envelopeId(userId, deviceId)
+        ];
         if (!mine) {
           out.push({ ...row, text: null });
           continue;
         }
-        try {
-          await ensureSession(userId, row.sender.id);
-          const text = await decryptFromPeer(userId, row.sender.id, mine);
-          out.push({ ...row, text });
-        } catch (err) {
-          out.push({
-            ...row,
-            text: null,
-            unlockError: err instanceof Error ? err.message.slice(0, 140) : "Unknown error",
-          });
+        const senderDevices =
+          peers.find((peer) => peer.userId === row.sender.id)?.devices.map((row) => row.deviceId) ??
+          [];
+        let text: string | null = null;
+        let unlockError: string | undefined;
+        for (const senderDevice of senderDevices) {
+          try {
+            await ensureSession(userId, row.sender.id, senderDevice);
+            text = await decryptFromPeer(userId, row.sender.id, senderDevice, mine);
+            break;
+          } catch (err) {
+            unlockError = err instanceof Error ? err.message.slice(0, 140) : "Unknown error";
+          }
         }
+        out.push({ ...row, text, unlockError: text === null ? (unlockError ?? "No sender device worked") : undefined });
       }
       setMessages(out);
     },
@@ -88,24 +116,10 @@ export function MessageThread({ caseId, userId }: Props) {
   const refresh = useCallback(async () => {
     try {
       await ensureSignalKeys(userId);
-      const rows = await fetchMessages(caseId);
-      await decryptAll(rows);
+      const [rows, peers] = await Promise.all([fetchMessages(caseId), fetchPeers(caseId)]);
+      await heal(peers);
+      await decryptAll(rows, peers);
       const fps: Record<string, string> = {};
-      const peers = await fetch("/api/signal/participants?caseId=" + encodeURIComponent(caseId), {
-        credentials: "include",
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then(
-          (body) =>
-            (body?.participants ?? []) as {
-              userId: string;
-              identityKey: string | null;
-              hasKeys: boolean;
-            }[],
-        )
-        .catch(() => []);
-      const self = peers.find((peer) => peer.userId === userId);
-      await heal(userId, peers);
       const local = localIdentityPublicKey(userId);
       if (local) {
         try {
@@ -115,11 +129,17 @@ export function MessageThread({ caseId, userId }: Props) {
         }
       }
       for (const peer of peers) {
-        if (peer.userId === userId || !peer.identityKey) continue;
-        try {
-          fps[peer.userId] = await fingerprintFor(userId, peer.userId, peer.identityKey);
-        } catch {
-          /* fingerprint optional */
+        if (peer.userId === userId) continue;
+        for (const device of peer.devices) {
+          try {
+            fps[`${peer.userId}.${device.deviceId}`] = await fingerprintFor(
+              userId,
+              `${peer.userId}.${device.deviceId}`,
+              device.identityKey,
+            );
+          } catch {
+            /* fingerprint optional */
+          }
         }
       }
       setFingerprints(fps);
@@ -148,14 +168,20 @@ export function MessageThread({ caseId, userId }: Props) {
     setError(null);
     try {
       await ensureSignalKeys(userId);
-      const peers = await fetch("/api/signal/participants?caseId=" + encodeURIComponent(caseId), {
-        credentials: "include",
-      }).then((res) => res.json()) as {
-        participants: { userId: string; hasKeys: boolean }[];
-      };
-      const ready = peers.participants.filter((peer) => peer.hasKeys).map((peer) => peer.userId);
-      if (!ready.includes(userId)) ready.push(userId);
-      const envelopes = await encryptForPeers(userId, ready, text);
+      const peers = await fetchPeers(caseId);
+      await heal(peers);
+      const targets = peers.flatMap((peer) =>
+        peer.devices.map((device) => ({ userId: peer.userId, deviceId: device.deviceId })),
+      );
+      const mine = { userId, deviceId: getDeviceId() };
+      if (!targets.some((row) => row.userId === mine.userId && row.deviceId === mine.deviceId)) {
+        targets.push(mine);
+      }
+      if (targets.length === 0) {
+        setError(t.noDevices);
+        return;
+      }
+      const envelopes = await encryptForPeers(userId, targets, text);
       const bodyHash = await sha256Hex(text);
       await postMessage(caseId, envelopes, bodyHash);
       setDraft("");
@@ -201,17 +227,19 @@ export function MessageThread({ caseId, userId }: Props) {
                 <span className="text-xs font-medium">{row.sender.name}</span>
                 <Badge variant="outline">{row.sender.role}</Badge>
                 {peerKeyChanged(userId, row.sender.id) && <Badge variant="warning">{t.keyChanged}</Badge>}
-                {fingerprints[row.sender.id] && (
-                  <span className="flex items-center gap-1">
-                    <span
-                      className="font-mono text-[10px] text-muted-foreground"
-                      title={`${t.safetyNumber}: ${fingerprints[row.sender.id]}`}
-                    >
-                      {t.safetyNumber}: {fingerprints[row.sender.id].slice(0, 12)}…
+                {Object.entries(fingerprints)
+                  .filter(([key]) => key.startsWith(`${row.sender.id}.`))
+                  .map(([key, value]) => (
+                    <span key={key} className="flex items-center gap-1">
+                      <span
+                        className="font-mono text-[10px] text-muted-foreground"
+                        title={`${t.safetyNumber}: ${value}`}
+                      >
+                        {t.safetyNumber}: {value.slice(0, 12)}…
+                      </span>
+                      <CopyButton text={value} label={t.safetyNumber} />
                     </span>
-                    <CopyButton text={fingerprints[row.sender.id]} label={t.safetyNumber} />
-                  </span>
-                )}
+                  ))}
               </div>
               {row.text === null ? (
                 <div className="flex flex-col gap-1">

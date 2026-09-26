@@ -27,7 +27,7 @@ export async function GET() {
       role: true,
       title: true,
       createdAt: true,
-      signalIdentity: { select: { userId: true } },
+      signalIdentity: { select: { deviceId: true } },
     },
   });
   return json({
@@ -37,7 +37,8 @@ export async function GET() {
       name: row.name,
       role: row.role,
       title: row.title,
-      hasKeys: Boolean(row.signalIdentity),
+      hasKeys: row.signalIdentity.length > 0,
+      devices: row.signalIdentity.length,
       createdAt: row.createdAt,
     })),
   });

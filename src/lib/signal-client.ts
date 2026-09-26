@@ -11,8 +11,28 @@ import {
   type StorageType,
 } from "libsignal-protocol-typescript";
 
-const DEVICE_ID = 1;
 const ONETIME_COUNT = 20;
+
+function addressOf(peerUserId: string, peerDeviceId: number) {
+  return new SignalProtocolAddress(peerUserId, peerDeviceId);
+}
+
+export function getDeviceId(): number {
+  try {
+    const raw = window.localStorage.getItem("signal:device");
+    const parsed = raw ? Number(raw) : NaN;
+    if (Number.isInteger(parsed) && parsed >= 1) return parsed;
+  } catch {
+    return 1;
+  }
+  const fresh = 1 + Math.floor(Math.random() * 0x7ffffffe);
+  try {
+    window.localStorage.setItem("signal:device", String(fresh));
+  } catch {
+    return fresh;
+  }
+  return fresh;
+}
 
 function b64encode(buf: ArrayBuffer): string {
   const bytes = new Uint8Array(buf);
@@ -140,10 +160,6 @@ function storeFor(userId: string) {
   return new BrowserSignalStore(userId);
 }
 
-function addressOf(peerUserId: string) {
-  return new SignalProtocolAddress(peerUserId, DEVICE_ID);
-}
-
 export function hasSignalIdentity(userId: string): boolean {
   return window.localStorage.getItem(lsKey(userId, "identity")) !== null;
 }
@@ -199,6 +215,7 @@ async function publishKeys(userId: string): Promise<void> {
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      deviceId: getDeviceId(),
       registrationId,
       identityKey: b64encode(identity.pubKey as ArrayBuffer),
       signedPreKey: {
@@ -224,28 +241,39 @@ async function publishKeys(userId: string): Promise<void> {
   window.localStorage.setItem(lsKey(userId, "registrationId"), String(registrationId));
 }
 
-type Bundle = {
+export type PeerDevice = {
   userId: string;
+  deviceId: number;
   registrationId: number;
   identityKey: string;
   signedPreKey: { keyId: number; publicKey: string; signature: string };
   oneTimePreKey: { keyId: number; publicKey: string } | null;
 };
 
-async function fetchBundle(peerUserId: string): Promise<Bundle> {
+export function envelopeId(userId: string, deviceId: number): string {
+  return `${userId}.${deviceId}`;
+}
+
+async function fetchBundles(peerUserId: string): Promise<PeerDevice[]> {
   const res = await fetch(
     `/api/signal/bundle?userId=${encodeURIComponent(peerUserId)}`,
     { credentials: "include" },
   );
   if (!res.ok) throw new Error("Peer has no encryption keys yet.");
-  return (await res.json()) as Bundle;
+  return ((await res.json()) as { devices: PeerDevice[] }).devices;
 }
 
-export async function ensureSession(userId: string, peerUserId: string): Promise<void> {
+export async function ensureSession(
+  userId: string,
+  peerUserId: string,
+  peerDeviceId: number,
+): Promise<void> {
   const store = storeFor(userId);
-  const cipher = new SessionCipher(store, addressOf(peerUserId));
+  const cipher = new SessionCipher(store, addressOf(peerUserId, peerDeviceId));
   if (await cipher.hasOpenSession()) return;
-  const bundle = await fetchBundle(peerUserId);
+  const bundles = await fetchBundles(peerUserId);
+  const bundle = bundles.find((row) => row.deviceId === peerDeviceId);
+  if (!bundle) throw new Error("Peer device has no encryption keys.");
   const device: DeviceType = {
     identityKey: b64decode(bundle.identityKey),
     registrationId: bundle.registrationId,
@@ -261,23 +289,23 @@ export async function ensureSession(userId: string, peerUserId: string): Promise
         }
       : undefined,
   };
-  const builder = new SessionBuilder(store, addressOf(peerUserId));
+  const builder = new SessionBuilder(store, addressOf(peerUserId, peerDeviceId));
   await builder.processPreKey(device);
 }
 
 export async function encryptForPeers(
   userId: string,
-  peerUserIds: string[],
+  peers: { userId: string; deviceId: number }[],
   plaintext: string,
 ): Promise<Record<string, { type: number; body: string }>> {
   const data = new TextEncoder().encode(plaintext).buffer;
   const out: Record<string, { type: number; body: string }> = {};
-  for (const peer of peerUserIds) {
-    await ensureSession(userId, peer);
-    const cipher = new SessionCipher(storeFor(userId), addressOf(peer));
+  for (const peer of peers) {
+    await ensureSession(userId, peer.userId, peer.deviceId);
+    const cipher = new SessionCipher(storeFor(userId), addressOf(peer.userId, peer.deviceId));
     const result = await cipher.encrypt(data.slice(0));
     if (!result.body) throw new Error("Encryption produced no body.");
-    out[peer] = { type: result.type, body: btoa(result.body) };
+    out[envelopeId(peer.userId, peer.deviceId)] = { type: result.type, body: btoa(result.body) };
   }
   return out;
 }
@@ -285,9 +313,10 @@ export async function encryptForPeers(
 export async function decryptFromPeer(
   userId: string,
   senderUserId: string,
+  senderDeviceId: number,
   envelope: { type: number; body: string },
 ): Promise<string> {
-  const cipher = new SessionCipher(storeFor(userId), addressOf(senderUserId));
+  const cipher = new SessionCipher(storeFor(userId), addressOf(senderUserId, senderDeviceId));
   const raw = atob(envelope.body);
   const plain =
     envelope.type === 3

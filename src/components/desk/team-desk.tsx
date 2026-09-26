@@ -79,6 +79,7 @@ export function TeamDesk() {
                   <TableCell>
                     <Badge variant={member.hasKeys ? "success" : "warning"}>
                       {member.hasKeys ? t.keysReady : t.noKeys}
+                      {member.devices > 1 ? ` · ${member.devices}` : ""}
                     </Badge>
                   </TableCell>
                 </TableRow>
