@@ -1,5 +1,5 @@
 import type { Role, User } from "@prisma/client";
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomInt } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/session";
 
@@ -26,8 +26,7 @@ const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 
 export function newEnrollmentCode(): { code: string; hash: string } {
   let raw = "";
-  const bytes = randomBytes(12);
-  for (const byte of bytes) raw += CODE_ALPHABET[byte % CODE_ALPHABET.length];
+  for (let i = 0; i < 12; i++) raw += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
   const code = `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}`;
   const hash = createHash("sha256").update(code).digest("hex");
   return { code, hash };
@@ -38,7 +37,10 @@ export function enrollmentExpiry(): Date {
 }
 
 export function hashEnrollmentCode(code: string): string {
-  return createHash("sha256").update(code.trim().toUpperCase()).digest("hex");
+  const raw = code.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const normalized =
+    raw.length === 12 ? `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8, 12)}` : raw;
+  return createHash("sha256").update(normalized).digest("hex");
 }
 
 export async function findAccount(username: string, org: string) {

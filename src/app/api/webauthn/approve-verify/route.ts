@@ -87,6 +87,7 @@ export async function POST(request: Request) {
       kind: "approve",
       response: body.response,
       expectedChallenge: ceremony.challenge,
+      userId: user.id,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Approval failed.";

@@ -165,6 +165,7 @@ export async function verifyAssertion(input: {
   kind: "sign-in" | "approve";
   response: unknown;
   expectedChallenge?: string;
+  userId?: string;
 }): Promise<VerifiedAuthenticationResponse> {
   const body = input.response as AuthenticationResponseJSON;
   const clientData = JSON.parse(
@@ -179,6 +180,9 @@ export async function verifyAssertion(input: {
     include: { user: true },
   });
   if (!stored) throw new Error("Unknown credential.");
+  if (input.userId && stored.userId !== input.userId) {
+    throw new Error("That passkey belongs to a different account.");
+  }
   const verification = await verifyAuthenticationResponse({
     response: body,
     expectedChallenge: challenge,

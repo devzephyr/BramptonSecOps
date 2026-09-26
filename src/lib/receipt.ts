@@ -5,6 +5,7 @@ import {
   SignJWT,
   type JWK,
 } from "jose";
+import { prisma } from "@/lib/db";
 
 type ReceiptKey = {
   privateKey: CryptoKey;
@@ -54,4 +55,19 @@ export async function signReceipt(
     .setIssuedAt()
     .sign(privateKey);
   return { jws, kid };
+}
+
+export async function loadPublicReceipt(token: string) {
+  const receipt = await prisma.verifyReceipt.findUnique({
+    where: { token },
+    include: { case: { select: { revokedAt: true } } },
+  });
+  if (!receipt || receipt.revokedAt || receipt.case.revokedAt) return null;
+  return {
+    token: receipt.token,
+    jws: receipt.jws,
+    jwksKid: receipt.jwksKid,
+    claims: receipt.claimsJson,
+    createdAt: receipt.createdAt.toISOString(),
+  };
 }

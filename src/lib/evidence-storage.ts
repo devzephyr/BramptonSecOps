@@ -30,6 +30,13 @@ export function evidenceKey(orgId: string, label: string) {
   return `${orgId}/${Date.now()}_${randomBytes(8).toString("hex")}_${safe}`;
 }
 
+export const MAX_EVIDENCE_BYTES = 10 * 1024 * 1024;
+
+export function isOrgEvidenceKey(key: unknown, orgId: string): key is string {
+  if (typeof key !== "string" || !key.startsWith(`${orgId}/`)) return false;
+  return /^\d+_[a-f0-9]{16}_[A-Za-z0-9._-]{1,80}$/.test(key.slice(orgId.length + 1));
+}
+
 export async function presignPut(key: string, contentType: string) {
   const client = s3Client();
   const bucket = process.env.S3_BUCKET ?? "supplychek-evidence";
