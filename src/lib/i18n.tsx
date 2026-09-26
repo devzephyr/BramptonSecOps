@@ -251,6 +251,21 @@ export type Messages = {
   noDrivers: string;
   requestedChange: string;
   requestedChangeHint: string;
+  editLoad: string;
+  saveChanges: string;
+  handoffNote: string;
+  handoffNoteHint: string;
+  history: string;
+  noHistory: string;
+  lockedMoving: string;
+  loadUpdated: string;
+  jobTitle: string;
+  jobTitleHint: string;
+  edit: string;
+  editTeammate: string;
+  teammateUpdated: string;
+  eventHandoff: string;
+  eventUpdated: string;
 };
 
 const en: Messages = {
@@ -492,6 +507,21 @@ const en: Messages = {
   noDrivers: "No drivers on the team yet. Add one in the Team tab.",
   requestedChange: "Requested change",
   requestedChangeHint: "Type what the counterparty asked for. Approvers see it side by side with what is on file.",
+  editLoad: "Edit or hand off",
+  saveChanges: "Save changes",
+  handoffNote: "Handoff location (optional)",
+  handoffNoteHint: "e.g. Flying J, Napanee ON",
+  history: "History",
+  noHistory: "No changes yet.",
+  lockedMoving: "Dock, destination, and seal are locked while the load is moving. Open a request to change them.",
+  loadUpdated: "Load updated",
+  jobTitle: "Job title",
+  jobTitleHint: "Pick a suggestion or type your own.",
+  edit: "Edit",
+  editTeammate: "Edit teammate",
+  teammateUpdated: "Teammate updated",
+  eventHandoff: "Handoff",
+  eventUpdated: "Edited",
 };
 
 const fr: Messages = {
@@ -739,6 +769,21 @@ const fr: Messages = {
   noDrivers: "Aucun chauffeur dans l’équipe. Ajoutez-en un dans l’onglet Équipe.",
   requestedChange: "Changement demandé",
   requestedChangeHint: "Saisissez ce que le partenaire a demandé. Les approbateurs le voient à côté de ce qui est au dossier.",
+  editLoad: "Modifier ou transférer",
+  saveChanges: "Enregistrer",
+  handoffNote: "Lieu du transfert (facultatif)",
+  handoffNoteHint: "ex. Flying J, Napanee (Ont.)",
+  history: "Historique",
+  noHistory: "Aucun changement pour l’instant.",
+  lockedMoving: "Le quai, la destination et le sceau sont verrouillés pendant le trajet. Ouvrez une demande pour les modifier.",
+  loadUpdated: "Chargement mis à jour",
+  jobTitle: "Poste",
+  jobTitleHint: "Choisissez une suggestion ou saisissez la vôtre.",
+  edit: "Modifier",
+  editTeammate: "Modifier le coéquipier",
+  teammateUpdated: "Coéquipier mis à jour",
+  eventHandoff: "Transfert",
+  eventUpdated: "Modifié",
 };
 
 const MAP = { en, fr } as const;

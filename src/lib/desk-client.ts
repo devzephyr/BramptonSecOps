@@ -233,6 +233,38 @@ export async function createLoad(input: NewLoad): Promise<void> {
   }
 }
 
+export type LoadPatch = Partial<Omit<NewLoad, "loadRef" | "driverUserId">> & {
+  driverUserId?: string | null;
+  handoffNote?: string;
+};
+
+export async function updateLoad(id: string, patch: LoadPatch): Promise<void> {
+  const res = await fetch(`/api/loads/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not update load"));
+  }
+}
+
+export type LoadEvent = {
+  id: string;
+  eventType: string;
+  note: string | null;
+  actor: string;
+  createdAt: string;
+};
+
+export async function fetchLoadEvents(id: string): Promise<LoadEvent[]> {
+  const res = await fetch(`/api/loads/${encodeURIComponent(id)}`, { credentials: "include" });
+  if (!res.ok) return [];
+  const body = (await parseJson(res)) as { events?: LoadEvent[] } | null;
+  return body?.events ?? [];
+}
+
 export async function markNotificationRead(id: string) {
   const res = await fetch(`/api/notifications/${encodeURIComponent(id)}/read`, {
     method: "POST",
@@ -254,6 +286,8 @@ export async function fetchLoads(): Promise<Load[]> {
     origin: row.origin,
     destination: row.destination,
     dock: row.approvedDock || row.scheduledDock || "",
+    scheduledDock: row.scheduledDock ?? "",
+    etaIso: row.eta ?? "",
     carrier: row.carrierName ?? "",
     plate: row.plate,
     trailer: row.trailer,
@@ -681,6 +715,7 @@ export async function addTeammate(input: {
   username: string;
   name: string;
   role: string;
+  title?: string;
 }): Promise<TeamMember> {
   const res = await fetch("/api/orgs/users", {
     method: "POST",
@@ -692,6 +727,21 @@ export async function addTeammate(input: {
     throw new DeskApiError(res.status, await failMessage(res, "Could not add teammate"));
   }
   return (await parseJson(res)) as TeamMember;
+}
+
+export async function updateTeammate(
+  id: string,
+  patch: { name?: string; role?: string; title?: string },
+): Promise<void> {
+  const res = await fetch(`/api/orgs/users/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not update teammate"));
+  }
 }
 
 export type MemberCredential = {
