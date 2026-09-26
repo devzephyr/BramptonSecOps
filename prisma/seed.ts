@@ -710,19 +710,6 @@ async function main() {
     },
   });
 
-  await prisma.partnerPortalAccount.upsert({
-    where: { id: "seed_partner_portal" },
-    create: {
-      id: "seed_partner_portal",
-      orgId: org.id,
-      label: "Lake Ontario partner desk",
-    },
-    update: {
-      orgId: org.id,
-      label: "Lake Ontario partner desk",
-    },
-  });
-
   if (issuedCodes.length > 0) {
     console.log("\nEnrollment codes (expire in 24h, one use each):");
     console.table(issuedCodes);

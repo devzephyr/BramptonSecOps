@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
-import { lockCase, oobComplete, parseOobAck } from "@/lib/cases";
+import { lockCase, notifyApprovers, oobComplete, parseOobAck } from "@/lib/cases";
 import {
   approvalProgress,
   redactValue,
@@ -151,6 +151,16 @@ export async function POST(request: Request) {
       if (progress !== "complete") {
         const status = progress === "need_second" ? "pending_second" : "pending_approval";
         await tx.verifyCase.update({ where: { id: row.id }, data: { status } });
+        if (status === "pending_second") {
+          await notifyApprovers(tx, {
+            orgId: user.orgId,
+            exclude: [...distinctIds, row.createdById],
+            kind: "case_second_approval",
+            requestType: row.requestType,
+            counterparty: row.counterparty,
+            body: `${user.name} approved it. A second, different manager must approve the same payload.`,
+          });
+        }
         return { status, approverCount: distinctIds.length, receiptToken: null };
       }
 
