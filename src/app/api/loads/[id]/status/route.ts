@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
+import { BreakRequired, driverHos, setDutyStatus } from "@/lib/duty";
 import { DRIVER_STATUS } from "@/lib/policy";
 import {
   badRequest,
@@ -56,10 +57,21 @@ export async function POST(request: Request, { params }: Params) {
   const lastKnown =
     typeof body.lastKnown === "string" ? body.lastKnown.slice(0, 200) : load.lastKnown;
 
+  // "Rolling" means the driver is driving: refuse it while a break is owed, before anything changes.
+  if (eventType === "rolling") {
+    const hos = await driverHos(user.id);
+    if (hos.breakOwed && hos.status !== "driving") {
+      const blocked = new BreakRequired(hos);
+      return json({ error: blocked.message, hos }, 409);
+    }
+  }
+
+  // An unassigned load can be claimed by the first driver to post, unless a facility is holding it:
+  // then only a custody transfer can hand it to a driver.
   const owned = {
     id: load.id,
     orgId: user.orgId,
-    OR: [{ driverUserId: null }, { driverUserId: user.id }],
+    OR: [{ driverUserId: null, facility: null }, { driverUserId: user.id }],
   };
   const data = { currentStatus: eventType, lastKnown, driverUserId: user.id };
 
@@ -78,6 +90,28 @@ export async function POST(request: Request, { params }: Params) {
   const claimed = await prisma.load.updateMany({ where: owned, data });
   if (claimed.count !== 1) {
     return forbidden("This load is assigned to another driver.");
+  }
+
+  if (eventType === "rolling" || eventType === "arrived") {
+    try {
+      const hos = await driverHos(user.id);
+      const next = eventType === "rolling" ? "driving" : "on_duty";
+      if (eventType === "rolling" || hos.status === "driving") {
+        await setDutyStatus({
+          orgId: user.orgId,
+          driverId: user.id,
+          actorId: user.id,
+          kind: "status",
+          status: next,
+          source: "status",
+          loadId: load.id,
+          lat: load.lat,
+          lng: load.lng,
+        });
+      }
+    } catch (error) {
+      if (!(error instanceof BreakRequired)) throw error;
+    }
   }
 
   const event = await prisma.trackingEvent.create({

@@ -43,20 +43,49 @@ export async function GET(_request: Request, { params }: Params) {
   });
   if (!load) return notFound();
 
-  const events = await prisma.trackingEvent.findMany({
-    where: { orgId: user.orgId, loadId: id },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-  });
+  const [events, custody, trail] = await Promise.all([
+    prisma.trackingEvent.findMany({
+      where: { orgId: user.orgId, loadId: id },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    }),
+    prisma.custodyTransfer.findMany({
+      where: { orgId: user.orgId, loadId: id },
+      orderBy: { createdAt: "asc" },
+      take: 200,
+    }),
+    prisma.positionPing.findMany({
+      where: { orgId: user.orgId, loadId: id },
+      orderBy: { recordedAt: "desc" },
+      take: 1000,
+      select: { lat: true, lng: true, recordedAt: true },
+    }),
+  ]);
+  const people = new Set<string>(events.map((event) => event.actorId));
+  for (const hop of custody) {
+    for (const person of [hop.actorId, hop.fromUserId, hop.toUserId]) if (person) people.add(person);
+  }
   const actors = await prisma.user.findMany({
-    where: {
-      orgId: user.orgId,
-      id: { in: [...new Set(events.map((event) => event.actorId))] },
-    },
+    where: { orgId: user.orgId, id: { in: [...people] } },
     select: { id: true, name: true },
   });
   const nameOf = new Map(actors.map((actor) => [actor.id, actor.name]));
+  const holder = (userId: string | null, facility: string | null) =>
+    userId ? { kind: "driver", name: nameOf.get(userId) ?? "Unknown" } : facility ? { kind: "facility", name: facility } : null;
   return json({
+    custody: custody.map((hop) => ({
+      id: hop.id,
+      from: holder(hop.fromUserId, hop.fromFacility),
+      to: holder(hop.toUserId, hop.toFacility),
+      sealNumber: hop.sealNumber,
+      sealIntact: hop.sealIntact,
+      lat: hop.lat,
+      lng: hop.lng,
+      note: hop.note,
+      actor: nameOf.get(hop.actorId) ?? "Unknown",
+      createdAt: hop.createdAt,
+    })),
+    trail: trail.reverse().map((point) => ({ lat: point.lat, lng: point.lng, at: point.recordedAt })),
     events: events.map((event) => ({
       id: event.id,
       eventType: event.eventType,
@@ -160,7 +189,10 @@ export async function PATCH(request: Request, { params }: Params) {
 
     const data: Record<string, string | Date | null> = {};
     for (const key of changed) data[key] = changes[key];
-    if (driverChanged) data.driverUserId = newDriver?.id ?? null;
+    if (driverChanged) {
+      data.driverUserId = newDriver?.id ?? null;
+      if (newDriver) data.facility = null;
+    }
     const updated = await tx.load.update({ where: { id }, data: data as Prisma.LoadUncheckedUpdateInput });
 
     const parts: string[] = [];
@@ -179,6 +211,20 @@ export async function PATCH(request: Request, { params }: Params) {
     });
 
     if (driverChanged) {
+      await tx.custodyTransfer.create({
+        data: {
+          orgId: user.orgId,
+          loadId: id,
+          fromUserId: previousDriver,
+          fromFacility: previousDriver ? null : load.facility,
+          toUserId: newDriver?.id ?? null,
+          toFacility: newDriver ? null : load.facility,
+          lat: load.lat,
+          lng: load.lng,
+          note: handoffNote || null,
+          actorId: user.id,
+        },
+      });
       const route = `${updated.origin} → ${updated.destination}`;
       const notes: Prisma.NotificationCreateManyInput[] = [];
       if (newDriver) {

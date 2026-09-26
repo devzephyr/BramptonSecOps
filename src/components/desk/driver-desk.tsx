@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { toastManager } from "@/components/ui/toast";
+import { CustodyForm } from "@/components/desk/custody";
 import { DocumentUpload } from "@/components/desk/document-upload";
+import { DutyPanel } from "@/components/desk/duty-panel";
 import { TripMap } from "@/components/desk/trip-map";
 import { FLOW, TripSteps } from "@/components/desk/trip-steps";
 import { postPosition } from "@/lib/desk-client";
@@ -98,10 +100,12 @@ export function DriverDesk() {
     const advance = async () => {
       const point = simPosition(step);
       try {
-        await postPosition(load.id, point.lat, point.lng);
-        if (step === 0 && load.status !== "rolling" && load.status !== "fifteen_min") {
-          await send(load.id, "rolling", true);
+        // Refused (e.g. a break is owed): the truck does not move, so stop before sending any position.
+        if (step === 0 && load.status !== "rolling" && load.status !== "fifteen_min" && !(await send(load.id, "rolling", true))) {
+          stopSim(true);
+          return;
         }
+        await postPosition(load.id, point.lat, point.lng);
         if (step === FIFTEEN_MIN_STEP) await send(load.id, "fifteen_min", true);
         if (step === SIM_STEPS) await send(load.id, "arrived", true);
         await desk.refreshRemote();
@@ -120,19 +124,28 @@ export function DriverDesk() {
     timer.current = window.setInterval(() => void tick(), SIM_TICK_MS);
   }
 
+  const activeLoad = mine.find((load) => load.status !== "arrived");
+  const facilities = [
+    ...new Set(desk.loads.flatMap((load) => [load.facility ?? "", load.origin, load.destination]).filter(Boolean)),
+  ];
+
   if (mine.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>{t.noLoads}</CardTitle>
-          <CardDescription>{t.noLoadsHint}</CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+        <DutyPanel driverId={desk.user.id} />
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.noLoads}</CardTitle>
+            <CardDescription>{t.noLoadsHint}</CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+      <DutyPanel driverId={desk.user.id} activeLoadId={activeLoad?.id} />
       <h1 className="font-heading text-lg font-semibold">{t.yourLoads}</h1>
       {error && (
         <Alert variant="error">
@@ -219,6 +232,18 @@ export function DriverDesk() {
                         {t.reportDelay}
                       </Button>
                     )}
+                  </div>
+                </details>
+
+                <details className="group rounded-lg border px-3 py-2">
+                  <summary className="cursor-pointer text-sm font-medium">{t.dropAtFacility}</summary>
+                  <div className="mt-3">
+                    <CustodyForm
+                      loadId={load.id}
+                      allowDrivers={false}
+                      facilities={facilities}
+                      onDone={() => void desk.refreshRemote()}
+                    />
                   </div>
                 </details>
 

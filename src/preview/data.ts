@@ -42,6 +42,8 @@ export type Load = {
   lat?: number | null;
   lng?: number | null;
   positionAt?: string | null;
+  /** Warehouse or yard holding the load when no driver has it. */
+  facility?: string;
 };
 
 export type Note = {

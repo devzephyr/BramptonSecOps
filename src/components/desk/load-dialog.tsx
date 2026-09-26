@@ -10,7 +10,8 @@ import type { Load } from "@/preview/data";
 import { TripMap } from "@/components/desk/trip-map";
 import { DocumentUpload } from "@/components/desk/document-upload";
 import { LoadEdit } from "@/components/desk/load-edit";
-import { fetchLoadEvents, fetchTeam, type LoadEvent, type TeamMember } from "@/lib/desk-client";
+import { CustodyChain, CustodyForm } from "@/components/desk/custody";
+import { fetchLoadJourney, fetchTeam, type LoadJourney, type TeamMember } from "@/lib/desk-client";
 import { useDesk } from "@/preview/store";
 
 function Row({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
@@ -27,18 +28,22 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
   const { t } = useI18n();
   const desk = useDesk();
   const canEdit = desk.user.role === "manager" || desk.user.role === "admin";
+  const canHandOff = canEdit || desk.user.role === "receiver";
   const [editing, setEditing] = useState(false);
-  const [events, setEvents] = useState<LoadEvent[]>([]);
+  const [handingOff, setHandingOff] = useState(false);
+  const [journey, setJourney] = useState<LoadJourney>({ events: [], custody: [], trail: [] });
+  const events = journey.events;
   const [drivers, setDrivers] = useState<TeamMember[]>([]);
   const loadId = load?.id ?? null;
   const live = load != null && load.lat != null && load.lng != null && isLive(load.positionAt);
 
   useEffect(() => {
     setEditing(false);
-    setEvents([]);
+    setHandingOff(false);
+    setJourney({ events: [], custody: [], trail: [] });
     if (!loadId) return;
     let alive = true;
-    void fetchLoadEvents(loadId).then((rows) => alive && setEvents(rows));
+    void fetchLoadJourney(loadId).then((rows) => alive && setJourney(rows));
     if (canEdit) void fetchTeam().then((team) => alive && setDrivers(team.filter((member) => member.role === "driver")));
     return () => {
       alive = false;
@@ -47,10 +52,19 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
 
   async function reloadHistory() {
     setEditing(false);
-    if (loadId) setEvents(await fetchLoadEvents(loadId));
+    setHandingOff(false);
+    if (loadId) setJourney(await fetchLoadJourney(loadId));
+    await desk.refreshRemote();
   }
 
-  const driverName = load?.driverId ? (drivers.find((member) => member.id === load.driverId)?.name ?? "") : t.unassigned;
+  const driverName = load?.driverId
+    ? (drivers.find((member) => member.id === load.driverId)?.name ?? "")
+    : load?.facility
+      ? ""
+      : t.unassigned;
+  const facilities = [
+    ...new Set(desk.loads.flatMap((item) => [item.facility ?? "", item.origin, item.destination]).filter(Boolean)),
+  ];
 
   return (
     <Dialog open={load !== null} onOpenChange={(open) => !open && onClose()}>
@@ -79,6 +93,7 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
                 )}
               </div>
               <Row label={t.driver} value={driverName} />
+              <Row label={t.atFacility} value={load.facility ?? ""} />
               <Row label={t.goods} value={load.commodity} />
               <Row label={t.dock} value={load.dock} />
               <Row label={t.seal} value={load.seal} mono />
@@ -94,13 +109,36 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
                     mono
                   />
                   <TripMap
-                    className="h-48"
+                    className="h-56"
                     depotLabel={t.mapDepot}
                     yardLabel={t.mapYard}
+                    trail={journey.trail}
                     trucks={[{ id: load.id, label: load.loadRef, lat: load.lat, lng: load.lng, live }]}
                   />
+                  {journey.trail.length > 1 && <p className="text-xs text-muted-foreground">{t.trailHint}</p>}
                 </>
               )}
+              <div className="mt-2 flex flex-col gap-2 border-t pt-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium">{t.custodyChain}</span>
+                  {canHandOff && !handingOff && (
+                    <Button size="sm" variant="outline" className="ml-auto" onClick={() => setHandingOff(true)}>
+                      {t.handOff}
+                    </Button>
+                  )}
+                </div>
+                {handingOff && (
+                  <div className="rounded-lg border p-3">
+                    <CustodyForm
+                      loadId={load.id}
+                      allowDrivers={canEdit}
+                      facilities={facilities}
+                      onDone={() => void reloadHistory()}
+                    />
+                  </div>
+                )}
+                <CustodyChain hops={journey.custody} />
+              </div>
               <div className="mt-2">
                 <DocumentUpload loadId={load.id} />
               </div>
@@ -115,7 +153,9 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
                         <span className="font-medium">
                           {event.eventType === "handoff"
                             ? t.eventHandoff
-                            : event.eventType === "updated"
+                            : event.eventType === "custody"
+                              ? t.eventCustody
+                              : event.eventType === "updated"
                               ? t.eventUpdated
                               : loadStatusTitle(event.eventType, t)}
                         </span>

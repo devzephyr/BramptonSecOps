@@ -39,48 +39,52 @@ enum RequestType {
 }
 
 model Org {
-  id               String                 @id @default(cuid())
-  name             String
-  slug             String                 @unique
-  city             String
-  province         String
-  createdAt        DateTime               @default(now())
-  users            User[]
-  contacts         DirectoryContact[]
-  cases            VerifyCase[]
-  loads            Load[]
-  trucks           Truck[]
-  notifications    Notification[]
-  mailbox          MailboxConnection[]
-  partnerAccounts  PartnerPortalAccount[]
-  evidence         EvidenceAsset[]
-  callLogs         CallLog[]
+  id              String                 @id @default(cuid())
+  name            String
+  slug            String                 @unique
+  city            String
+  province        String
+  createdAt       DateTime               @default(now())
+  users           User[]
+  contacts        DirectoryContact[]
+  cases           VerifyCase[]
+  loads           Load[]
+  trucks          Truck[]
+  notifications   Notification[]
+  mailbox         MailboxConnection[]
+  partnerAccounts PartnerPortalAccount[]
+  evidence        EvidenceAsset[]
+  callLogs        CallLog[]
 }
 
 model User {
-  id            String               @id @default(cuid())
-  orgId         String
-  org           Org                  @relation(fields: [orgId], references: [id])
-  clerkId       String?              @unique
-  username      String?
-  email         String
-  name          String
-  role          Role
-  numberOnFile  String?
-  title         String?
-  enrollmentTokenHash String?
+  id                     String                @id @default(cuid())
+  orgId                  String
+  org                    Org                   @relation(fields: [orgId], references: [id])
+  clerkId                String?               @unique
+  username               String?
+  email                  String
+  name                   String
+  role                   Role
+  numberOnFile           String?
+  title                  String?
+  enrollmentTokenHash    String?
   enrollmentTokenExpires DateTime?
-  createdAt     DateTime             @default(now())
-  credentials   WebAuthnCredential[]
-  decisions     VerifyDecision[]
-  ceremonies    PendingCeremony[]
-  attestations  ApprovalAttestation[]
-  notifications Notification[]
-  callLogs      CallLog[]
-  messages      Message[]
-  signalIdentity SignalIdentity[]
-  signalSignedPreKeys SignalSignedPreKey[]
-  signalOneTimePreKeys SignalOneTimePreKey[]
+  createdAt              DateTime              @default(now())
+  credentials            WebAuthnCredential[]
+  decisions              VerifyDecision[]
+  ceremonies             PendingCeremony[]
+  attestations           ApprovalAttestation[]
+  notifications          Notification[]
+  callLogs               CallLog[]
+  messages               Message[]
+  signalIdentity         SignalIdentity[]
+  signalSignedPreKeys    SignalSignedPreKey[]
+  signalOneTimePreKeys   SignalOneTimePreKey[]
+  photoKey               String?
+  photoHash              String?
+  photoType              String?
+  dutyEntries            DutyEntry[]
 
   @@unique([orgId, email])
   @@unique([orgId, username])
@@ -211,12 +215,12 @@ model PendingCeremony {
 }
 
 model ApprovalAttestation {
-  id                String   @id @default(cuid())
+  id                String     @id @default(cuid())
   orgId             String
   caseId            String
   case              VerifyCase @relation(fields: [caseId], references: [id])
   userId            String
-  user              User     @relation(fields: [userId], references: [id])
+  user              User       @relation(fields: [userId], references: [id])
   payloadHash       String
   challenge         String
   credentialId      String
@@ -227,7 +231,7 @@ model ApprovalAttestation {
   signCount         Int
   uv                Boolean
   assertionHash     String
-  verifiedAt        DateTime @default(now())
+  verifiedAt        DateTime   @default(now())
   peerAttestationId String?
 
   @@index([orgId, caseId, payloadHash])
@@ -261,31 +265,31 @@ enum DocType {
 }
 
 model EvidenceAsset {
-  id          String   @id @default(cuid())
-  orgId       String
-  org         Org      @relation(fields: [orgId], references: [id])
-  caseId      String?
-  loadId      String?
-  r2Key       String
-  contentHash String
-  contentType String
-  label       String
-  byteSize    Int
-  docType     DocType  @default(other)
-  docNumber   String?
-  amountCents Int?
-  currency    String?
+  id           String   @id @default(cuid())
+  orgId        String
+  org          Org      @relation(fields: [orgId], references: [id])
+  caseId       String?
+  loadId       String?
+  r2Key        String
+  contentHash  String
+  contentType  String
+  label        String
+  byteSize     Int
+  docType      DocType  @default(other)
+  docNumber    String?
+  amountCents  Int?
+  currency     String?
   uploadedById String?
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   @@index([orgId])
   @@index([orgId, docType])
 }
 
 model Truck {
-  id          String  @id @default(cuid())
+  id          String @id @default(cuid())
   orgId       String
-  org         Org     @relation(fields: [orgId], references: [id])
+  org         Org    @relation(fields: [orgId], references: [id])
   plate       String
   trailer     String
   carrierName String
@@ -295,12 +299,12 @@ model Truck {
 }
 
 model Load {
-  id                              String          @id @default(cuid())
+  id                              String            @id @default(cuid())
   orgId                           String
-  org                             Org             @relation(fields: [orgId], references: [id])
-  seedKey                         String?         @unique
+  org                             Org               @relation(fields: [orgId], references: [id])
+  seedKey                         String?           @unique
   truckId                         String?
-  truck                           Truck?          @relation(fields: [truckId], references: [id])
+  truck                           Truck?            @relation(fields: [truckId], references: [id])
   loadRef                         String
   carrierName                     String
   plate                           String
@@ -321,8 +325,12 @@ model Load {
   lat                             Float?
   lng                             Float?
   positionAt                      DateTime?
-  createdAt                       DateTime        @default(now())
+  /// Facility holding the load when no driver has it (dropped at a warehouse or yard).
+  facility                        String?
+  createdAt                       DateTime          @default(now())
   events                          TrackingEvent[]
+  custody                         CustodyTransfer[]
+  pings                           PositionPing[]
 
   @@unique([orgId, loadRef])
   @@index([orgId])
@@ -358,6 +366,8 @@ model Notification {
   href        String?
   emailTo     String?
   emailStatus String?
+  /// Set on alerts that must fire once per condition (e.g. one hours-of-service alert per driving stretch).
+  dedupeKey   String?   @unique
   readAt      DateTime?
   createdAt   DateTime  @default(now())
 
@@ -392,15 +402,15 @@ model CallLog {
 }
 
 model Message {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   orgId     String
   caseId    String
   case      VerifyCase @relation(fields: [caseId], references: [id])
   senderId  String
-  sender    User     @relation(fields: [senderId], references: [id])
+  sender    User       @relation(fields: [senderId], references: [id])
   envelopes Json
   bodyHash  String
-  createdAt DateTime @default(now())
+  createdAt DateTime   @default(now())
 
   @@index([orgId, caseId])
 }
@@ -419,8 +429,8 @@ model SignalIdentity {
 
 model SignalSignedPreKey {
   userId    String
-  user      User   @relation(fields: [userId], references: [id])
-  deviceId  Int    @default(1)
+  user      User     @relation(fields: [userId], references: [id])
+  deviceId  Int      @default(1)
   keyId     Int
   publicKey String
   signature String
@@ -440,4 +450,73 @@ model SignalOneTimePreKey {
 
   @@unique([userId, deviceId, keyId])
   @@index([userId])
+}
+
+enum DutyStatus {
+  off_duty
+  sleeper_berth
+  on_duty
+  driving
+}
+
+/// Append-only driver duty log. Times come from the server clock, never the client, so entries cannot be
+/// back-dated. Each entry hashes the previous one per driver; editing or deleting a row breaks the chain.
+/// Corrections are new "note" entries that point at the entry they explain; the original stays.
+model DutyEntry {
+  id       String      @id @default(cuid())
+  orgId    String
+  driverId String
+  driver   User        @relation(fields: [driverId], references: [id])
+  seq      Int
+  kind     String
+  status   DutyStatus?
+  at       DateTime
+  lat      Float?
+  lng      Float?
+  loadId   String?
+  note     String?
+  /// driver | gps | status | manager
+  source   String
+  refId    String?
+  actorId  String
+  prevHash String
+  hash     String
+
+  @@unique([driverId, seq])
+  @@index([orgId, driverId, at])
+}
+
+/// Chain of custody: every time a load changes hands (driver to driver, driver to warehouse, warehouse to driver).
+model CustodyTransfer {
+  id           String   @id @default(cuid())
+  orgId        String
+  loadId       String
+  load         Load     @relation(fields: [loadId], references: [id])
+  fromUserId   String?
+  fromFacility String?
+  toUserId     String?
+  toFacility   String?
+  sealNumber   String?
+  sealIntact   Boolean?
+  lat          Float?
+  lng          Float?
+  note         String?
+  actorId      String
+  createdAt    DateTime @default(now())
+
+  @@index([orgId, loadId])
+}
+
+/// Position history for the journey trail. Throttled server-side; Load.lat/lng stays the latest fix.
+model PositionPing {
+  id         String   @id @default(cuid())
+  orgId      String
+  loadId     String
+  load       Load     @relation(fields: [loadId], references: [id])
+  driverId   String?
+  lat        Float
+  lng        Float
+  recordedAt DateTime @default(now())
+
+  @@index([loadId, recordedAt])
 }

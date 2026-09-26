@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { CaseCeremony } from "@/components/desk/case-ceremony";
 import { DirectoryDesk } from "@/components/desk/directory-desk";
 import { DocumentUpload } from "@/components/desk/document-upload";
+import { FleetDesk } from "@/components/desk/fleet-desk";
 import { LoadForm } from "@/components/desk/load-form";
 import { LoadsTable } from "@/components/desk/loads-table";
 import { ReceiptView } from "@/components/desk/receipt-view";
@@ -36,8 +37,9 @@ export function ManagerDesk() {
       value={desk.managerTab}
       onValueChange={(value) => desk.setManagerTab(value as typeof desk.managerTab)}
     >
-      <TabsList>
+      <TabsList className="max-w-full overflow-x-auto">
         <TabsTab value="board">{t.requests}</TabsTab>
+        <TabsTab value="fleet">{t.fleet}</TabsTab>
         <TabsTab value="request">{t.newRequest}</TabsTab>
         <TabsTab value="load">{t.newLoad}</TabsTab>
         <TabsTab value="directory">{t.directory}</TabsTab>
@@ -100,6 +102,9 @@ export function ManagerDesk() {
           </CardPanel>
         </Card>
         <LoadsTable />
+      </TabsPanel>
+      <TabsPanel value="fleet" className="pt-4">
+        <FleetDesk />
       </TabsPanel>
       <TabsPanel value="request" className="flex flex-col gap-2 pt-4">
         <p className="text-sm text-muted-foreground">{t.newRequestHint}</p>
