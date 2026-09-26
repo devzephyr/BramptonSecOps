@@ -107,12 +107,20 @@ async function main() {
   const first = await aliceCipher.encrypt(enc.encode("sealed note: change the bank account").buffer);
   console.log("alice->bob type:", first.type);
   const bobCipher = new SessionCipher(bobStore, new SignalProtocolAddress("alice", 1));
-  const opened = await bobCipher.decryptPreKeyWhisperMessage(first.body!);
+  const wire = JSON.parse(JSON.stringify({ type: first.type, body: btoa(first.body!) })) as {
+    type: number;
+    body: string;
+  };
+  const opened = await bobCipher.decryptPreKeyWhisperMessage(atob(wire.body));
   console.log("alice->bob reads:", dec.decode(opened));
 
   const reply = await bobCipher.encrypt(enc.encode("confirmed, calling the number on file").buffer);
   console.log("bob->alice type:", reply.type);
-  const back = await aliceCipher.decryptWhisperMessage(reply.body!);
+  const wireBack = JSON.parse(JSON.stringify({ type: reply.type, body: btoa(reply.body!) })) as {
+    type: number;
+    body: string;
+  };
+  const back = await aliceCipher.decryptWhisperMessage(atob(wireBack.body));
   console.log("bob->alice reads:", dec.decode(back));
 
   const fp = new FingerprintGenerator(5200);

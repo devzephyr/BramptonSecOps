@@ -21,7 +21,8 @@ function validEnvelopes(value: unknown): value is Record<string, { type: number;
       (row.type === 1 || row.type === 3) &&
       typeof row.body === "string" &&
       row.body.length > 0 &&
-      row.body.length < 20000
+      row.body.length < 20000 &&
+      /^[A-Za-z0-9+/=]+$/.test(row.body)
     );
   });
 }
