@@ -225,6 +225,17 @@ export type Messages = {
   dismiss: string;
   statusSent: string;
   saveFailed: string;
+  mapDepot: string;
+  mapYard: string;
+  nextStep: string;
+  reportDelay: string;
+  delivered: string;
+  deliveredBody: string;
+  trailerPlate: string;
+  sharingPosition: string;
+  yourLoads: string;
+  correctStatus: string;
+  tripHint: string;
 };
 
 const en: Messages = {
@@ -350,7 +361,7 @@ const en: Messages = {
   noLive: "No driver is sharing a live position right now.",
   lastKnown: "Last known",
   simulated: "simulated",
-  startTrip: "Share my location",
+  startTrip: "Start simulated trip",
   stopTrip: "Stop sharing",
   noLoads: "No loads assigned",
   noLoadsHint: "Dispatch assigns loads to your username. Nothing is assigned yet.",
@@ -440,6 +451,17 @@ const en: Messages = {
   dismiss: "Dismiss",
   statusSent: "Status sent",
   saveFailed: "Could not save",
+  mapDepot: "Depot",
+  mapYard: "Yard",
+  nextStep: "Next step",
+  reportDelay: "Report a delay",
+  delivered: "Delivered",
+  deliveredBody: "Hand the paperwork to receiving. Nothing else is needed from you for this load.",
+  trailerPlate: "Trailer · plate",
+  sharingPosition: "Sharing position",
+  yourLoads: "Your loads",
+  correctStatus: "Correct the status",
+  tripHint: "The simulated trip drives the depot-to-yard route and sends Rolling, 15 minutes away, and Arrived for you.",
 };
 
 const fr: Messages = {
@@ -567,7 +589,7 @@ const fr: Messages = {
   noLive: "Aucun conducteur ne partage sa position pour l’instant.",
   lastKnown: "Dernière position",
   simulated: "simulé",
-  startTrip: "Partager ma position",
+  startTrip: "Démarrer un trajet simulé",
   stopTrip: "Arrêter le partage",
   noLoads: "Aucun chargement assigné",
   noLoadsHint: "La répartition assigne les chargements à votre nom d’utilisateur. Rien n’est assigné pour l’instant.",
@@ -661,6 +683,17 @@ const fr: Messages = {
   dismiss: "Fermer",
   statusSent: "Statut envoyé",
   saveFailed: "Enregistrement impossible",
+  mapDepot: "Entrepôt",
+  mapYard: "Cour",
+  nextStep: "Prochaine étape",
+  reportDelay: "Signaler un retard",
+  delivered: "Livré",
+  deliveredBody: "Remettez les documents à la réception. Rien d’autre n’est requis pour ce chargement.",
+  trailerPlate: "Remorque · plaque",
+  sharingPosition: "Position partagée",
+  yourLoads: "Vos chargements",
+  correctStatus: "Corriger le statut",
+  tripHint: "Le trajet simulé suit la route entrepôt-cour et envoie les statuts à votre place.",
 };
 
 const MAP = { en, fr } as const;

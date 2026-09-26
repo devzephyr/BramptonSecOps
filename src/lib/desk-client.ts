@@ -236,6 +236,8 @@ export async function fetchLoads(): Promise<Load[]> {
     eta: row.eta
       ? new Date(row.eta).toLocaleString("en-CA", {
           timeZone: "America/Toronto",
+          dateStyle: "medium",
+          timeStyle: "short",
         })
       : "",
     driverId: row.driverUserId ?? "",
