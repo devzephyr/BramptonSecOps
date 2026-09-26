@@ -11,8 +11,8 @@ import { Dialog, DialogDescription, DialogHeader, DialogPanel, DialogPopup, Dial
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Input } from "@/components/ui/input";
 import { Progress, ProgressIndicator, ProgressLabel, ProgressTrack, ProgressValue } from "@/components/ui/progress";
-import { useI18n } from "@/lib/i18n";
-import { PARTNERS } from "@/preview/data";
+import { useI18n, caseStatusTitle } from "@/lib/i18n";
+import { PARTNERS, requestTitle } from "@/preview/data";
 import { sha256Hex } from "@/preview/hash";
 import { useDesk } from "@/preview/store";
 import { DocumentUpload } from "@/components/desk/document-upload";
@@ -26,7 +26,7 @@ function shortHash(hash: string) {
 
 export function CaseCeremony() {
   const desk = useDesk();
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const item = desk.cases.find((entry) => entry.id === desk.caseId);
   const [open, setOpen] = useState(false);
   const [reviewed, setReviewed] = useState(false);
@@ -80,8 +80,8 @@ export function CaseCeremony() {
           {t.backToBoard}
         </Button>
         <span className="font-mono text-sm font-semibold">Case {item.id}</span>
-        <Badge variant="secondary">{item.requestType}</Badge>
-        <Badge variant={item.status === "fully_approved" ? "success" : "warning"}>{item.status}</Badge>
+        <Badge variant="secondary">{requestTitle(item.requestType, lang)}</Badge>
+        <Badge variant={item.status === "fully_approved" ? "success" : "warning"}>{caseStatusTitle(item.status, t)}</Badge>
         <Badge variant={hashOk === null ? "outline" : hashOk ? "success" : "error"}>
           {hashOk === null ? "checking hash…" : hashOk ? "hash verified" : "hash mismatch"}
         </Badge>
@@ -194,7 +194,7 @@ export function CaseCeremony() {
           <DialogHeader>
             <DialogTitle>{t.confirmBytes}</DialogTitle>
             <DialogDescription>
-              {item.requestType} · {item.counterparty}
+              {requestTitle(item.requestType, lang)} · {item.counterparty}
               {item.dualControl ? ` · ${t.dual}` : ""}
             </DialogDescription>
           </DialogHeader>

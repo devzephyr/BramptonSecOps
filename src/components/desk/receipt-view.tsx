@@ -7,6 +7,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { Separator } from "@/components/ui/separator";
 import { CopyButton } from "@/components/desk/copy-button";
 import { useI18n } from "@/lib/i18n";
+import { requestTitle } from "@/preview/data";
 import { useDesk } from "@/preview/store";
 
 function stamp(iso: string) {
@@ -23,7 +24,7 @@ function shortHash(hash: string) {
 
 export function ReceiptView() {
   const desk = useDesk();
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
   const item =
     desk.cases.find((entry) => entry.token === desk.receiptToken) ?? desk.cases.find((entry) => entry.token);
 
@@ -42,7 +43,7 @@ export function ReceiptView() {
     <Card className="print-stamp">
       <CardHeader>
         <CardTitle>{t.partnerCheck}</CardTitle>
-        <CardDescription>{item.requestType}</CardDescription>
+        <CardDescription>{requestTitle(item.requestType, lang)}</CardDescription>
       </CardHeader>
       <CardPanel className="flex flex-col gap-3 text-sm">
         <p>{item.counterparty}</p>

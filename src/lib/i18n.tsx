@@ -61,6 +61,15 @@ export type Messages = {
   copy: string;
   copied: string;
   skipToContent: string;
+  statusDraft: string;
+  statusFlagged: string;
+  statusOob: string;
+  statusPending: string;
+  statusSecond: string;
+  statusApproved: string;
+  statusRejected: string;
+  statusRevoked: string;
+  scheduled: string;
   alerts: string;
   holdCall: string;
   notApproval: string;
@@ -190,6 +199,15 @@ const en: Messages = {
   copy: "Copy",
   copied: "Copied",
   skipToContent: "Skip to content",
+  statusDraft: "Draft",
+  statusFlagged: "Flagged",
+  statusOob: "Waiting for call",
+  statusPending: "Ready to review",
+  statusSecond: "Needs second approval",
+  statusApproved: "Approved",
+  statusRejected: "Rejected",
+  statusRevoked: "Revoked",
+  scheduled: "Scheduled",
   alerts: "alerts",
   holdCall: "Approve stays off until every step is checked and you name who you called.",
   notApproval: "Uploading a photo does not approve a change.",
@@ -321,6 +339,15 @@ const fr: Messages = {
   copy: "Copier",
   copied: "Copié",
   skipToContent: "Aller au contenu",
+  statusDraft: "Brouillon",
+  statusFlagged: "Signalé",
+  statusOob: "Appel à faire",
+  statusPending: "Prêt à examiner",
+  statusSecond: "Deuxième approbation requise",
+  statusApproved: "Approuvé",
+  statusRejected: "Refusé",
+  statusRevoked: "Révoqué",
+  scheduled: "Planifié",
   alerts: "alertes",
   holdCall:
     "L’approbation reste désactivée tant que chaque étape n’est pas cochée et que vous n’avez pas nommé la personne appelée.",
@@ -475,5 +502,47 @@ export function roleTitle(role: string, t: Messages): string {
       return t.admin;
     default:
       return role;
+  }
+}
+
+export function caseStatusTitle(status: string, t: Messages): string {
+  switch (status) {
+    case "draft":
+      return t.statusDraft;
+    case "flagged":
+      return t.statusFlagged;
+    case "oob_pending":
+      return t.statusOob;
+    case "pending_approval":
+      return t.statusPending;
+    case "pending_second":
+      return t.statusSecond;
+    case "fully_approved":
+      return t.statusApproved;
+    case "rejected":
+      return t.statusRejected;
+    case "revoked":
+      return t.statusRevoked;
+    default:
+      return status;
+  }
+}
+
+export function loadStatusTitle(status: string, t: Messages): string {
+  switch (status) {
+    case "scheduled":
+      return t.scheduled;
+    case "loaded":
+      return t.loaded;
+    case "rolling":
+      return t.rolling;
+    case "fifteen_min":
+      return t.away;
+    case "arrived":
+      return t.arrived;
+    case "delayed":
+      return t.delayed;
+    default:
+      return status;
   }
 }

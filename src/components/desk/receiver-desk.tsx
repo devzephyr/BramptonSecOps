@@ -10,7 +10,7 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/c
 import { toastManager } from "@/components/ui/toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DeskApiError, uploadEvidence } from "@/lib/desk-client";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, loadStatusTitle } from "@/lib/i18n";
 import { isLive, tripProgress, updatedAgo } from "@/lib/tracking";
 import { useDesk } from "@/preview/store";
 import type { Load } from "@/preview/data";
@@ -134,7 +134,7 @@ export function ReceiverDesk() {  const desk = useDesk();
                   <TableCell>{load.dock}</TableCell>
                   <TableCell>
                     <Badge variant={load.status === "fifteen_min" ? "warning" : "secondary"}>
-                      {load.status === "fifteen_min" ? t.away : load.status}
+                      {loadStatusTitle(load.status, t)}
                     </Badge>
                   </TableCell>
                 </TableRow>

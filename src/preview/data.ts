@@ -367,6 +367,12 @@ export function isDual(requestType: string): boolean {
   return REQUESTS.find((item) => item.id === requestType)?.dual ?? false;
 }
 
+export function requestTitle(requestType: string, lang: string): string {
+  const found = REQUESTS.find((item) => item.id === requestType);
+  if (!found) return requestType;
+  return lang === "fr" ? found.fr : found.en;
+}
+
 export function deskFlags(
   raw: string,
   onFileDomain: string,
