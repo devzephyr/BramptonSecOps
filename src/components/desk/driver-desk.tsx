@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { toastManager } from "@/components/ui/toast";
+import { DocumentUpload } from "@/components/desk/document-upload";
 import { TripMap } from "@/components/desk/trip-map";
 import { FLOW, TripSteps } from "@/components/desk/trip-steps";
 import { postPosition } from "@/lib/desk-client";
@@ -133,121 +134,124 @@ export function DriverDesk() {
         const simulating = sim === load.id;
         const busy = posting !== null || simulating;
         return (
-          <Card key={load.id}>
-            <CardHeader>
-              <div className="flex flex-wrap items-center gap-2">
-                <TruckIcon className="size-5 text-muted-foreground" aria-hidden />
-                <CardTitle className="font-mono text-xl">{load.loadRef}</CardTitle>
-                <Badge
-                  variant={
-                    load.status === "arrived" ? "success" : load.status === "delayed" ? "warning" : "secondary"
-                  }
-                >
-                  {loadStatusTitle(load.status, t)}
-                </Badge>
-              </div>
-              <CardDescription className="flex flex-wrap items-center gap-1.5">
-                <MapPinIcon className="size-3.5" aria-hidden />
-                {load.origin} → {load.destination}
-              </CardDescription>
-            </CardHeader>
-            <CardPanel className="flex flex-col gap-4">
-              <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <Detail label={t.dock} value={load.dock} />
-                <Detail label={t.eta} value={load.eta} />
-                <Detail label={t.goods} value={load.commodity} />
-                <Detail label={t.seal} value={load.seal} mono />
-                <Detail label={t.trailerPlate} value={[load.trailer, load.plate].filter(Boolean).join(" · ")} mono />
-                <Detail label={t.setpoint} value={load.setpoint} mono />
-              </dl>
-
-              <TripSteps status={load.status} labels={labels} />
-
-              {next ? (
-                <Button
-                  size="xl"
-                  className="min-h-16 w-full text-base"
-                  disabled={busy}
-                  onClick={() => void send(load.id, next)}
-                >
-                  <NavigationIcon aria-hidden />
-                  {t.nextStep}: {labels[next]}
-                </Button>
-              ) : (
-                <Alert variant="success">
-                  <CheckIcon aria-hidden />
-                  <AlertTitle>{t.delivered}</AlertTitle>
-                  <AlertDescription>{t.deliveredBody}</AlertDescription>
-                </Alert>
-              )}
-
-              <details className="group rounded-lg border px-3 py-2">
-                <summary className="cursor-pointer text-sm font-medium">{t.correctStatus}</summary>
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {FLOW.filter((status) => status !== load.status && status !== next).map((status) => (
-                    <Button
-                      key={status}
-                      variant="outline"
-                      className="min-h-12"
-                      disabled={busy}
-                      onClick={() => void send(load.id, status)}
-                    >
-                      {labels[status]}
-                    </Button>
-                  ))}
-                  {load.status !== "delayed" && load.status !== "arrived" && (
-                    <Button
-                      variant="destructive-outline"
-                      className="min-h-12"
-                      disabled={busy}
-                      onClick={() => void send(load.id, "delayed")}
-                    >
-                      {t.reportDelay}
-                    </Button>
-                  )}
-                </div>
-              </details>
-
-              <div className="flex flex-col gap-2 border-t pt-4">
+          <div key={load.id} className="flex flex-col gap-4">
+            <Card>
+              <CardHeader>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium">{t.liveLocation}</span>
-                  <Badge variant="outline">{t.simulated}</Badge>
-                  {hasPosition && (
-                    <span className="text-xs text-muted-foreground">
-                      {live ? t.sharingPosition : t.lastKnown} · {updatedAgo(load.positionAt)}
-                    </span>
-                  )}
-                  <span className="ml-auto">
-                    {simulating ? (
-                      <Button size="sm" variant="outline" onClick={() => stopSim()}>
-                        {t.stopTrip}
-                      </Button>
-                    ) : (
+                  <TruckIcon className="size-5 text-muted-foreground" aria-hidden />
+                  <CardTitle className="font-mono text-xl">{load.loadRef}</CardTitle>
+                  <Badge
+                    variant={
+                      load.status === "arrived" ? "success" : load.status === "delayed" ? "warning" : "secondary"
+                    }
+                  >
+                    {loadStatusTitle(load.status, t)}
+                  </Badge>
+                </div>
+                <CardDescription className="flex flex-wrap items-center gap-1.5">
+                  <MapPinIcon className="size-3.5" aria-hidden />
+                  {load.origin} → {load.destination}
+                </CardDescription>
+              </CardHeader>
+              <CardPanel className="flex flex-col gap-4">
+                <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <Detail label={t.dock} value={load.dock} />
+                  <Detail label={t.eta} value={load.eta} />
+                  <Detail label={t.goods} value={load.commodity} />
+                  <Detail label={t.seal} value={load.seal} mono />
+                  <Detail label={t.trailerPlate} value={[load.trailer, load.plate].filter(Boolean).join(" · ")} mono />
+                  <Detail label={t.setpoint} value={load.setpoint} mono />
+                </dl>
+
+                <TripSteps status={load.status} labels={labels} />
+
+                {next ? (
+                  <Button
+                    size="xl"
+                    className="min-h-16 w-full text-base"
+                    disabled={busy}
+                    onClick={() => void send(load.id, next)}
+                  >
+                    <NavigationIcon aria-hidden />
+                    {t.nextStep}: {labels[next]}
+                  </Button>
+                ) : (
+                  <Alert variant="success">
+                    <CheckIcon aria-hidden />
+                    <AlertTitle>{t.delivered}</AlertTitle>
+                    <AlertDescription>{t.deliveredBody}</AlertDescription>
+                  </Alert>
+                )}
+
+                <details className="group rounded-lg border px-3 py-2">
+                  <summary className="cursor-pointer text-sm font-medium">{t.correctStatus}</summary>
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {FLOW.filter((status) => status !== load.status && status !== next).map((status) => (
                       <Button
-                        size="sm"
-                        disabled={posting !== null || sim !== null || load.status === "arrived"}
-                        onClick={() => startSim(load)}
+                        key={status}
+                        variant="outline"
+                        className="min-h-12"
+                        disabled={busy}
+                        onClick={() => void send(load.id, status)}
                       >
-                        {t.startTrip}
+                        {labels[status]}
+                      </Button>
+                    ))}
+                    {load.status !== "delayed" && load.status !== "arrived" && (
+                      <Button
+                        variant="destructive-outline"
+                        className="min-h-12"
+                        disabled={busy}
+                        onClick={() => void send(load.id, "delayed")}
+                      >
+                        {t.reportDelay}
                       </Button>
                     )}
-                  </span>
+                  </div>
+                </details>
+
+                <div className="flex flex-col gap-2 border-t pt-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium">{t.liveLocation}</span>
+                    <Badge variant="outline">{t.simulated}</Badge>
+                    {hasPosition && (
+                      <span className="text-xs text-muted-foreground">
+                        {live ? t.sharingPosition : t.lastKnown} · {updatedAgo(load.positionAt)}
+                      </span>
+                    )}
+                    <span className="ml-auto">
+                      {simulating ? (
+                        <Button size="sm" variant="outline" onClick={() => stopSim()}>
+                          {t.stopTrip}
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          disabled={posting !== null || sim !== null || load.status === "arrived"}
+                          onClick={() => startSim(load)}
+                        >
+                          {t.startTrip}
+                        </Button>
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t.tripHint}</p>
+                  <TripMap
+                    className="h-56"
+                    depotLabel={t.mapDepot}
+                    yardLabel={t.mapYard}
+                    follow={simulating ? load.id : null}
+                    trucks={
+                      hasPosition
+                        ? [{ id: load.id, label: load.loadRef, lat: load.lat!, lng: load.lng!, live }]
+                        : []
+                    }
+                  />
                 </div>
-                <p className="text-xs text-muted-foreground">{t.tripHint}</p>
-                <TripMap
-                  className="h-56"
-                  depotLabel={t.mapDepot}
-                  yardLabel={t.mapYard}
-                  follow={simulating ? load.id : null}
-                  trucks={
-                    hasPosition
-                      ? [{ id: load.id, label: load.loadRef, lat: load.lat!, lng: load.lng!, live }]
-                      : []
-                  }
-                />
-              </div>
-            </CardPanel>
-          </Card>
+              </CardPanel>
+            </Card>
+            <DocumentUpload loadId={load.id} />
+          </div>
         );
       })}
     </div>

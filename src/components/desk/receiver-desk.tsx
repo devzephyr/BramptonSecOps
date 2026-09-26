@@ -40,7 +40,7 @@ export function ReceiverDesk() {
     setPodBusy(true);
     setPodError(null);
     try {
-      const done = await uploadEvidence({ file, label: file.name, loadId: podLoad });
+      const done = await uploadEvidence({ file, label: file.name, loadId: podLoad, docType: "proof_of_delivery" });
       toastManager.add({ type: "success", title: t.podSaved, description: `sha256 ${done.contentHash.slice(0, 12)}…` });
     } catch (err) {
       if (err instanceof DeskApiError) setPodError(err.message);

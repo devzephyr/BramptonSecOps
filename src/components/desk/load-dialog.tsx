@@ -8,6 +8,7 @@ import { useI18n, loadStatusTitle } from "@/lib/i18n";
 import { isLive, updatedAgo } from "@/lib/tracking";
 import type { Load } from "@/preview/data";
 import { TripMap } from "@/components/desk/trip-map";
+import { DocumentUpload } from "@/components/desk/document-upload";
 import { LoadEdit } from "@/components/desk/load-edit";
 import { fetchLoadEvents, fetchTeam, type LoadEvent, type TeamMember } from "@/lib/desk-client";
 import { useDesk } from "@/preview/store";
@@ -100,6 +101,9 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
                   />
                 </>
               )}
+              <div className="mt-2">
+                <DocumentUpload loadId={load.id} />
+              </div>
               <div className="mt-2 flex flex-col gap-2 border-t pt-3">
                 <span className="text-sm font-medium">{t.history}</span>
                 {events.length === 0 ? (
