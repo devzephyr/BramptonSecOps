@@ -84,7 +84,6 @@ export function MessageThread({ caseId, userId }: Props) {
         .catch(() => []);
       const self = peers.find((peer) => peer.userId === userId);
       if (self && !self.hasKeys) {
-        // Server lost our keys (or another device replaced them): republish.
         resetSignalKeys(userId);
         await ensureSignalKeys(userId);
       }

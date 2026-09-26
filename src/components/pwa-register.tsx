@@ -7,9 +7,7 @@ export function PwaRegister() {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
       return;
     }
-    void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {
-      // Registration can fail on insecure origins or during local HTTP dev.
-    });
+    void navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => undefined);
   }, []);
 
   return null;

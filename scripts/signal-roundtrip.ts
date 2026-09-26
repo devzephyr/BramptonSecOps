@@ -62,7 +62,6 @@ const toB64 = (buf: ArrayBuffer) => Buffer.from(buf).toString("base64");
 const fromB64 = (s: string) => Uint8Array.from(Buffer.from(s, "base64")).buffer as ArrayBuffer;
 
 async function main() {
-  // Bob publishes a key bundle (what POST /api/signal/keys stores).
   const bobStore = new MemStore();
   const bobIdentity = await KeyHelper.generateIdentityKeyPair();
   bobStore.identity = bobIdentity;
@@ -85,7 +84,6 @@ async function main() {
     },
   };
 
-  // Alice builds a session from Bob's bundle (what ensureSession does).
   const aliceStore = new MemStore();
   aliceStore.identity = await KeyHelper.generateIdentityKeyPair();
   aliceStore.registrationId = KeyHelper.generateRegistrationId();
@@ -105,7 +103,6 @@ async function main() {
   };
   await new SessionBuilder(aliceStore, bobAddr).processPreKey(device);
 
-  // Alice encrypts, Bob decrypts (prekey message, type 3).
   const aliceCipher = new SessionCipher(aliceStore, bobAddr);
   const first = await aliceCipher.encrypt(enc.encode("sealed note: change the bank account").buffer);
   console.log("alice->bob type:", first.type);
@@ -113,13 +110,11 @@ async function main() {
   const opened = await bobCipher.decryptPreKeyWhisperMessage(first.body!);
   console.log("alice->bob reads:", dec.decode(opened));
 
-  // Bob replies on the established session (whisper message, type 1).
   const reply = await bobCipher.encrypt(enc.encode("confirmed, calling the number on file").buffer);
   console.log("bob->alice type:", reply.type);
   const back = await aliceCipher.decryptWhisperMessage(reply.body!);
   console.log("bob->alice reads:", dec.decode(back));
 
-  // Safety numbers match both ways.
   const fp = new FingerprintGenerator(5200);
   const ab = await fp.createFor("alice", aliceStore.identity!.pubKey as ArrayBuffer, "bob", fromB64(bundle.identityKey));
   const ba = await fp.createFor("bob", fromB64(bundle.identityKey), "alice", aliceStore.identity!.pubKey as ArrayBuffer);

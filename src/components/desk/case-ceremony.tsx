@@ -49,9 +49,6 @@ export function CaseCeremony() {
     };
   }, [canonical, storedHash]);
 
-  // ponytail: full bytes surface inside the passkey review dialog, which binds
-  // its challenge to this hash; per-recipient PRF-wrapped E2EE is the upgrade
-  // path if residency review ever demands it.
   if (!item) {
     return (
       <Empty>
