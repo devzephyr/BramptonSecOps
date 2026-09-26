@@ -1,43 +1,79 @@
-import { requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import { hasRole, requireUser } from "@/lib/auth";
 import {
-  isOrgEvidenceKey,
+  evidenceKey,
   MAX_EVIDENCE_BYTES,
-  putObject,
   sha256Buffer,
-  storageMode,
-  writeLocalEvidence,
+  StorageNotConfigured,
+  storeEvidence,
 } from "@/lib/evidence-storage";
 import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
+import { CASE_STAFF } from "@/lib/policy";
+
+const TOO_LARGE = "File is larger than 4 MB.";
 
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
 
-  const url = new URL(request.url);
-  const key = url.searchParams.get("key");
-  if (!isOrgEvidenceKey(key, user.orgId)) {
-    return forbidden("Invalid evidence key.");
-  }
-  const declared = Number(request.headers.get("content-length") ?? 0);
-  if (declared > MAX_EVIDENCE_BYTES) return badRequest("File is larger than 10 MB.");
+  const params = new URL(request.url).searchParams;
+  const label = (params.get("label") ?? "evidence").slice(0, 200);
+  const caseId = params.get("caseId");
+  const loadId = params.get("loadId");
+  if (!caseId && !loadId) return badRequest("caseId or loadId is required.");
 
+  if (caseId) {
+    if (!hasRole(user, CASE_STAFF)) {
+      return forbidden("Only supplier or manager staff can attach case documents.");
+    }
+    const kase = await prisma.verifyCase.findFirst({
+      where: { id: caseId, orgId: user.orgId, revokedAt: null },
+      select: { id: true },
+    });
+    if (!kase) return badRequest("caseId is not an open case in your org.");
+  }
+  if (loadId) {
+    const load = await prisma.load.findFirst({
+      where: { id: loadId, orgId: user.orgId },
+      select: { id: true },
+    });
+    if (!load) return badRequest("loadId is not in your org.");
+  }
+
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_EVIDENCE_BYTES) {
+    return badRequest(TOO_LARGE);
+  }
   const buffer = Buffer.from(await request.arrayBuffer());
   if (!buffer.length) return badRequest("Empty upload.");
-  if (buffer.length > MAX_EVIDENCE_BYTES) return badRequest("File is larger than 10 MB.");
+  if (buffer.length > MAX_EVIDENCE_BYTES) return badRequest(TOO_LARGE);
 
-  const contentType =
-    request.headers.get("content-type") ?? "application/octet-stream";
-
-  if (storageMode() === "s3") {
-    await putObject(key, buffer, contentType);
-  } else {
-    await writeLocalEvidence(key, buffer);
+  const contentType = (request.headers.get("content-type") ?? "application/octet-stream").slice(0, 100);
+  const key = evidenceKey(user.orgId, label);
+  try {
+    await storeEvidence(key, buffer, contentType);
+  } catch (error) {
+    if (error instanceof StorageNotConfigured) return json({ error: error.message }, 503);
+    throw error;
   }
 
-  return json({
-    key,
-    contentHash: sha256Buffer(buffer),
-    byteSize: buffer.length,
-    contentType,
+  const asset = await prisma.evidenceAsset.create({
+    data: {
+      orgId: user.orgId,
+      caseId,
+      loadId,
+      r2Key: key,
+      contentHash: sha256Buffer(buffer),
+      contentType,
+      label,
+      byteSize: buffer.length,
+    },
   });
+  if (caseId) {
+    await prisma.verifyCase.updateMany({
+      where: { id: caseId, orgId: user.orgId },
+      data: { matchesUploaded: true },
+    });
+  }
+
+  return json({ id: asset.id, contentHash: asset.contentHash, byteSize: asset.byteSize }, 201);
 }

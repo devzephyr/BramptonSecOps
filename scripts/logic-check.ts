@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 
 process.env.DATABASE_URL ??= "postgres://unused@localhost/unused";
 async function main() {
-  const { isOrgEvidenceKey, evidenceKey } = await import("../src/lib/evidence-storage");
+  const { evidenceKey } = await import("../src/lib/evidence-storage");
   const { hashEnrollmentCode, newEnrollmentCode } = await import("../src/lib/auth");
   const { mergeRequestedPatch } = await import("../src/lib/cases");
   const { ROUTE, SIM_STEPS, simPosition } = await import("../src/lib/tracking");
   const org = "org123";
-  assert.ok(isOrgEvidenceKey(evidenceKey(org, "bill of lading.pdf"), org));
-  assert.ok(!isOrgEvidenceKey(`${org}/../../etc/passwd`, org));
-  assert.ok(!isOrgEvidenceKey(`${org}/1_0123456789abcdef_a/../../x`, org));
-  assert.ok(!isOrgEvidenceKey(`other/1_0123456789abcdef_a`, org));
+  for (const label of ["bill of lading.pdf", "../../etc/passwd", "a/../../x", "photo.webp"]) {
+    const key = evidenceKey(org, label);
+    assert.match(key, /^org123\/\d+_[a-f0-9]{16}_[A-Za-z0-9._-]{1,80}$/, key);
+  }
   const { code, hash } = newEnrollmentCode();
   assert.equal(hashEnrollmentCode(code), hash);
   assert.equal(hashEnrollmentCode(code.replace(/-/g, "").toLowerCase()), hash);
