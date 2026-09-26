@@ -41,6 +41,23 @@ export function MessageThread({ caseId, userId }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fingerprints, setFingerprints] = useState<Record<string, string>>({});
+  const [ownFingerprint, setOwnFingerprint] = useState<string | null>(null);
+
+  async function heal(userId: string, peers: { userId: string; hasKeys: boolean; identityKey: string | null }[]) {
+    const self = peers.find((peer) => peer.userId === userId);
+    if (self && !self.hasKeys) {
+      resetSignalKeys(userId);
+      await ensureSignalKeys(userId);
+    } else if (self?.identityKey) {
+      const local = localIdentityPublicKey(userId);
+      if (!local) {
+        await ensureSignalKeys(userId);
+      } else if (local !== self.identityKey) {
+        resetSignalKeys(userId);
+        await ensureSignalKeys(userId);
+      }
+    }
+  }
 
   const decryptAll = useCallback(
     async (rows: CaseMessage[]) => {
@@ -88,14 +105,13 @@ export function MessageThread({ caseId, userId }: Props) {
         )
         .catch(() => []);
       const self = peers.find((peer) => peer.userId === userId);
-      if (self && !self.hasKeys) {
-        resetSignalKeys(userId);
-        await ensureSignalKeys(userId);
-      } else if (self?.identityKey) {
-        const local = localIdentityPublicKey(userId);
-        if (local && local !== self.identityKey) {
-          resetSignalKeys(userId);
-          await ensureSignalKeys(userId);
+      await heal(userId, peers);
+      const local = localIdentityPublicKey(userId);
+      if (local) {
+        try {
+          setOwnFingerprint((await fingerprintFor(userId, userId, local)).slice(0, 24));
+        } catch {
+          setOwnFingerprint(null);
         }
       }
       for (const peer of peers) {
@@ -117,6 +133,13 @@ export function MessageThread({ caseId, userId }: Props) {
     const timer = window.setInterval(() => void refresh(), 15000);
     return () => window.clearInterval(timer);
   }, [refresh]);
+
+  async function resetDevice() {
+    if (!window.confirm(t.resetKeysConfirm)) return;
+    resetSignalKeys(userId);
+    setMessages([]);
+    await refresh();
+  }
 
   async function send() {
     const text = draft.trim();
@@ -151,8 +174,17 @@ export function MessageThread({ caseId, userId }: Props) {
       <CardHeader>
         <CardTitle>{t.messages}</CardTitle>
         <CardDescription>{t.messagesHint}</CardDescription>
-      </CardHeader>
-      <CardPanel className="flex flex-col gap-3">
+      </CardHeader>      <CardPanel className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {ownFingerprint && (
+            <span className="font-mono text-[10px] text-muted-foreground" title={ownFingerprint}>
+              {t.thisDevice}: {ownFingerprint}…
+            </span>
+          )}
+          <Button size="sm" variant="ghost" onClick={() => void resetDevice()}>
+            {t.resetKeys}
+          </Button>
+        </div>
         {error && (
           <Alert variant="error">
             <AlertDescription>{error}</AlertDescription>
