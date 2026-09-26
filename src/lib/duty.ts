@@ -157,7 +157,7 @@ export async function alertIfOverLimit(orgId: string, driverId: string, summary:
       kind: "hos_violation",
       title: `${driver.name} is driving past the ${formatDuration(DRIVING_LIMIT_MS)} limit`,
       body: `${formatDuration(summary.drivingMs)} of driving since the last break. A break is required now.`,
-      href: "/manager",
+      href: "/logistics",
       emailTo: person.email,
       emailStatus: "in-app",
       dedupeKey: `${key}:${person.id}`,

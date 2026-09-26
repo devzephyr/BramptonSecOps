@@ -146,7 +146,7 @@ export async function POST(request: Request, { params }: Params) {
           kind: "seal_exception",
           title: `Seal exception on load ${updated.loadRef}`,
           body: `${parts.slice(0, 2).join(" · ")}. Recorded by ${user.name}.`,
-          href: "/manager",
+          href: "/logistics",
           emailTo: person.email,
           emailStatus: "in-app",
         });

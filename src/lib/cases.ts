@@ -243,7 +243,7 @@ export async function notifyApprovers(
       kind: input.kind,
       title: `${label} from ${input.counterparty}`,
       body: input.body,
-      href: "/manager",
+      href: "/logistics",
       emailStatus: "in-app",
     })),
   });

@@ -188,7 +188,7 @@ export async function POST(request: Request, { params }: Params) {
           kind: "load_arrived_early",
           title: `Load ${load.loadRef} — arrived early`,
           body: `${user.name} arrived at ${load.destination} ${earlyBy}${load.scheduledDock ? ` · ${load.scheduledDock}` : ""}.`,
-          href: person.role === "receiver" ? "/receiver" : "/manager",
+          href: person.role === "receiver" ? "/receiver" : "/logistics",
           emailTo: person.email,
           emailStatus: "in-app",
         })),
