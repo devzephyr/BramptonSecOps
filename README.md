@@ -144,6 +144,7 @@ It fails if forbidden substrings (chat-app names, legacy auth wording, overclaim
 | `npx prisma db push` | Sync schema to the database (dev pattern; migration history has drift) |
 | `npx prisma db seed` | Seed two orgs, users, contacts, cases, loads |
 | `npx tsx scripts/signal-roundtrip.ts` | Signal crypto proof: Alice↔Bob encrypt, reply, matching safety numbers |
+| `npx tsx scripts/logic-check.ts` | Asserts evidence-key validation, enrollment-code normalization, payload patch sanitizing |
 | `node scripts/ban-list.mjs` | Copy gate: fails on chat-app names, legacy auth wording, overclaims |
 
 ## Architecture notes for contributors
