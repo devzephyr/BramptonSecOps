@@ -31,6 +31,6 @@ export function jevClassify(rawText: string, requestType: string) {
   return {
     labels,
     effect: "classify-only" as const,
-    note: "Jev labeled this text. It did not approve it.",
+    note: "Automated labels are advisory. They do not approve anything.",
   };
 }

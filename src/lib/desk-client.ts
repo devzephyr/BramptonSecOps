@@ -515,7 +515,7 @@ export async function approveWithPasskey(caseId: string) {
   if (!optRes.ok) {
     throw new DeskApiError(
       optRes.status,
-      await failMessage(optRes, "Could not start approval ceremony"),
+      await failMessage(optRes, "Could not start the approval"),
     );
   }
   const { optionsJSON, ceremonyId } = (await optRes.json()) as {
