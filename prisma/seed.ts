@@ -471,7 +471,7 @@ async function main() {
     const status = CASE_STATUS[scenario.id] ?? "flagged";
     const oobAckJson: Prisma.InputJsonValue | undefined =
       status === "oob_pending"
-        ? { done: oobSteps.map((_, i) => i === 0), note: "" }
+        ? { steps: oobSteps.map((_, i) => i === 0), note: "" }
         : undefined;
 
     await prisma.verifyCase.upsert({
