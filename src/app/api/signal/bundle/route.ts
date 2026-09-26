@@ -12,34 +12,42 @@ export async function GET(request: Request) {
   const target = await prisma.user.findFirst({
     where: { id: targetId, orgId: user.orgId },
     include: {
-      signalIdentity: true,
-      signalSignedPreKeys: { orderBy: { createdAt: "desc" }, take: 1 },
+      signalIdentity: { orderBy: { deviceId: "asc" } },
+      signalSignedPreKeys: { orderBy: { deviceId: "asc" } },
     },
   });
-  if (!target?.signalIdentity || target.signalSignedPreKeys.length === 0) {
+  if (!target || target.signalIdentity.length === 0) {
     return notFound("No encryption keys for that user yet.");
   }
 
-  const oneTime = await prisma.signalOneTimePreKey.findFirst({
-    where: { userId: target.id },
-    orderBy: { createdAt: "asc" },
-  });
-  if (oneTime) {
-    await prisma.signalOneTimePreKey.delete({ where: { id: oneTime.id } });
+  const devices = [];
+  for (const identity of target.signalIdentity) {
+    const signed = target.signalSignedPreKeys.find(
+      (row) => row.deviceId === identity.deviceId,
+    );
+    if (!signed) continue;
+    const oneTime = await prisma.signalOneTimePreKey.findFirst({
+      where: { userId: target.id, deviceId: identity.deviceId },
+      orderBy: { createdAt: "asc" },
+    });
+    if (oneTime) {
+      await prisma.signalOneTimePreKey.delete({ where: { id: oneTime.id } });
+    }
+    devices.push({
+      userId: target.id,
+      deviceId: identity.deviceId,
+      registrationId: identity.registrationId,
+      identityKey: identity.identityKey,
+      signedPreKey: {
+        keyId: signed.keyId,
+        publicKey: signed.publicKey,
+        signature: signed.signature,
+      },
+      oneTimePreKey: oneTime
+        ? { keyId: oneTime.keyId, publicKey: oneTime.publicKey }
+        : null,
+    });
   }
-
-  const signed = target.signalSignedPreKeys[0];
-  return json({
-    userId: target.id,
-    registrationId: target.signalIdentity.registrationId,
-    identityKey: target.signalIdentity.identityKey,
-    signedPreKey: {
-      keyId: signed.keyId,
-      publicKey: signed.publicKey,
-      signature: signed.signature,
-    },
-    oneTimePreKey: oneTime
-      ? { keyId: oneTime.keyId, publicKey: oneTime.publicKey }
-      : null,
-  });
+  if (devices.length === 0) return notFound("No encryption keys for that user yet.");
+  return json({ devices });
 }

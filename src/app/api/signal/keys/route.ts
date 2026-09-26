@@ -11,6 +11,15 @@ function isB64(value: unknown, max = 256): value is string {
   );
 }
 
+function validDevice(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 0x7fffffff
+  );
+}
+
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
@@ -23,6 +32,8 @@ export async function POST(request: Request) {
   }
 
   const { registrationId, identityKey, signedPreKey, oneTimePreKeys } = body;
+  if (!validDevice(body.deviceId)) return badRequest("deviceId is required.");
+  const deviceId = body.deviceId as number;
   if (typeof registrationId !== "number" || !Number.isInteger(registrationId)) {
     return badRequest("registrationId is required.");
   }
@@ -47,9 +58,10 @@ export async function POST(request: Request) {
   }
 
   await prisma.signalIdentity.upsert({
-    where: { userId: user.id },
+    where: { userId_deviceId: { userId: user.id, deviceId } },
     create: {
       userId: user.id,
+      deviceId,
       registrationId,
       identityKey: identityKey as string,
     },
@@ -59,9 +71,12 @@ export async function POST(request: Request) {
     },
   });
   await prisma.signalSignedPreKey.upsert({
-    where: { userId_keyId: { userId: user.id, keyId: signed.keyId as number } },
+    where: {
+      userId_deviceId_keyId: { userId: user.id, deviceId, keyId: signed.keyId as number },
+    },
     create: {
       userId: user.id,
+      deviceId,
       keyId: signed.keyId as number,
       publicKey: signed.publicKey as string,
       signature: signed.signature as string,
@@ -71,16 +86,17 @@ export async function POST(request: Request) {
       signature: signed.signature as string,
     },
   });
-  await prisma.signalOneTimePreKey.deleteMany({ where: { userId: user.id } });
+  await prisma.signalOneTimePreKey.deleteMany({ where: { userId: user.id, deviceId } });
   if (oneTimePreKeys.length > 0) {
     await prisma.signalOneTimePreKey.createMany({
       data: (oneTimePreKeys as Record<string, unknown>[]).map((pre) => ({
         userId: user.id,
+        deviceId,
         keyId: pre.keyId as number,
         publicKey: pre.publicKey as string,
       })),
       skipDuplicates: true,
     });
   }
-  return json({ ok: true });
+  return json({ ok: true, deviceId });
 }

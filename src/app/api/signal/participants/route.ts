@@ -24,7 +24,7 @@ export async function GET(request: Request) {
       id: true,
       name: true,
       role: true,
-      signalIdentity: { select: { identityKey: true } },
+      signalIdentity: { select: { deviceId: true, identityKey: true } },
     },
   });
   return json({
@@ -32,8 +32,14 @@ export async function GET(request: Request) {
       userId: row.id,
       name: row.name,
       role: row.role,
-      hasKeys: Boolean(row.signalIdentity),
-      identityKey: row.signalIdentity?.identityKey ?? null,
+      devices: row.signalIdentity
+        .slice()
+        .sort((a, b) => a.deviceId - b.deviceId)
+        .map((key) => ({
+          deviceId: key.deviceId,
+          hasKeys: true,
+          identityKey: key.identityKey,
+        })),
     })),
   });
 }

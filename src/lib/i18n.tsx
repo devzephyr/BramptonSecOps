@@ -138,6 +138,7 @@ export type Messages = {
   send: string;
   sending: string;
   lockedMessage: string;
+  noDevices: string;
   thisDevice: string;
   resetKeys: string;
   resetKeysConfirm: string;
@@ -300,6 +301,7 @@ const en: Messages = {
   send: "Send",
   sending: "Sending…",
   lockedMessage: "Locked. Your device cannot open this message.",
+  noDevices: "Nobody on this case finished encryption setup yet.",
   thisDevice: "This device",
   resetKeys: "Reset encryption",
   resetKeysConfirm: "Replace this device's keys? Messages sent to the old keys stay locked.",
@@ -465,6 +467,7 @@ const fr: Messages = {
   send: "Envoyer",
   sending: "Envoi…",
   lockedMessage: "Verrouillé. Votre appareil ne peut pas ouvrir ce message.",
+  noDevices: "Personne dans ce dossier n’a terminé le chiffrement.",
   thisDevice: "Cet appareil",
   resetKeys: "Réinitialiser le chiffrement",
   resetKeysConfirm: "Remplacer les clés de cet appareil ? Les messages envoyés aux anciennes clés restent verrouillés.",

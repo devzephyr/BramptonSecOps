@@ -575,6 +575,7 @@ export type TeamMember = {
   role: string;
   title: string | null;
   hasKeys: boolean;
+  devices: number;
   createdAt: string;
 };
 
