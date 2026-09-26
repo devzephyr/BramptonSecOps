@@ -10,7 +10,7 @@ export async function documentScope(user: AuthedUser): Promise<Prisma.EvidenceAs
   if (user.role === "receiver") return { orgId: user.orgId, loadId: { not: null } };
   if (user.role === "driver") {
     const loads = await prisma.load.findMany({
-      where: { orgId: user.orgId, driverUserId: user.id },
+      where: { orgId: user.orgId, OR: [{ driverUserId: user.id }, { coDriverUserId: user.id }] },
       select: { id: true },
     });
     return { orgId: user.orgId, loadId: { in: loads.map((load) => load.id) } };

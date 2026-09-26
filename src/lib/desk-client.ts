@@ -206,6 +206,7 @@ type ApiLoad = {
   approvedDock?: string | null;
   eta?: string | null;
   driverUserId?: string | null;
+  coDriverUserId?: string | null;
   lat?: number | null;
   lng?: number | null;
   positionAt?: string | null;
@@ -225,6 +226,7 @@ export type NewLoad = {
   reeferSetpoint?: string;
   eta?: string;
   driverUserId?: string;
+  coDriverUserId?: string;
 };
 
 export async function createLoad(input: NewLoad): Promise<void> {
@@ -239,8 +241,9 @@ export async function createLoad(input: NewLoad): Promise<void> {
   }
 }
 
-export type LoadPatch = Partial<Omit<NewLoad, "loadRef" | "driverUserId">> & {
+export type LoadPatch = Partial<Omit<NewLoad, "loadRef" | "driverUserId" | "coDriverUserId">> & {
   driverUserId?: string | null;
+  coDriverUserId?: string | null;
   handoffNote?: string;
 };
 
@@ -407,6 +410,7 @@ export type FleetLoad = {
   destination: string;
   currentStatus: string;
   driverUserId: string | null;
+  coDriverUserId: string | null;
   facility: string | null;
   lat: number | null;
   lng: number | null;
@@ -467,6 +471,7 @@ export async function fetchLoads(): Promise<Load[]> {
         })
       : "",
     driverId: row.driverUserId ?? "",
+    coDriverId: row.coDriverUserId ?? "",
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     positionAt: row.positionAt ?? null,
@@ -515,7 +520,7 @@ export async function approveWithPasskey(caseId: string) {
   if (!optRes.ok) {
     throw new DeskApiError(
       optRes.status,
-      await failMessage(optRes, "Could not start approval ceremony"),
+      await failMessage(optRes, "Could not start the approval"),
     );
   }
   const { optionsJSON, ceremonyId } = (await optRes.json()) as {
@@ -602,6 +607,7 @@ export type CaseDocument = {
   contentHash: string;
   docType: DocTypeName;
   docNumber: string | null;
+  otherType: string | null;
   amountCents: number | null;
   currency: string | null;
   caseId: string | null;
@@ -667,6 +673,7 @@ export async function uploadEvidence(input: {
   loadId?: string;
   docType?: DocTypeName;
   docNumber?: string;
+  otherType?: string;
   amount?: string;
   currency?: string;
 }): Promise<{ id: string; contentHash: string }> {
@@ -679,6 +686,7 @@ export async function uploadEvidence(input: {
   if (input.loadId) params.set("loadId", input.loadId);
   if (input.docType) params.set("docType", input.docType);
   if (input.docNumber) params.set("docNumber", input.docNumber);
+  if (input.otherType) params.set("otherType", input.otherType);
   if (input.amount) params.set("amount", input.amount);
   if (input.currency) params.set("currency", input.currency);
   const res = await fetch(`/api/evidence/upload?${params}`, {
@@ -997,4 +1005,42 @@ export async function revokeCredential(userId: string, credentialId: string): Pr
   if (!res.ok) {
     throw new DeskApiError(res.status, await failMessage(res, "Could not revoke credential"));
   }
+}
+
+export type SavedScenario = {
+  id: string;
+  title: string;
+  requestType: string;
+  contactId: string | null;
+  rawText: string;
+  requested: Record<string, string>;
+  createdById: string;
+};
+
+export async function fetchScenarios(): Promise<SavedScenario[]> {
+  const res = await fetch("/api/scenarios", { credentials: "include" });
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not load scenarios"));
+  const body = (await parseJson(res)) as { scenarios?: SavedScenario[] } | null;
+  return body?.scenarios ?? [];
+}
+
+export async function saveScenario(input: Omit<SavedScenario, "id" | "createdById">): Promise<SavedScenario> {
+  const res = await fetch("/api/scenarios", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not save scenario"));
+  return (await parseJson(res)) as SavedScenario;
+}
+
+export async function deleteScenario(id: string): Promise<void> {
+  const res = await fetch(`/api/scenarios/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" });
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not delete scenario"));
+}
+
+export async function swapDrivers(loadId: string): Promise<void> {
+  const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/swap`, { method: "POST", credentials: "include" });
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not swap drivers"));
 }

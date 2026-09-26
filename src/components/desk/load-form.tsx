@@ -5,13 +5,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
 import { toastManager } from "@/components/ui/toast";
+import { DriverPicker, NO_DRIVER } from "@/components/desk/driver-picker";
 import { createLoad, fetchDirectory, fetchTeam, type Contact, type NewLoad, type TeamMember } from "@/lib/desk-client";
 import { useI18n } from "@/lib/i18n";
+import { LOAD_REF_PREFIX } from "@/lib/policy";
 import { useDesk } from "@/preview/store";
 
-type Fields = Required<Omit<NewLoad, "driverUserId">>;
+type Fields = Required<Omit<NewLoad, "driverUserId" | "coDriverUserId">>;
 
 const BLANK: Fields = {
   loadRef: "",
@@ -27,13 +29,12 @@ const BLANK: Fields = {
   eta: "",
 };
 
-const NO_DRIVER = "none";
-
 export function LoadForm({ onCreated }: { onCreated?: () => void }) {
   const desk = useDesk();
   const { t } = useI18n();
   const [form, setForm] = useState(BLANK);
   const [driver, setDriver] = useState(NO_DRIVER);
+  const [coDriver, setCoDriver] = useState(NO_DRIVER);
   const [drivers, setDrivers] = useState<TeamMember[]>([]);
   const [directory, setDirectory] = useState<Contact[]>([]);
   const [busy, setBusy] = useState(false);
@@ -115,10 +116,12 @@ export function LoadForm({ onCreated }: { onCreated?: () => void }) {
         ...form,
         eta: form.eta ? new Date(form.eta).toISOString() : undefined,
         driverUserId: driver === NO_DRIVER ? undefined : driver,
+        coDriverUserId: driver === NO_DRIVER || coDriver === NO_DRIVER ? undefined : coDriver,
       });
-      toastManager.add({ type: "success", title: t.loadCreated, description: form.loadRef });
+      toastManager.add({ type: "success", title: t.loadCreated, description: `${LOAD_REF_PREFIX}${form.loadRef}` });
       setForm(BLANK);
       setDriver(NO_DRIVER);
+      setCoDriver(NO_DRIVER);
       await desk.refreshRemote();
       onCreated?.();
     } catch (err) {
@@ -142,7 +145,26 @@ export function LoadForm({ onCreated }: { onCreated?: () => void }) {
             </Alert>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
-            {field("loadRef", t.loadRef, { required: true })}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" htmlFor="load-loadRef">
+                {t.loadRef}
+              </label>
+              <InputGroup>
+                <InputGroupAddon>
+                  <InputGroupText>{LOAD_REF_PREFIX}</InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  id="load-loadRef"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  required
+                  maxLength={10}
+                  placeholder="4419"
+                  value={form.loadRef}
+                  onChange={(event) => setForm((current) => ({ ...current, loadRef: event.target.value.replace(/\D/g, "") }))}
+                />
+              </InputGroup>
+            </div>
             {field("commodity", t.goods, { required: true })}
             {field("origin", t.origin, { required: true })}
             {field("destination", t.destination, { required: true })}
@@ -153,25 +175,27 @@ export function LoadForm({ onCreated }: { onCreated?: () => void }) {
             {field("sealNumber", t.seal)}
             {field("reeferSetpoint", t.setpoint)}
             {field("eta", t.eta, { type: "datetime-local" })}
-            <div className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium">{t.driver}</span>
-              <Select value={driver} onValueChange={(value) => setDriver(String(value))}>
-                <SelectTrigger aria-label={t.driver}>
-                  <SelectValue>
-                    {(value) => drivers.find((member) => member.id === value)?.name ?? t.unassigned}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectPopup>
-                  <SelectItem value={NO_DRIVER}>{t.unassigned}</SelectItem>
-                  {drivers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name}
-                    </SelectItem>
-                  ))}
-                </SelectPopup>
-              </Select>
-              {drivers.length === 0 && <span className="text-xs text-muted-foreground">{t.noDrivers}</span>}
-            </div>
+            <DriverPicker
+              label={t.driver}
+              emptyLabel={t.unassigned}
+              value={driver}
+              drivers={drivers}
+              exclude={coDriver}
+              onChange={(value) => {
+                setDriver(value);
+                if (value === NO_DRIVER) setCoDriver(NO_DRIVER);
+              }}
+            />
+            <DriverPicker
+              label={t.coDriver}
+              emptyLabel={t.noCoDriver}
+              value={coDriver}
+              drivers={drivers}
+              exclude={driver}
+              disabled={driver === NO_DRIVER}
+              onChange={setCoDriver}
+            />
+            {drivers.length === 0 && <span className="text-xs text-muted-foreground sm:col-span-2">{t.noDrivers}</span>}
           </div>
           <div>
             <Button type="submit" disabled={busy}>

@@ -58,7 +58,7 @@ export async function POST(request: Request, { params }: Params) {
     if (locked.length !== 1) return notFound();
     const load = await tx.load.findUniqueOrThrow({ where: { id } });
 
-    if (user.role === "driver" && load.driverUserId !== user.id) {
+    if (user.role === "driver" && load.driverUserId !== user.id && load.coDriverUserId !== user.id) {
       return forbidden("You can only drop a load you are carrying.");
     }
     if (toDriver && load.driverUserId === toDriver.id) return badRequest(`${toDriver.name} already has this load.`);
@@ -93,7 +93,10 @@ export async function POST(request: Request, { params }: Params) {
     });
     const updated = await tx.load.update({
       where: { id },
-      data: toDriver ? { driverUserId: toDriver.id, facility: null } : { driverUserId: null, facility: toFacility },
+      // A handoff ends the team: the co-driver seat is cleared and can be re-added from Edit.
+      data: toDriver
+        ? { driverUserId: toDriver.id, coDriverUserId: null, facility: null }
+        : { driverUserId: null, coDriverUserId: null, facility: toFacility },
     });
 
     const parts = [`${fromLabel} → ${toLabel}`];
@@ -129,6 +132,18 @@ export async function POST(request: Request, { params }: Params) {
         kind: "load_reassigned",
         title: `Load ${updated.loadRef} handed off`,
         body: `${user.name} recorded the load going to ${toLabel}. Stop sharing your position for it.`,
+        href: "/driver",
+        emailStatus: "in-app",
+      });
+    }
+    if (load.coDriverUserId && load.coDriverUserId !== user.id) {
+      notes.push({
+        orgId: user.orgId,
+        userId: load.coDriverUserId,
+        role: "driver",
+        kind: "load_reassigned",
+        title: `Load ${updated.loadRef} handed off`,
+        body: `${user.name} recorded the load going to ${toLabel}. You are no longer the co-driver on it.`,
         href: "/driver",
         emailStatus: "in-app",
       });

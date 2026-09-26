@@ -45,7 +45,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   if (clientTriedToApprove(body)) {
     return forbidden(
-      "Approvals require a passkey ceremony, not a client decision.",
+      "Approvals must be completed with a passkey.",
     );
   }
 

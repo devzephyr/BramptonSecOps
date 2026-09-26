@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { DriverDesk } from "@/components/desk/driver-desk";
 import { LogisticsDesk } from "@/components/desk/logistics-desk";
 import { WarehouseDesk } from "@/components/desk/warehouse-desk";
@@ -11,35 +9,15 @@ import { DeskShell } from "@/components/desk/shell";
 import { SupplierDesk } from "@/components/desk/supplier-desk";
 import type { SessionUser } from "@/lib/desk-client";
 import { roleTitle, useI18n } from "@/lib/i18n";
-import type { Note, Role } from "@/preview/data";
+import type { Role } from "@/preview/data";
 import { StoreProvider, useDesk } from "@/preview/store";
-
-const URGENT = new Set(["hos_violation", "seal_exception"]);
-
-function noteForRole(note: Note, role: Role) {
-  const audience = Array.isArray(note.audience) ? note.audience : [];
-  return audience.includes(role);
-}
 
 function DeskBody() {
   const desk = useDesk();
-  const { t } = useI18n();
   const role = desk.user.role as Role;
-  const unread = desk.notes.filter((note) => !note.read && noteForRole(note, role)).slice(0, 3);
 
   return (
     <>
-      {unread.map((note) => (
-        <Alert key={note.id} variant={URGENT.has(note.kind) ? "error" : note.kind === "load_fifteen_min" ? "warning" : "info"}>
-          <AlertTitle>{note.title}</AlertTitle>
-          <AlertDescription>{note.body}</AlertDescription>
-          <AlertAction>
-            <Button size="sm" variant="outline" onClick={() => void desk.dismissNote(note.id)}>
-              {t.dismiss}
-            </Button>
-          </AlertAction>
-        </Alert>
-      ))}
       {role === "supplier" && <SupplierDesk />}
       {(role === "admin" || role === "logistics") && <LogisticsDesk />}
       {role === "driver" && <DriverDesk />}
@@ -53,14 +31,13 @@ function RoleDeskInner({ user, onSignOut }: { user: SessionUser; onSignOut: () =
   const desk = useDesk();
   const { t } = useI18n();
   const role = desk.user.role as Role;
-  const alertCount = desk.notes.filter((note) => noteForRole(note, role) && !note.read).length;
 
   useEffect(() => {
     document.title = `${roleTitle(role, t)} · ${t.brand}`;
   }, [role, t]);
 
   return (
-    <DeskShell user={user} alertCount={alertCount} onSignOut={onSignOut}>
+    <DeskShell user={user} onSignOut={onSignOut}>
       <DeskBody />
     </DeskShell>
   );

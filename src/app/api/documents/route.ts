@@ -35,6 +35,7 @@ export async function GET(request: Request) {
       contentHash: true,
       docType: true,
       docNumber: true,
+      otherType: true,
       amountCents: true,
       currency: true,
       caseId: true,

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
 import { BreakRequired, driverHos, setDutyStatus } from "@/lib/duty";
 import { DRIVER_STATUS, MANAGERS } from "@/lib/policy";
+import { claimIfUnassigned, driverMayAct } from "@/lib/loads";
 import {
   badRequest,
   forbidden,
@@ -68,12 +69,8 @@ export async function POST(request: Request, { params }: Params) {
 
   // An unassigned load can be claimed by the first driver to post, unless a facility is holding it:
   // then only a custody transfer can hand it to a driver.
-  const owned = {
-    id: load.id,
-    orgId: user.orgId,
-    OR: [{ driverUserId: null, facility: null }, { driverUserId: user.id }],
-  };
-  const data = { currentStatus: eventType, lastKnown, driverUserId: user.id };
+  const owned = { id: load.id, orgId: user.orgId, ...driverMayAct(user.id) };
+  const data = { currentStatus: eventType, lastKnown };
 
   // Only the request that actually moves the load into fifteen_min alerts staff.
   // The status predicate makes this atomic, so retries and overlapping posts
@@ -104,6 +101,7 @@ export async function POST(request: Request, { params }: Params) {
   if (claimed.count !== 1) {
     return forbidden("This load is assigned to another driver.");
   }
+  await claimIfUnassigned(load.id, user.id);
 
   if (eventType === "rolling" || eventType === "arrived") {
     try {

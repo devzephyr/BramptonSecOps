@@ -3,6 +3,7 @@ import { hasRole, requireUser } from "@/lib/auth";
 import { MANAGERS } from "@/lib/policy";
 import { alertIfOverLimit, driverHos, setDutyStatus } from "@/lib/duty";
 import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
+import { claimIfUnassigned, driverMayAct } from "@/lib/loads";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -63,20 +64,17 @@ export async function POST(request: Request, { params }: Params) {
     orderBy: { recordedAt: "desc" },
     select: { lat: true, lng: true, recordedAt: true },
   });
-  const driverScope =
-    user.role === "driver"
-      ? { OR: [{ driverUserId: null, facility: null }, { driverUserId: user.id }] }
-      : {};
+  const driverScope = user.role === "driver" ? driverMayAct(user.id) : {};
   const moved = await prisma.load.updateMany({
     where: { id, orgId: user.orgId, ...driverScope },
     data: {
       lat,
       lng,
       positionAt: now,
-      ...(user.role === "driver" ? { driverUserId: user.id } : {}),
     },
   });
   if (moved.count !== 1) return forbidden("This load is assigned to another driver.");
+  if (user.role === "driver") await claimIfUnassigned(id, user.id);
 
   const lastPing = await prisma.positionPing.findFirst({
     where: { loadId: id },

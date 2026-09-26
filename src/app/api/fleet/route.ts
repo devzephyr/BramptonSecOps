@@ -18,7 +18,10 @@ export async function GET() {
       select: { id: true, name: true, title: true, photoHash: true },
     }),
     prisma.load.findMany({
-      where: { orgId: user.orgId, OR: [{ driverUserId: { not: null } }, { facility: { not: null } }] },
+      where: {
+        orgId: user.orgId,
+        OR: [{ driverUserId: { not: null } }, { coDriverUserId: { not: null } }, { facility: { not: null } }],
+      },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -28,6 +31,7 @@ export async function GET() {
         destination: true,
         currentStatus: true,
         driverUserId: true,
+        coDriverUserId: true,
         facility: true,
         lat: true,
         lng: true,
@@ -46,7 +50,7 @@ export async function GET() {
       photoVersion: driver.photoHash ? driver.photoHash.slice(0, 12) : null,
       hos: clocks[index],
       loads: loads
-        .filter((load) => load.driverUserId === driver.id)
+        .filter((load) => load.driverUserId === driver.id || load.coDriverUserId === driver.id)
         .sort((a, b) => Number(a.currentStatus === "arrived") - Number(b.currentStatus === "arrived")),
     })),
     atFacilities: loads.filter((load) => !load.driverUserId && load.facility),

@@ -64,6 +64,8 @@ export function DocumentUpload({
   const [filter, setFilter] = useState<DocTypeName | typeof ALL>(ALL);
   const [docType, setDocType] = useState<DocTypeName>(ledger ? "invoice" : loadId ? "bill_of_lading" : "other");
   const [docNumber, setDocNumber] = useState("");
+  const [otherType, setOtherType] = useState("");
+  const needsName = docType === "other" && !otherType.trim();
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState<string>("CAD");
 
@@ -90,9 +92,20 @@ export function DocumentUpload({
     setBusy(true);
     setError(null);
     try {
-      const done = await uploadEvidence({ file, label: file.name, caseId, loadId, docType, docNumber, amount, currency });
+      const done = await uploadEvidence({
+        file,
+        label: file.name,
+        caseId,
+        loadId,
+        docType,
+        docNumber,
+        otherType: docType === "other" ? otherType.trim() : undefined,
+        amount,
+        currency,
+      });
       toastManager.add({ type: "success", title: t.toastDocSaved, description: `${file.name} · sha256 ${done.contentHash.slice(0, 12)}…` });
       setDocNumber("");
+      setOtherType("");
       setAmount("");
       await refresh();
     } catch (err) {
@@ -111,6 +124,10 @@ export function DocumentUpload({
     }
   }
 
+  function typeLabel(doc: CaseDocument) {
+    return doc.docType === "other" && doc.otherType ? doc.otherType : t.docTypes[doc.docType];
+  }
+
   function linkedTo(doc: CaseDocument) {
     if (doc.loadRef) return `${t.load} ${doc.loadRef}`;
     if (doc.counterparty) return doc.counterparty;
@@ -122,7 +139,7 @@ export function DocumentUpload({
     const lines = docs.map((doc) =>
       [
         doc.createdAt.slice(0, 10),
-        t.docTypes[doc.docType],
+        typeLabel(doc),
         doc.docNumber ?? "",
         doc.amountCents === null ? "" : (doc.amountCents / 100).toFixed(2),
         doc.currency ?? "",
@@ -202,10 +219,19 @@ export function DocumentUpload({
             </SelectPopup>
           </Select>
         </div>
+        {docType === "other" && (
+          <Input
+            aria-label={t.otherTypeLabel}
+            placeholder={t.otherTypeHint}
+            value={otherType}
+            maxLength={60}
+            onChange={(event) => setOtherType(event.target.value)}
+          />
+        )}
         <Input
           type="file"
           aria-label={t.documents}
-          disabled={busy}
+          disabled={busy || needsName}
           onChange={(event) => {
             void onFile(event.target.files?.[0]);
             event.target.value = "";
@@ -244,7 +270,7 @@ export function DocumentUpload({
           <ul className="flex flex-col divide-y">
             {docs.map((doc) => (
               <li key={doc.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
-                <Badge variant="outline">{t.docTypes[doc.docType]}</Badge>
+                <Badge variant="outline">{typeLabel(doc)}</Badge>
                 {doc.docNumber && <span className="font-mono">{doc.docNumber}</span>}
                 {doc.amountCents !== null && doc.currency && (
                   <span className="font-medium">{money(doc.amountCents, doc.currency)}</span>

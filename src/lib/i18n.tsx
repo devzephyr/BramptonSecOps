@@ -31,19 +31,40 @@ export type Messages = {
   rolling: string;
   arrived: string;
   delayed: string;
-  warning: string;
   matches: string;
   notGov: string;
   jevNote: string;
   empty: string;
   dual: string;
   signIn: string;
+  firstTime: string;
+  firstTimeHint: string;
+  firstTimeRequired: string;
+  newOrgTab: string;
+  newOrgRequired: string;
+  orgReady: string;
+  orgReadyBody: string;
+  receiptTitle: string;
+  receiptChange: string;
+  receiptOnFile: string;
+  receiptRequested: string;
+  receiptApprovals: string;
+  receiptSignature: string;
+  receiptStamp: string;
+  receiptCaption: string;
   signOut: string;
   createPasskey: string;
   supplier: string;
   logistics: string;
   warehouse: string;
   driver: string;
+  coDriver: string;
+  noCoDriver: string;
+  swapDrivers: string;
+  youAreDriving: string;
+  coDriverDriving: string;
+  driversSwapped: string;
+  eventSwap: string;
   receiver: string;
   admin: string;
   directory: string;
@@ -76,10 +97,10 @@ export type Messages = {
   statusRevoked: string;
   scheduled: string;
   alerts: string;
+  noAlerts: string;
   holdCall: string;
   notApproval: string;
   signedInAs: string;
-  noSession: string;
   signInWithPasskey: string;
   username: string;
   usernamePlaceholder: string;
@@ -107,7 +128,6 @@ export type Messages = {
   orgName: string;
   province: string;
   yourName: string;
-  orgCreated: string;
   orgLabel: string;
   orgPlaceholder: string;
   accountHint: string;
@@ -126,7 +146,10 @@ export type Messages = {
   city: string;
   domain: string;
   numberOnFile: string;
-  scenariosHint: string;
+  savedScenarios: string;
+  scenarioName: string;
+  saveScenario: string;
+  deleteScenario: string;
   sealedNoteHint: string;
   loadsHint: string;
   incomingHint: string;
@@ -174,6 +197,8 @@ export type Messages = {
   docType: string;
   docNumber: string;
   docNumberHint: string;
+  otherTypeLabel: string;
+  otherTypeHint: string;
   amount: string;
   currency: string;
   download: string;
@@ -192,7 +217,6 @@ export type Messages = {
   toastTripStopped: string;
   directoryHint: string;
   emptyManager: string;
-  emptyCase: string;
   confirmBytes: string;
   signedSoFar: string;
   nobody: string;
@@ -204,7 +228,6 @@ export type Messages = {
   no: string;
   noPartnerPage: string;
   noPartnerPageBody: string;
-  oobHint: string;
   backToBoard: string;
   noRequestOpen: string;
   pickFromBoard: string;
@@ -298,8 +321,9 @@ export type Messages = {
   eventHandoff: string;
   eventUpdated: string;
   fleet: string;
+  startFleetSim: string;
+  stopFleetSim: string;
   fleetHint: string;
-  noDriversFleet: string;
   dutyStatus: string;
   dutyOff: string;
   dutySleeper: string;
@@ -344,7 +368,6 @@ export type Messages = {
   toFacility: string;
   atFacility: string;
   atFacilities: string;
-  heldBy: string;
   journey: string;
   changePhoto: string;
   addPhoto: string;
@@ -354,45 +377,65 @@ export type Messages = {
   sealOk: string;
   sealBad: string;
   trailHint: string;
-  allDrivers: string;
 };
 
 const en: Messages = {
   brand: "SupplyChek",
-  place: "A platform for food-chain organizations",
+  place: "Verified operations for food and cold-chain logistics",
   demoOrg: "Demo organization: Lake Ontario Cold Storage",
   sealedNote: "Write a sealed note",
   flags: "Flags",
   onFile: "On file",
   asked: "Asked for",
   oob: "Call the number on file",
-  reviewed: "I reviewed these bytes",
+  reviewed: "I have reviewed this request",
   approve: "Approve with passkey",
   away: "15 minutes away",
   loaded: "Loaded",
-  rolling: "Rolling",
+  rolling: "In transit",
   arrived: "Arrived",
   delayed: "Delayed",
-  warning: "Driver is 15 minutes away",
   matches: "Matches uploaded content",
   notGov: "SupplyChek attestation — not a government certification",
-  jevNote: "Jev labeled this text. It did not approve it.",
+  jevNote: "Automated labels are advisory. They do not approve anything.",
   empty: "Nothing here yet.",
   dual: "Two different people must each use a passkey.",
   signIn: "Sign in",
+  firstTime: "First time here",
+  firstTimeHint: "Use the enrollment code from your admin to create a passkey on this device.",
+  firstTimeRequired: "Enter your username, organization and enrollment code.",
+  newOrgTab: "New organization",
+  newOrgRequired: "Enter the organization name, your name and a username.",
+  orgReady: "Your organization is ready",
+  orgReadyBody: "Save this enrollment code. It is shown once. Then create your passkey below.",
+  receiptTitle: "Verification receipt",
+  receiptChange: "Bank change · Maple Malt",
+  receiptOnFile: "Account on file",
+  receiptRequested: "Requested",
+  receiptApprovals: "Passkey approvals",
+  receiptSignature: "Signature",
+  receiptStamp: "Verified",
+  receiptCaption: "Every bank, dock and carrier change is checked against the number on file, then signed by two people before anyone acts on it.",
   signOut: "Sign out",
   createPasskey: "Create passkey",
   supplier: "Supplier",
   logistics: "Logistics",
   warehouse: "Warehouse",
   driver: "Driver",
+  coDriver: "Co-driver",
+  noCoDriver: "No co-driver",
+  swapDrivers: "Swap drivers",
+  youAreDriving: "You are at the wheel",
+  coDriverDriving: "Your co-driver is at the wheel",
+  driversSwapped: "Drivers swapped. Resting driver moved to sleeper berth.",
+  eventSwap: "Driver swap",
   receiver: "Receiver",
   admin: "Admin",
   directory: "Directory",
   scenarios: "Scenarios",
   sendToManager: "Send to the logistics desk",
-  reviewBytes: "Review the bytes",
-  passkeyStopped: "Passkey stopped",
+  reviewBytes: "Review the request",
+  passkeyStopped: "The passkey request was cancelled or did not complete.",
   whoSpoke: "Who you spoke with, and when",
   back: "Back",
   open: "Open",
@@ -418,10 +461,10 @@ const en: Messages = {
   statusRevoked: "Revoked",
   scheduled: "Scheduled",
   alerts: "alerts",
+  noAlerts: "No alerts yet.",
   holdCall: "Approve stays off until every step is checked and you name who you called.",
   notApproval: "Uploading a photo does not approve a change.",
   signedInAs: "Signed in as",
-  noSession: "No active session. Sign in with a passkey tied to one account.",
   signInWithPasskey: "Sign in with passkey",
   username: "Username",
   usernamePlaceholder: "First name, lower case",
@@ -442,14 +485,13 @@ const en: Messages = {
   synced: "synced",
   enrollmentCode: "Enrollment code",
   enrollmentCodeHint: "From your admin, for first-time setup",
-  codeIssued: "Code issued once — read it to them, it never shows again:",
+  codeIssued: "Share this code with the user now. It will not be shown again:",
   issueCode: "Issue code",
   createOrg: "Create organization",
   newOrgHint: "Start a new organization. You become its admin.",
   orgName: "Organization name",
   province: "Province",
   yourName: "Your name",
-  orgCreated: "Organization ready. Sign in below with your username, then create your passkey.",
   orgLabel: "Organization",
   orgPlaceholder: "Organization name or slug",
   accountHint: "Enter your own username and organization. Accounts are not listed here.",
@@ -468,9 +510,12 @@ const en: Messages = {
   city: "City",
   domain: "Domain",
   numberOnFile: "Number on file",
-  scenariosHint: "Five sealed-thread drills from the demo pack, plus a mid-haul change.",
+  savedScenarios: "Saved by your team",
+  scenarioName: "Scenario name",
+  saveScenario: "Save draft as scenario",
+  deleteScenario: "Delete scenario",
   sealedNoteHint: "Write the change here for the verified counterparty. Never paste email text. The note seals to a hash at send.",
-  loadsHint: "Approved dock and seal stay on the board until a new ceremony changes them.",
+  loadsHint: "Approved dock and seal stay on the board until an approved request changes them.",
   incomingHint:
     "You see the dock on the board. A destination change does not move it until it is fully approved.",
   yardTraffic: "Yard traffic",
@@ -497,11 +542,11 @@ const en: Messages = {
   noLoadsHint: "Dispatch assigns loads to your username. Nothing is assigned yet.",
   messages: "Messages",
   messagesHint: "End-to-end encrypted with the Signal protocol. The server only sees ciphertext.",
-  noMessages: "No messages yet. Say what changed.",
+  noMessages: "No messages yet.",
   messagePlaceholder: "Write to the people on this case…",
   send: "Send",
   sending: "Sending…",
-  lockedMessage: "Locked. Your device cannot open this message.",
+  lockedMessage: "This message was encrypted for another device and cannot be opened here.",
   noDevices: "Nobody on this case finished encryption setup yet.",
   thisDevice: "This device",
   resetKeys: "Reset encryption",
@@ -511,7 +556,7 @@ const en: Messages = {
   documents: "Documents",
   documentsHint: "Files are hash-recorded. Anyone can re-check the hash later.",
   uploading: "Uploading…",
-  toastSent: "Message sent sealed.",
+  toastSent: "Encrypted message sent.",
   toastDocSaved: "Document saved with its hash.",
   docTypes: {
     bill_of_lading: "Bill of lading",
@@ -527,6 +572,8 @@ const en: Messages = {
   docType: "Document type",
   docNumber: "Number",
   docNumberHint: "BOL, invoice or receipt number",
+  otherTypeLabel: "What is this document?",
+  otherTypeHint: "e.g. Fuel receipt, scale ticket, inspection report",
   amount: "Amount",
   currency: "Currency",
   download: "Download",
@@ -535,22 +582,21 @@ const en: Messages = {
   allTypes: "All types",
   exportCsv: "Export CSV",
   totals: "Totals",
-  orgRecord: "Org record",
+  orgRecord: "Organization record",
   noDocuments: "No documents yet.",
   uploadedBy: "Uploaded by",
   date: "Date",
   file: "File",
   linkedTo: "Linked to",
-  toastTrip: "Live trip running. The receiver sees you move.",
+  toastTrip: "Simulated trip started. Your position is shared with the receiver.",
   toastTripStopped: "Stopped sharing position.",
   directoryHint: "Numbers already on file. Do not use a number that arrives inside a request.",
   emptyManager: "Write a sealed note on the supplier desk.",
-  emptyCase: "Pick one from the logistics desk.",
-  confirmBytes: "Confirm these bytes",
+  confirmBytes: "Confirm this request",
   signedSoFar: "Signed so far",
-  nobody: "nobody",
+  nobody: "No one yet",
   openPartnerPage: "Open partner page",
-  bytesLocked: "Bytes locked",
+  bytesLocked: "Request locked",
   bytesLockedBody:
     "The passkey step required user verification. The partner page shows who signed and when.",
   userVerification: "User verification",
@@ -558,12 +604,11 @@ const en: Messages = {
   no: "No",
   noPartnerPage: "No partner page yet",
   noPartnerPageBody: "A page appears after the required passkeys sign the same hash.",
-  oobHint: "Approve stays off until every step is checked and you name who you called.",
   backToBoard: "Back to board",
   noRequestOpen: "No request open",
   pickFromBoard: "Pick one from the logistics desk.",
   serverDown: "Server not reachable",
-  serverDownBody: "Start the Next server on port 3000. Passkeys need the API. There is no pretend login.",
+  serverDownBody: "The service is temporarily unavailable. Try again in a moment.",
   passkeyCreated: "Passkey created for this account.",
   creatingPasskey: "Creating passkey…",
   signingIn: "Signing in…",
@@ -594,12 +639,12 @@ const en: Messages = {
   checkingHash: "checking hash…",
   hashVerified: "hash verified",
   hashMismatch: "hash mismatch",
-  hashMismatchBody: "These bytes do not match the sealed hash. Do not sign.",
+  hashMismatchBody: "This request does not match its sealed hash. Do not approve it.",
   canonicalPayload: "Canonical payload",
   approvalProgress: "{done} of {needed} approved",
   twoManagers: "two different logistics approvers required",
-  ceremonyHint: "The passkey ceremony unlocks these bytes. Its challenge binds to the hash below.",
-  jevTitle: "Jev labels",
+  ceremonyHint: "Your passkey signs the hash below, so the approval applies only to this exact request.",
+  jevTitle: "Automated labels",
   waitingPasskey: "Waiting for passkey…",
   approvalRecorded: "Approval recorded",
   secondSignerNeeded: "A different logistics approver must sign next.",
@@ -620,7 +665,7 @@ const en: Messages = {
   yourLoads: "Your loads",
   showAllLoads: "Show all",
   correctStatus: "Correct the status",
-  tripHint: "The simulated trip drives the depot-to-yard route and sends Rolling, 15 minutes away, and Arrived for you.",
+  tripHint: "The simulated trip follows the depot-to-yard route and sends In transit, 15 minutes away, and Arrived for you.",
   newRequest: "New request",
   newRequestHint: "Log a request a counterparty made, in your own words. A different logistics approver must approve it.",
   newLoad: "New load",
@@ -639,7 +684,7 @@ const en: Messages = {
   editLoad: "Edit or hand off",
   saveChanges: "Save changes",
   handoffNote: "Handoff location (optional)",
-  handoffNoteHint: "e.g. Flying J, Napanee ON",
+  handoffNoteHint: "e.g. truck stop, Napanee ON",
   history: "History",
   noHistory: "No changes yet.",
   lockedMoving: "Dock, destination, and seal are locked while the load is moving. Open a request to change them.",
@@ -652,8 +697,9 @@ const en: Messages = {
   eventHandoff: "Handoff",
   eventUpdated: "Edited",
   fleet: "Fleet",
-  fleetHint: "Every driver, their duty clock, and where their loads are. Refreshes every 15 seconds.",
-  noDriversFleet: "No drivers on the team yet. Add one in the Team tab.",
+  startFleetSim: "Simulate fleet",
+  stopFleetSim: "Stop simulation",
+  fleetHint: "Every driver, their duty clock, and where their loads are. Refreshes every 5 seconds.",
   dutyStatus: "Duty status",
   dutyOff: "Off duty",
   dutySleeper: "Sleeper berth",
@@ -678,7 +724,7 @@ const en: Messages = {
   noDutyEntries: "No entries in this period.",
   sourceGps: "detected by GPS",
   sourceStatus: "from a trip step",
-  sourceManager: "manager note",
+  sourceManager: "logistics note",
   sourceSim: "simulated trip",
   dutyChanged: "Duty status updated",
   today: "Today",
@@ -690,7 +736,7 @@ const en: Messages = {
   sealBroken: "Seal is broken or missing",
   recordDrop: "Record drop",
   handoffRecorded: "Handoff recorded",
-  sealException: "Seal exception recorded. Managers were alerted.",
+  sealException: "Seal exception recorded. Logistics staff were alerted.",
   custodyChain: "Chain of custody",
   noCustody: "No handoffs yet.",
   handOff: "Hand off",
@@ -698,7 +744,6 @@ const en: Messages = {
   toFacility: "To a warehouse or yard",
   atFacility: "At",
   atFacilities: "Loads at warehouses and yards",
-  heldBy: "Held by",
   journey: "Journey",
   changePhoto: "Change photo",
   addPhoto: "Add photo",
@@ -708,45 +753,65 @@ const en: Messages = {
   sealOk: "Seal checked",
   sealBad: "Seal exception",
   trailHint: "Solid line: where the truck actually went. Dashed: the planned route.",
-  allDrivers: "All drivers",
 };
 
 const fr: Messages = {
   brand: "SupplyChek",
-  place: "Une plateforme pour les organisations de la chaîne alimentaire",
+  place: "Opérations vérifiées pour la logistique alimentaire et la chaîne du froid",
   demoOrg: "Organisation de démonstration : Lake Ontario Cold Storage",
   sealedNote: "Rédigez une note scellée",
   flags: "Signaux",
   onFile: "Au dossier",
   asked: "Demandé",
   oob: "Appelez le numéro au dossier",
-  reviewed: "J’ai lu ces octets",
+  reviewed: "J’ai examiné cette demande",
   approve: "Approuver avec une clé d’accès",
   away: "Dans 15 minutes",
   loaded: "Chargé",
-  rolling: "En route",
+  rolling: "En transit",
   arrived: "Arrivé",
   delayed: "En retard",
-  warning: "Le chauffeur est à 15 minutes",
   matches: "Correspond au contenu déposé",
   notGov: "Attestation SupplyChek — ce n’est pas un sceau du gouvernement",
-  jevNote: "Jev a étiqueté ce texte. Il ne l’a pas approuvé.",
+  jevNote: "Les étiquettes automatiques sont indicatives. Elles n’approuvent rien.",
   empty: "Rien ici pour le moment.",
   dual: "Deux personnes différentes doivent chacune utiliser une clé d’accès.",
   signIn: "Connexion",
+  firstTime: "Première connexion",
+  firstTimeHint: "Utilisez le code d’inscription de votre admin pour créer une clé d’accès sur cet appareil.",
+  firstTimeRequired: "Entrez votre nom d’utilisateur, votre organisation et votre code d’inscription.",
+  newOrgTab: "Nouvelle organisation",
+  newOrgRequired: "Entrez le nom de l’organisation, votre nom et un nom d’utilisateur.",
+  orgReady: "Votre organisation est prête",
+  orgReadyBody: "Conservez ce code d’inscription. Il n’est affiché qu’une fois. Créez ensuite votre clé d’accès ci-dessous.",
+  receiptTitle: "Reçu de vérification",
+  receiptChange: "Changement bancaire · Maple Malt",
+  receiptOnFile: "Compte au dossier",
+  receiptRequested: "Demandé",
+  receiptApprovals: "Approbations par clé",
+  receiptSignature: "Signature",
+  receiptStamp: "Vérifié",
+  receiptCaption: "Chaque changement bancaire, de quai ou de transporteur est vérifié auprès du numéro au dossier, puis signé par deux personnes avant toute action.",
   signOut: "Déconnexion",
   createPasskey: "Créer une clé d’accès",
   supplier: "Fournisseur",
   logistics: "Logistique",
   warehouse: "Entrepôt",
   driver: "Chauffeur",
+  coDriver: "Co-conducteur",
+  noCoDriver: "Aucun co-conducteur",
+  swapDrivers: "Échanger les conducteurs",
+  youAreDriving: "Vous êtes au volant",
+  coDriverDriving: "Votre co-conducteur est au volant",
+  driversSwapped: "Conducteurs échangés. Le conducteur au repos passe en couchette.",
+  eventSwap: "Échange de conducteurs",
   receiver: "Réception",
   admin: "Administration",
   directory: "Répertoire",
   scenarios: "Scénarios",
   sendToManager: "Envoyer au bureau de la logistique",
-  reviewBytes: "Relire les octets",
-  passkeyStopped: "Clé d’accès interrompue",
+  reviewBytes: "Examiner la demande",
+  passkeyStopped: "La demande de clé d’accès a été annulée ou n’a pas abouti.",
   whoSpoke: "Avec qui vous avez parlé, et quand",
   back: "Retour",
   open: "Ouvrir",
@@ -772,11 +837,11 @@ const fr: Messages = {
   statusRevoked: "Révoqué",
   scheduled: "Planifié",
   alerts: "alertes",
+  noAlerts: "Aucune alerte pour l’instant.",
   holdCall:
     "L’approbation reste désactivée tant que chaque étape n’est pas cochée et que vous n’avez pas nommé la personne appelée.",
   notApproval: "Envoyer une photo n’approuve pas un changement.",
   signedInAs: "Connecté en tant que",
-  noSession: "Aucune session active. Connectez-vous avec une clé d’accès liée à un seul compte.",
   signInWithPasskey: "Connexion avec clé d’accès",
   username: "Nom d’utilisateur",
   usernamePlaceholder: "Prénom, en minuscules",
@@ -797,14 +862,13 @@ const fr: Messages = {
   synced: "synchronisée",
   enrollmentCode: "Code d’inscription",
   enrollmentCodeHint: "Fourni par votre admin, pour la première configuration",
-  codeIssued: "Code émis une fois — dictez-le, il ne s’affichera plus :",
+  codeIssued: "Transmettez ce code à l’utilisateur maintenant. Il ne sera plus affiché :",
   issueCode: "Émettre un code",
   createOrg: "Créer une organisation",
   newOrgHint: "Démarrez une nouvelle organisation. Vous en devenez l’admin.",
   orgName: "Nom de l’organisation",
   province: "Province",
   yourName: "Votre nom",
-  orgCreated: "Organisation prête. Connectez-vous ci-dessous, puis créez votre clé d’accès.",
   orgLabel: "Organisation",
   orgPlaceholder: "Nom ou identifiant de l’organisation",
   accountHint: "Saisissez votre nom d’utilisateur et votre organisation. Aucun compte n’est listé ici.",
@@ -823,10 +887,13 @@ const fr: Messages = {
   city: "Ville",
   domain: "Domaine",
   numberOnFile: "Numéro au dossier",
-  scenariosHint: "Cinq messages d’attaque du jeu de démo, plus un changement en route.",
+  savedScenarios: "Enregistrés par votre équipe",
+  scenarioName: "Nom du scénario",
+  saveScenario: "Enregistrer le brouillon comme scénario",
+  deleteScenario: "Supprimer le scénario",
   sealedNoteHint: "Décrivez le changement ici pour la contrepartie vérifiée. Ne collez jamais de courriel. La note est scellée en empreinte à l’envoi.",
   loadsHint:
-    "Quai et sceau approuvés restent au tableau jusqu’à ce qu’une nouvelle cérémonie les change.",
+    "Quai et sceau approuvés restent au tableau jusqu’à ce qu’une demande approuvée les change.",
   incomingHint:
     "Vous voyez le quai au tableau. Un changement de destination ne le déplace pas tant que tout n’est pas approuvé.",
   yardTraffic: "Circulation à la cour",
@@ -854,11 +921,11 @@ const fr: Messages = {
   noLoadsHint: "La répartition assigne les chargements à votre nom d’utilisateur. Rien n’est assigné pour l’instant.",
   messages: "Messages",
   messagesHint: "Chiffrement de bout en bout avec le protocole Signal. Le serveur ne voit que du chiffré.",
-  noMessages: "Aucun message. Dites ce qui a changé.",
+  noMessages: "Aucun message pour l’instant.",
   messagePlaceholder: "Écrivez aux personnes de ce dossier…",
   send: "Envoyer",
   sending: "Envoi…",
-  lockedMessage: "Verrouillé. Votre appareil ne peut pas ouvrir ce message.",
+  lockedMessage: "Ce message a été chiffré pour un autre appareil et ne peut pas être ouvert ici.",
   noDevices: "Personne dans ce dossier n’a terminé le chiffrement.",
   thisDevice: "Cet appareil",
   resetKeys: "Réinitialiser le chiffrement",
@@ -868,7 +935,7 @@ const fr: Messages = {
   documents: "Documents",
   documentsHint: "Les fichiers sont enregistrés avec empreinte. Chacun peut revérifier plus tard.",
   uploading: "Téléversement…",
-  toastSent: "Message scellé envoyé.",
+  toastSent: "Message chiffré envoyé.",
   toastDocSaved: "Document enregistré avec son empreinte.",
   docTypes: {
     bill_of_lading: "Connaissement",
@@ -884,6 +951,8 @@ const fr: Messages = {
   docType: "Type de document",
   docNumber: "Numéro",
   docNumberHint: "Numéro de connaissement, de facture ou de reçu",
+  otherTypeLabel: "Quel est ce document?",
+  otherTypeHint: "ex. reçu de carburant, billet de pesée, rapport d’inspection",
   amount: "Montant",
   currency: "Devise",
   download: "Télécharger",
@@ -898,17 +967,16 @@ const fr: Messages = {
   date: "Date",
   file: "Fichier",
   linkedTo: "Lié à",
-  toastTrip: "Trajet en direct. Le réceptionnaire vous voit bouger.",
+  toastTrip: "Trajet simulé démarré. Votre position est partagée avec le réceptionnaire.",
   toastTripStopped: "Partage de position arrêté.",
   emptyManager: "Rédigez une note scellée au bureau fournisseur.",
   directoryHint:
     "Numéros déjà au dossier. N’utilisez pas un numéro qui arrive dans une demande.",
-  emptyCase: "Choisissez-en une au bureau de la logistique.",
-  confirmBytes: "Confirmer ces octets",
+  confirmBytes: "Confirmer cette demande",
   signedSoFar: "Signé jusqu’ici",
-  nobody: "personne",
+  nobody: "Personne pour l’instant",
   openPartnerPage: "Ouvrir la page partenaire",
-  bytesLocked: "Octets verrouillés",
+  bytesLocked: "Demande verrouillée",
   bytesLockedBody:
     "L’étape de clé d’accès exigeait une vérification de l’utilisateur. La page partenaire montre qui a signé et quand.",
   userVerification: "Vérification de l’utilisateur",
@@ -917,14 +985,11 @@ const fr: Messages = {
   noPartnerPage: "Pas encore de page partenaire",
   noPartnerPageBody:
     "Une page apparaît après que les clés d’accès requises ont signé la même empreinte.",
-  oobHint:
-    "L’approbation reste désactivée tant que chaque étape n’est pas cochée et que vous n’avez pas nommé la personne appelée.",
   backToBoard: "Retour au tableau",
   noRequestOpen: "Aucune demande ouverte",
   pickFromBoard: "Choisissez-en une au bureau de la logistique.",
   serverDown: "Serveur injoignable",
-  serverDownBody:
-    "Démarrez le serveur Next sur le port 3000. Les clés d’accès ont besoin de l’API. Il n’y a pas de connexion fictive.",
+  serverDownBody: "Le service est temporairement indisponible. Réessayez dans un instant.",
   passkeyCreated: "Clé d’accès créée pour ce compte.",
   creatingPasskey: "Création de la clé d’accès…",
   signingIn: "Connexion…",
@@ -955,12 +1020,12 @@ const fr: Messages = {
   checkingHash: "vérification du hachage…",
   hashVerified: "hachage vérifié",
   hashMismatch: "hachage non conforme",
-  hashMismatchBody: "Ces octets ne correspondent pas au hachage scellé. Ne signez pas.",
+  hashMismatchBody: "Cette demande ne correspond pas à son empreinte scellée. Ne l’approuvez pas.",
   canonicalPayload: "Contenu canonique",
   approvalProgress: "{done} sur {needed} approuvé(s)",
   twoManagers: "deux approbateurs logistique différents requis",
-  ceremonyHint: "La cérémonie de clé d’accès déverrouille ces octets. Son défi est lié au hachage ci-dessous.",
-  jevTitle: "Étiquettes Jev",
+  ceremonyHint: "Votre clé d’accès signe l’empreinte ci-dessous : l’approbation ne s’applique qu’à cette demande exacte.",
+  jevTitle: "Étiquettes automatiques",
   waitingPasskey: "En attente de la clé d’accès…",
   approvalRecorded: "Approbation enregistrée",
   secondSignerNeeded: "Un autre approbateur logistique doit signer ensuite.",
@@ -1000,7 +1065,7 @@ const fr: Messages = {
   editLoad: "Modifier ou transférer",
   saveChanges: "Enregistrer",
   handoffNote: "Lieu du transfert (facultatif)",
-  handoffNoteHint: "ex. Flying J, Napanee (Ont.)",
+  handoffNoteHint: "ex. relais routier, Napanee (Ont.)",
   history: "Historique",
   noHistory: "Aucun changement pour l’instant.",
   lockedMoving: "Le quai, la destination et le sceau sont verrouillés pendant le trajet. Ouvrez une demande pour les modifier.",
@@ -1013,8 +1078,9 @@ const fr: Messages = {
   eventHandoff: "Transfert",
   eventUpdated: "Modifié",
   fleet: "Flotte",
-  fleetHint: "Chaque chauffeur, son temps de conduite et la position de ses chargements. Actualisé toutes les 15 secondes.",
-  noDriversFleet: "Aucun chauffeur dans l'équipe. Ajoutez-en un dans l'onglet Équipe.",
+  startFleetSim: "Simuler la flotte",
+  stopFleetSim: "Arrêter la simulation",
+  fleetHint: "Chaque chauffeur, son temps de conduite et la position de ses chargements. Actualisé toutes les 5 secondes.",
   dutyStatus: "Statut de service",
   dutyOff: "Hors service",
   dutySleeper: "Couchette",
@@ -1039,7 +1105,7 @@ const fr: Messages = {
   noDutyEntries: "Aucune entrée pour cette période.",
   sourceGps: "détecté par GPS",
   sourceStatus: "depuis une étape du trajet",
-  sourceManager: "note du gestionnaire",
+  sourceManager: "note de la logistique",
   sourceSim: "trajet simulé",
   dutyChanged: "Statut de service mis à jour",
   today: "Aujourd'hui",
@@ -1051,7 +1117,7 @@ const fr: Messages = {
   sealBroken: "Scellé brisé ou absent",
   recordDrop: "Enregistrer le dépôt",
   handoffRecorded: "Transfert enregistré",
-  sealException: "Anomalie de scellé enregistrée. Les gestionnaires ont été avertis.",
+  sealException: "Anomalie de scellé enregistrée. L’équipe logistique a été avertie.",
   custodyChain: "Chaîne de possession",
   noCustody: "Aucun transfert pour l'instant.",
   handOff: "Transférer",
@@ -1059,7 +1125,6 @@ const fr: Messages = {
   toFacility: "À un entrepôt ou une cour",
   atFacility: "À",
   atFacilities: "Chargements aux entrepôts et cours",
-  heldBy: "Détenu par",
   journey: "Trajet",
   changePhoto: "Changer la photo",
   addPhoto: "Ajouter une photo",
@@ -1069,7 +1134,6 @@ const fr: Messages = {
   sealOk: "Scellé vérifié",
   sealBad: "Anomalie de scellé",
   trailHint: "Ligne pleine : le trajet réel du camion. Pointillés : l'itinéraire prévu.",
-  allDrivers: "Tous les chauffeurs",
 };
 
 const MAP = { en, fr } as const;

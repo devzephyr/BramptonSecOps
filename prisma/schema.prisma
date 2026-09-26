@@ -56,6 +56,7 @@ model Org {
   mailbox          MailboxConnection[]
   partnerAccounts  PartnerPortalAccount[]
   evidence        EvidenceAsset[]
+  scenarios       Scenario[]
   callLogs        CallLog[]
 }
 
@@ -266,6 +267,22 @@ enum DocType {
   other
 }
 
+/// A reusable request template staff can load into the New request form (org-wide, custom).
+model Scenario {
+  id          String      @id @default(cuid())
+  orgId       String
+  org         Org         @relation(fields: [orgId], references: [id])
+  title       String
+  requestType RequestType
+  contactId   String?
+  rawText     String
+  requested   Json
+  createdById String
+  createdAt   DateTime    @default(now())
+
+  @@index([orgId])
+}
+
 model EvidenceAsset {
   id           String   @id @default(cuid())
   orgId        String
@@ -279,6 +296,8 @@ model EvidenceAsset {
   byteSize     Int
   docType      DocType  @default(other)
   docNumber    String?
+  /// What the document is when docType is "other", e.g. "Fuel receipt".
+  otherType    String?
   amountCents  Int?
   currency     String?
   uploadedById String?
@@ -324,6 +343,8 @@ model Load {
   eta                             DateTime?
   payloadHashOfLastApprovedChange String?
   driverUserId                    String?
+  /// Second driver on a team load; "Swap drivers" exchanges this with driverUserId (the one at the wheel).
+  coDriverUserId                  String?
   lat                             Float?
   lng                             Float?
   positionAt                      DateTime?

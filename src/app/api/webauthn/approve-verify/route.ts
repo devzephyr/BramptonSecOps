@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     where: { id: ceremonyId, userId: user.id, orgId: user.orgId },
   });
   if (!ceremony || ceremony.usedAt || ceremony.expiresAt < new Date()) {
-    return badRequest("Approval ceremony expired or unknown.");
+    return badRequest("This approval has expired. Start the approval again.");
   }
 
   let verification: Awaited<ReturnType<typeof verifyAssertion>>;
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         where: { id: ceremony.id, usedAt: null, expiresAt: { gt: now } },
         data: { usedAt: now },
       });
-      if (burned.count !== 1) return badRequest("Approval ceremony already used or expired.");
+      if (burned.count !== 1) return badRequest("This approval was already used or has expired. Start the approval again.");
 
       const row = await tx.verifyCase.findFirst({
         where: { id: ceremony.caseId, orgId: user.orgId },
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       if (!row || row.revokedAt) return notFound();
       if (row.status === "fully_approved") return forbidden("This case is already approved.");
       if (row.payloadHash !== ceremony.payloadHash) {
-        return badRequest("Payload changed since this ceremony started. Review it again.");
+        return badRequest("The request changed after the approval started. Review it again.");
       }
       if (row.createdById === user.id) {
         return forbidden("The person who opened a case cannot approve it.");

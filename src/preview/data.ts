@@ -39,6 +39,8 @@ export type Load = {
   status: string;
   eta: string;
   driverId: string;
+  /** Second driver on a team load; empty when the load has one driver. */
+  coDriverId: string;
   lat?: number | null;
   lng?: number | null;
   positionAt?: string | null;
@@ -124,6 +126,9 @@ export const REQUESTS: { id: string; dual: boolean; en: string; fr: string }[] =
       fr: "Changement de connaissement ou de sceau",
     },
   ];
+
+/** Types a person can raise as a new request. Truck status comes from driver taps, not requests. */
+export const NEW_REQUEST_TYPES = REQUESTS.filter((item) => item.id !== "truck_status_update");
 
 /** Fields a request of each type changes; the composer asks for them and the payload records them. */
 export const REQUEST_FIELDS: Record<string, ("institution" | "transit" | "account" | "dock" | "destination" | "carrier" | "seal")[]> = {
@@ -299,5 +304,35 @@ export const SCENARIOS: {
     rawText:
       "From: night@milton-meats.net\nChange the Milton delivery to a trailer drop in Vaughan. Confirm by reply. Do not call, the planner is driving.",
     requested: { dock: "Vaughan drop lot", destination: "Vaughan" },
+  },
+  {
+    id: "bol",
+    title: "Bill of lading correction",
+    frTitle: "Correction de connaissement",
+    requestType: "bol_pod_alter",
+    partnerId: "halton",
+    rawText:
+      "From: shipping@halton-poultry-docs.com\nThe seal on the BOL for load HP-311 was typed wrong. Please change it to SL-9902 before the receiver signs. No need to call, we are short staffed.",
+    requested: { seal: "SL-9902" },
+  },
+  {
+    id: "credit",
+    title: "First-order credit terms",
+    frTitle: "Conditions de crédit, première commande",
+    requestType: "first_order_credit",
+    partnerId: "grain",
+    rawText:
+      "From: treasury@wellington-grain-ca.com\nWe are placing our first bulk order this week. Please release it on net-60 terms today; our credit application will follow.",
+    requested: {},
+  },
+  {
+    id: "schedule",
+    title: "Pickup time change",
+    frTitle: "Changement d'heure de ramassage",
+    requestType: "schedule_only",
+    partnerId: "harbour",
+    rawText:
+      "From: receiving@harbourfront-seafood.net\nMove tomorrow's pickup from 06:00 to 02:00. The driver will be a new contractor, please give them the gate code.",
+    requested: {},
   },
 ];

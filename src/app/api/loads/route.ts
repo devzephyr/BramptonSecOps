@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
-import { MANAGERS } from "@/lib/policy";
+import { MANAGERS, normalizeLoadRef } from "@/lib/policy";
 import { badRequest, forbidden, isUniqueViolation, json, unauthorized } from "@/lib/http";
 import { serializeLoad } from "@/lib/loads";
 
@@ -45,6 +45,9 @@ export async function POST(request: Request) {
     }
   }
 
+  const loadRef = normalizeLoadRef(String(body.loadRef));
+  if (!loadRef) return badRequest("Load number must be digits only, e.g. 4419.");
+
   const eta = body.eta ? new Date(String(body.eta)) : null;
   if (eta && Number.isNaN(eta.getTime())) return badRequest("eta must be a valid date.");
 
@@ -56,6 +59,16 @@ export async function POST(request: Request) {
     });
     if (!driver) return badRequest("driverUserId must be a driver in your org.");
   }
+  const coDriverUserId = typeof body.coDriverUserId === "string" && body.coDriverUserId ? body.coDriverUserId : null;
+  if (coDriverUserId) {
+    if (!driverUserId) return badRequest("Pick the main driver before a co-driver.");
+    if (coDriverUserId === driverUserId) return badRequest("The co-driver must be a different person.");
+    const coDriver = await prisma.user.findFirst({
+      where: { id: coDriverUserId, orgId: user.orgId, role: "driver" },
+      select: { id: true },
+    });
+    if (!coDriver) return badRequest("coDriverUserId must be a driver in your org.");
+  }
 
   const text = (key: string, max = 120) =>
     typeof body[key] === "string" ? (body[key] as string).trim().slice(0, max) : "";
@@ -65,7 +78,7 @@ export async function POST(request: Request) {
     .create({
       data: {
         orgId: user.orgId,
-        loadRef: text("loadRef", 40),
+        loadRef,
         carrierName: text("carrierName"),
         plate: text("plate", 20),
         trailer: text("trailer", 20),
@@ -78,6 +91,7 @@ export async function POST(request: Request) {
         sealNumber: optional("sealNumber", 40),
         scheduledDock: optional("scheduledDock", 40),
         driverUserId,
+        coDriverUserId,
         eta,
       },
     })
@@ -87,18 +101,19 @@ export async function POST(request: Request) {
     });
   if (!load) return badRequest("That load reference already exists.");
 
-  if (driverUserId) {
-    await prisma.notification.create({
-      data: {
+  const assigned = [driverUserId, coDriverUserId].filter((id): id is string => Boolean(id));
+  if (assigned.length) {
+    await prisma.notification.createMany({
+      data: assigned.map((driverId) => ({
         orgId: user.orgId,
-        userId: driverUserId,
-        role: "driver",
+        userId: driverId,
+        role: "driver" as const,
         kind: "load_assigned",
-        title: `New load ${load.loadRef}`,
+        title: `New load ${load.loadRef}${driverId === coDriverUserId ? " (co-driver)" : ""}`,
         body: `${load.commodity} · ${load.origin} → ${load.destination}${load.scheduledDock ? ` · ${load.scheduledDock}` : ""}. Assigned by ${user.name}.`,
         href: "/driver",
         emailStatus: "in-app",
-      },
+      })),
     });
   }
 

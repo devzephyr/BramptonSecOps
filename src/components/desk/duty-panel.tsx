@@ -134,7 +134,7 @@ export function DutyPanel({ driverId, activeLoadId }: { driverId: string; active
               <Button
                 key={status}
                 variant={current ? "default" : "outline"}
-                className="h-auto min-h-14 flex-col gap-1 py-2 whitespace-normal text-center text-xs sm:text-sm"
+                className="h-auto min-h-14 flex-col gap-1 py-2 whitespace-normal sm:h-auto text-center text-xs sm:text-sm"
                 aria-pressed={current}
                 disabled={busy || current || blocked}
                 onClick={() => void change(status)}
