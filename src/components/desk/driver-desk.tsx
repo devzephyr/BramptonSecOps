@@ -83,7 +83,19 @@ export function DriverDesk() {
     stopSim(true);
     setError(null);
     let step = 0;
+    let inFlight = false;
     const tick = async () => {
+      // A slow tick must not overlap the next one: both would read the same
+      // step and post the same status twice.
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        await advance();
+      } finally {
+        inFlight = false;
+      }
+    };
+    const advance = async () => {
       const point = simPosition(step);
       try {
         await postPosition(load.id, point.lat, point.lng);

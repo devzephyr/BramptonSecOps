@@ -56,14 +56,26 @@ export async function POST(request: Request, { params }: Params) {
   const lastKnown =
     typeof body.lastKnown === "string" ? body.lastKnown.slice(0, 200) : load.lastKnown;
 
-  const claimed = await prisma.load.updateMany({
-    where: {
-      id: load.id,
-      orgId: user.orgId,
-      OR: [{ driverUserId: null }, { driverUserId: user.id }],
-    },
-    data: { currentStatus: eventType, lastKnown, driverUserId: user.id },
-  });
+  const owned = {
+    id: load.id,
+    orgId: user.orgId,
+    OR: [{ driverUserId: null }, { driverUserId: user.id }],
+  };
+  const data = { currentStatus: eventType, lastKnown, driverUserId: user.id };
+
+  // Only the request that actually moves the load into fifteen_min alerts staff.
+  // The status predicate makes this atomic, so retries and overlapping posts
+  // for a load already fifteen minutes out don't fan out duplicate alerts.
+  const reachedFifteen =
+    eventType === "fifteen_min" &&
+    (
+      await prisma.load.updateMany({
+        where: { ...owned, currentStatus: { not: "fifteen_min" } },
+        data,
+      })
+    ).count === 1;
+
+  const claimed = await prisma.load.updateMany({ where: owned, data });
   if (claimed.count !== 1) {
     return forbidden("This load is assigned to another driver.");
   }
@@ -78,7 +90,7 @@ export async function POST(request: Request, { params }: Params) {
     },
   });
 
-  if (eventType === "fifteen_min") {
+  if (reachedFifteen) {
     const staff = await prisma.user.findMany({
       where: {
         orgId: user.orgId,
