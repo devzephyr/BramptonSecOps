@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { CaseCeremony } from "@/components/desk/case-ceremony";
 import { DirectoryDesk } from "@/components/desk/directory-desk";
+import { DocumentUpload } from "@/components/desk/document-upload";
 import { LoadForm } from "@/components/desk/load-form";
 import { LoadsTable } from "@/components/desk/loads-table";
 import { ReceiptView } from "@/components/desk/receipt-view";
@@ -40,6 +41,7 @@ export function ManagerDesk() {
         <TabsTab value="request">{t.newRequest}</TabsTab>
         <TabsTab value="load">{t.newLoad}</TabsTab>
         <TabsTab value="directory">{t.directory}</TabsTab>
+        <TabsTab value="records">{t.records}</TabsTab>
         <TabsTab value="team">{t.team}</TabsTab>
         {desk.receiptToken && <TabsTab value="receipt">{t.partnerCheck}</TabsTab>}
       </TabsList>
@@ -108,6 +110,9 @@ export function ManagerDesk() {
       </TabsPanel>
       <TabsPanel value="directory" className="pt-4">
         <DirectoryDesk />
+      </TabsPanel>
+      <TabsPanel value="records" className="pt-4">
+        <DocumentUpload ledger />
       </TabsPanel>
       <TabsPanel value="team" className="pt-4">
         <TeamDesk />

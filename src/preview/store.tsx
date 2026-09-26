@@ -20,7 +20,7 @@ import { REQUEST_FIELDS, SCENARIOS, type DeskCase, type Load, type Note, type Ro
 
 const CASE_STAFF: Role[] = ["supplier", "manager", "admin"];
 
-type ManagerTab = "board" | "request" | "load" | "directory" | "receipt" | "team";
+type ManagerTab = "board" | "request" | "load" | "directory" | "records" | "receipt" | "team";
 type Draft = { requestType: string; contactId: string; rawText: string; requested: Record<string, string> };
 
 type Store = {
