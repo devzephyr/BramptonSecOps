@@ -469,7 +469,7 @@ const en: Messages = {
   saveScenario: "Save draft as scenario",
   deleteScenario: "Delete scenario",
   sealedNoteHint: "Write the change here for the verified counterparty. Never paste email text. The note seals to a hash at send.",
-  loadsHint: "Approved dock and seal stay on the board until a new ceremony changes them.",
+  loadsHint: "Approved dock and seal stay on the board until an approved request changes them.",
   incomingHint:
     "You see the dock on the board. A destination change does not move it until it is fully approved.",
   yardTraffic: "Yard traffic",
@@ -822,7 +822,7 @@ const fr: Messages = {
   deleteScenario: "Supprimer le scénario",
   sealedNoteHint: "Décrivez le changement ici pour la contrepartie vérifiée. Ne collez jamais de courriel. La note est scellée en empreinte à l’envoi.",
   loadsHint:
-    "Quai et sceau approuvés restent au tableau jusqu’à ce qu’une nouvelle cérémonie les change.",
+    "Quai et sceau approuvés restent au tableau jusqu’à ce qu’une demande approuvée les change.",
   incomingHint:
     "Vous voyez le quai au tableau. Un changement de destination ne le déplace pas tant que tout n’est pas approuvé.",
   yardTraffic: "Circulation à la cour",
