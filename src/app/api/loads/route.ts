@@ -70,10 +70,28 @@ export async function POST(request: Request) {
     }
   }
 
+  const eta = body.eta ? new Date(String(body.eta)) : null;
+  if (eta && Number.isNaN(eta.getTime())) return badRequest("eta must be a valid date.");
+
+  const driverUserId = typeof body.driverUserId === "string" ? body.driverUserId : null;
+  if (driverUserId) {
+    const driver = await prisma.user.findFirst({
+      where: { id: driverUserId, orgId: user.orgId, role: "driver" },
+      select: { id: true },
+    });
+    if (!driver) return badRequest("driverUserId must be a driver in your org.");
+  }
+
+  const taken = await prisma.load.findFirst({
+    where: { orgId: user.orgId, loadRef: (body.loadRef as string).trim() },
+    select: { id: true },
+  });
+  if (taken) return badRequest("That load reference already exists.");
+
   const load = await prisma.load.create({
     data: {
       orgId: user.orgId,
-      loadRef: body.loadRef as string,
+      loadRef: (body.loadRef as string).trim(),
       carrierName: body.carrierName as string,
       plate: body.plate as string,
       trailer: body.trailer as string,
@@ -87,9 +105,8 @@ export async function POST(request: Request) {
       sealNumber: typeof body.sealNumber === "string" ? body.sealNumber : null,
       scheduledDock:
         typeof body.scheduledDock === "string" ? body.scheduledDock : null,
-      driverUserId:
-        typeof body.driverUserId === "string" ? body.driverUserId : null,
-      eta: body.eta ? new Date(String(body.eta)) : null,
+      driverUserId,
+      eta,
     },
   });
 

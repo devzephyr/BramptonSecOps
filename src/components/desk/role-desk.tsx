@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { DriverDesk } from "@/components/desk/driver-desk";
 import { ManagerDesk } from "@/components/desk/manager-desk";
 import { ReceiverDesk } from "@/components/desk/receiver-desk";
@@ -21,18 +22,21 @@ function DeskBody() {
   const desk = useDesk();
   const { t } = useI18n();
   const role = desk.user.role as Role;
-  const warning = desk.notes.find(
-    (note) => note.title.startsWith("Driver is 15") && noteForRole(note, role),
-  );
+  const unread = desk.notes.filter((note) => !note.read && noteForRole(note, role)).slice(0, 3);
 
   return (
     <>
-      {warning && (role === "manager" || role === "receiver" || role === "admin") && (
-        <Alert variant="warning">
-          <AlertTitle>{t.warning}</AlertTitle>
-          <AlertDescription>{warning.body}</AlertDescription>
+      {unread.map((note) => (
+        <Alert key={note.id} variant={note.kind === "load_fifteen_min" ? "warning" : "info"}>
+          <AlertTitle>{note.title}</AlertTitle>
+          <AlertDescription>{note.body}</AlertDescription>
+          <AlertAction>
+            <Button size="sm" variant="outline" onClick={() => void desk.dismissNote(note.id)}>
+              {t.dismiss}
+            </Button>
+          </AlertAction>
         </Alert>
-      )}
+      ))}
       {role === "supplier" && <SupplierDesk />}
       {(role === "manager" || role === "admin") && <ManagerDesk />}
       {role === "driver" && <DriverDesk />}

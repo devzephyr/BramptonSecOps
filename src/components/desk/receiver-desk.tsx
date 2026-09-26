@@ -49,7 +49,9 @@ function EtaRail({ load, labels }: { load: Load; labels: string[] }) {
   );
 }
 
-export function ReceiverDesk() {  const desk = useDesk();
+export function ReceiverDesk() {
+  const desk = useDesk();
+  const { refreshRemote } = desk;
   const { t } = useI18n();
   const [podLoad, setPodLoad] = useState("");
   const [podBusy, setPodBusy] = useState(false);
@@ -62,9 +64,9 @@ export function ReceiverDesk() {  const desk = useDesk();
   );
 
   useEffect(() => {
-    const timer = window.setInterval(() => void desk.refreshRemote(), 5000);
+    const timer = window.setInterval(() => void refreshRemote(), 5000);
     return () => window.clearInterval(timer);
-  }, [desk]);
+  }, [refreshRemote]);
 
   async function onPodFile(file: File | undefined) {
     if (!file || !podLoad || podBusy) return;
@@ -196,7 +198,10 @@ export function ReceiverDesk() {  const desk = useDesk();
             accept="image/*"
             aria-label={t.pod}
             disabled={podBusy || !podLoad}
-            onChange={(event) => void onPodFile(event.target.files?.[0])}
+            onChange={(event) => {
+              void onPodFile(event.target.files?.[0]);
+              event.target.value = "";
+            }}
           />
           {podBusy && <p className="text-sm text-muted-foreground">{t.uploading}</p>}
         </CardPanel>

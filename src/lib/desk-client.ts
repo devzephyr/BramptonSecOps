@@ -146,6 +146,7 @@ export async function signInWithPasskey(identity: SignInIdentity) {
 
 type ApiNote = {
   id: string;
+  kind: string;
   title: string;
   body: string;
   href?: string | null;
@@ -174,6 +175,7 @@ export async function fetchNotifications(): Promise<Note[]> {
   const body = (await parseJson(res)) as { notifications?: ApiNote[] } | null;
   return (body?.notifications ?? []).map((row) => ({
     id: row.id,
+    kind: row.kind,
     audience: audienceForNote(row),
     title: row.title,
     body: row.body,
@@ -203,6 +205,16 @@ type ApiLoad = {
   lng?: number | null;
   positionAt?: string | null;
 };
+
+export async function markNotificationRead(id: string) {
+  const res = await fetch(`/api/notifications/${encodeURIComponent(id)}/read`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not dismiss alert"));
+  }
+}
 
 export async function fetchLoads(): Promise<Load[]> {
   const res = await fetch("/api/loads", { credentials: "include" });
@@ -241,18 +253,22 @@ export async function postLoadStatus(loadId: string, status: string) {
     body: JSON.stringify({ eventType: status }),
   });
   if (!res.ok) {
-    throw new DeskApiError(res.status, "Could not update load status");
+    throw new DeskApiError(res.status, await failMessage(res, "Could not update load status"));
   }
 }
 
-export async function approveWithPasskey(caseId: string) {  const optRes = await fetch("/api/webauthn/approve-options", {
+export async function approveWithPasskey(caseId: string) {
+  const optRes = await fetch("/api/webauthn/approve-options", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ caseId }),
   });
   if (!optRes.ok) {
-    throw new DeskApiError(optRes.status, "Could not start approval ceremony");
+    throw new DeskApiError(
+      optRes.status,
+      await failMessage(optRes, "Could not start approval ceremony"),
+    );
   }
   const { optionsJSON, ceremonyId } = (await optRes.json()) as {
     optionsJSON: unknown;
@@ -267,22 +283,26 @@ export async function approveWithPasskey(caseId: string) {  const optRes = await
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ caseId, ceremonyId, response: authResp }),
+    body: JSON.stringify({ ceremonyId, response: authResp }),
   });
   if (!verifyRes.ok) {
-    throw new DeskApiError(verifyRes.status, "Approval was not verified");
+    throw new DeskApiError(
+      verifyRes.status,
+      await failMessage(verifyRes, "Approval was not verified"),
+    );
   }
   return parseJson(verifyRes);
 }
 
-export async function postPosition(loadId: string, lat: number, lng: number) {  const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/position`, {
+export async function postPosition(loadId: string, lat: number, lng: number) {
+  const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/position`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ lat, lng }),
   });
   if (!res.ok) {
-    throw new DeskApiError(res.status, "Could not update position");
+    throw new DeskApiError(res.status, await failMessage(res, "Could not update position"));
   }
   return parseJson(res);
 }
@@ -345,6 +365,8 @@ export async function fetchDocuments(caseId: string): Promise<CaseDocument[]> {
   return body?.documents ?? [];
 }
 
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
 async function sha256HexFile(bytes: ArrayBuffer): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)]
@@ -358,6 +380,9 @@ export async function uploadEvidence(input: {
   caseId?: string;
   loadId?: string;
 }): Promise<{ id: string; contentHash: string }> {
+  if (input.file.size > MAX_UPLOAD_BYTES) {
+    throw new DeskApiError(413, "File is larger than 10 MB.");
+  }
   const presignRes = await fetch("/api/evidence/presign", {
     method: "POST",
     credentials: "include",
@@ -432,6 +457,7 @@ export type ApiCase = {
   requestType: string;
   counterparty: string;
   contactId: string | null;
+  numberOnFile: string | null;
   rawText?: string;
   onFile: unknown;
   requested: unknown;
@@ -470,6 +496,14 @@ function stringList(value: unknown): string[] {
   });
 }
 
+function jevLabels(value: unknown): string[] {
+  if (Array.isArray(value)) return stringList(value);
+  if (typeof value === "object" && value !== null && "labels" in value) {
+    return stringList((value as { labels: unknown }).labels);
+  }
+  return [];
+}
+
 export function mapApiCase(row: ApiCase): DeskCase {
   const steps = stringList(row.oobSteps);
   const done = Array.isArray(row.oobAck?.steps)
@@ -480,7 +514,8 @@ export function mapApiCase(row: ApiCase): DeskCase {
     id: row.id,
     requestType: row.requestType,
     counterparty: row.counterparty,
-    partnerId: row.contactId ?? "",
+    contactId: row.contactId ?? "",
+    numberOnFile: row.numberOnFile ?? "",
     rawText: row.rawText ?? "",
     onFile: stringRecord(row.onFile),
     requested: stringRecord(row.requested),
@@ -496,7 +531,7 @@ export function mapApiCase(row: ApiCase): DeskCase {
       ? row.approvals.map((item) => ({ ...item, role: item.role as Role }))
       : [],
     token: row.publicToken,
-    jev: stringList(row.jev),
+    jev: jevLabels(row.jev),
   };
 }
 
@@ -517,11 +552,9 @@ export async function fetchCase(id: string): Promise<DeskCase | null> {
 
 export async function submitCase(input: {
   requestType: string;
-  counterparty: string;
+  contactId: string;
   rawText: string;
-  onFile: Record<string, string>;
   requested: Record<string, string>;
-  contactId?: string;
 }): Promise<DeskCase> {
   const res = await fetch("/api/verify-cases", {
     method: "POST",
@@ -535,7 +568,8 @@ export async function submitCase(input: {
   return mapApiCase((await parseJson(res)) as ApiCase);
 }
 
-export async function patchOob(  id: string,
+export async function patchOob(
+  id: string,
   patch: { oobStepIndex?: number; oobStepDone?: boolean; oobNote?: string },
 ): Promise<DeskCase> {
   const res = await fetch(`/api/verify-cases/${encodeURIComponent(id)}`, {
@@ -548,6 +582,61 @@ export async function patchOob(  id: string,
     throw new DeskApiError(res.status, await failMessage(res, "Could not save checklist"));
   }
   return mapApiCase((await parseJson(res)) as ApiCase);
+}
+
+export async function revokeCase(id: string): Promise<void> {
+  const res = await fetch(`/api/verify-cases/${encodeURIComponent(id)}/revoke`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not revoke case"));
+  }
+}
+
+export type Contact = {
+  id: string;
+  seedKey: string | null;
+  company: string;
+  name: string;
+  roleLabel: string;
+  city: string;
+  domain: string;
+  numberOnFile: string;
+  onFile: Record<string, string>;
+};
+
+export async function fetchDirectory(): Promise<Contact[]> {
+  const res = await fetch("/api/directory", { credentials: "include" });
+  if (!res.ok) return [];
+  const body = (await parseJson(res)) as { contacts?: Contact[] } | null;
+  return body?.contacts ?? [];
+}
+
+export type NewContact = {
+  company: string;
+  city: string;
+  domain: string;
+  numberOnFile: string;
+  name?: string;
+  institution?: string;
+  transit?: string;
+  account?: string;
+  dock?: string;
+  carrier?: string;
+};
+
+export async function addContact(input: NewContact): Promise<Contact> {
+  const res = await fetch("/api/directory", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not add contact"));
+  }
+  return (await parseJson(res)) as Contact;
 }
 
 export type NewOrg = {
@@ -596,7 +685,8 @@ export async function addTeammate(input: {
   username: string;
   name: string;
   role: string;
-}): Promise<TeamMember> {  const res = await fetch("/api/orgs/users", {
+}): Promise<TeamMember> {
+  const res = await fetch("/api/orgs/users", {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },

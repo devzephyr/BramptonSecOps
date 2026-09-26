@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { hasRole, requireUser } from "@/lib/auth";
 import {
   badRequest,
   forbidden,
@@ -13,10 +13,12 @@ import {
   mergeRequestedPatch,
   parseOobAck,
   patchTouchesPayload,
+  caseInclude,
   serializeCase,
   statusFromOob,
 } from "@/lib/cases";
 import type { PayloadFields } from "@/lib/payload";
+import { approvalProgress } from "@/lib/policy";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -26,17 +28,7 @@ export async function GET(_request: Request, { params }: Params) {
   const { id } = await params;
   const row = await prisma.verifyCase.findFirst({
     where: { id, orgId: user.orgId },
-    include: {
-      org: { select: { name: true } },
-      attestations: {
-        orderBy: { verifiedAt: "asc" },
-        select: {
-          userId: true,
-          verifiedAt: true,
-          user: { select: { name: true, role: true } },
-        },
-      },
-    },
+    include: caseInclude,
   });
   if (!row || row.revokedAt) return notFound();
   return json(serializeCase(row, { includeRawText: true }));
@@ -45,6 +37,9 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PATCH(request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
+  if (!hasRole(user, ["supplier", "manager", "admin"])) {
+    return forbidden("Only supplier or manager staff can edit a case.");
+  }
   const { id } = await params;
 
   let body: Record<string, unknown>;
@@ -62,7 +57,7 @@ export async function PATCH(request: Request, { params }: Params) {
 
   const row = await prisma.verifyCase.findFirst({
     where: { id, orgId: user.orgId },
-    include: { org: { select: { name: true } } },
+    include: caseInclude,
   });
   if (!row || row.revokedAt) return notFound();
   if (row.status === "fully_approved") {
@@ -75,7 +70,7 @@ export async function PATCH(request: Request, { params }: Params) {
   let ack = parseOobAck(row.oobAckJson, steps.length);
 
   if (typeof body.oobNote === "string") {
-    ack = { ...ack, note: body.oobNote };
+    ack = { ...ack, note: body.oobNote.slice(0, 500) };
   }
   if (Array.isArray(body.oobSteps)) {
     ack = {
@@ -108,6 +103,19 @@ export async function PATCH(request: Request, { params }: Params) {
     payloadHash = payload.payloadHash;
     ack = parseOobAck(null, steps.length);
     status = "flagged";
+  } else if (status === "pending_approval") {
+    const prior = await prisma.approvalAttestation.findMany({
+      where: { caseId: row.id, payloadHash },
+      select: { userId: true },
+    });
+    if (
+      approvalProgress({
+        dualControl: row.dualControl,
+        approverIds: prior.map((item) => item.userId),
+      }) === "need_second"
+    ) {
+      status = "pending_second";
+    }
   }
 
   const updated = await prisma.verifyCase.update({
@@ -119,17 +127,7 @@ export async function PATCH(request: Request, { params }: Params) {
       payloadHash,
       status,
     },
-    include: {
-      org: { select: { name: true } },
-      attestations: {
-        orderBy: { verifiedAt: "asc" },
-        select: {
-          userId: true,
-          verifiedAt: true,
-          user: { select: { name: true, role: true } },
-        },
-      },
-    },
+    include: caseInclude,
   });
 
   return json(serializeCase(updated, { includeRawText: true }));

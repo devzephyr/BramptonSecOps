@@ -17,6 +17,7 @@ export function DriverDesk() {
   const mine = desk.loads.filter((load) => load.driverId === desk.user.id);
   const [sim, setSim] = useState<string | null>(null);
   const [simError, setSimError] = useState<string | null>(null);
+  const [posting, setPosting] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
 
   useEffect(
@@ -57,6 +58,15 @@ export function DriverDesk() {
     timer.current = window.setInterval(() => void tick(), SIM_TICK_MS);
   }
 
+  async function tap(loadId: string, status: string, label: string) {
+    setPosting(`${loadId}:${status}`);
+    setSimError(null);
+    const failure = await desk.pushStatus(loadId, status);
+    setPosting(null);
+    if (failure) setSimError(failure);
+    else toastManager.add({ type: "success", title: t.statusSent, description: label });
+  }
+
   const taps = [
     ["loaded", t.loaded],
     ["rolling", t.rolling],
@@ -85,7 +95,7 @@ export function DriverDesk() {
           <CardHeader>
             <CardTitle>{load.loadRef}</CardTitle>
             <CardDescription>
-              {load.commodity} · {load.dock} · {load.plate}
+              {[load.commodity, load.dock, load.plate].filter(Boolean).join(" · ")}
             </CardDescription>
           </CardHeader>
           <CardPanel className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -94,8 +104,10 @@ export function DriverDesk() {
                 key={status}
                 size="xl"
                 className="min-h-16 text-base"
-                variant={status === "fifteen_min" ? "default" : "outline"}
-                onClick={() => void desk.pushStatus(load.id, status)}
+                variant={load.status === status ? "default" : "outline"}
+                aria-pressed={load.status === status}
+                disabled={posting !== null}
+                onClick={() => void tap(load.id, status, label)}
               >
                 {label}
               </Button>

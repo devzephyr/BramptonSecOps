@@ -1,69 +1,41 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect } from "react";
 import { CaseCeremony } from "@/components/desk/case-ceremony";
+import { RolePage } from "@/components/desk/role-page";
 import { DeskShell } from "@/components/desk/shell";
-import { SignInScreen } from "@/components/desk/sign-in";
-import { fetchSession, signOutSession, type SessionUser } from "@/lib/desk-client";
-import { I18nProvider } from "@/lib/i18n";
+import type { SessionUser } from "@/lib/desk-client";
 import type { Role } from "@/preview/data";
 import { StoreProvider, useDesk } from "@/preview/store";
 
 function CasePageBody({ caseId, onSignOut }: { caseId: string; onSignOut: () => void }) {
-  const desk = useDesk();
-  const { openCase, caseId: openId, notes, user } = desk;
+  const router = useRouter();
+  const { openCase, notes, user } = useDesk();
   const role = user.role as Role;
 
-  useEffect(() => {
-    if (openId !== caseId) openCase(caseId);
-  }, [caseId, openCase, openId]);
+  useEffect(() => openCase(caseId), [caseId, openCase]);
 
-  const alertCount = notes.filter((note) => {
-    const audience = Array.isArray(note.audience) ? note.audience : [];
-    return audience.includes(role) && !note.read;
-  }).length;
+  const alertCount = notes.filter((note) => note.audience.includes(role) && !note.read).length;
 
   return (
     <DeskShell user={user} alertCount={alertCount} onSignOut={onSignOut}>
-      <CaseCeremony />
+      <CaseCeremony onBack={() => router.push("/manager")} />
     </DeskShell>
   );
 }
 
-function ManagerCaseInner() {
-  const params = useParams();
-  const router = useRouter();
-  const caseId = String(params.id ?? "");
-  const [user, setUser] = useState<SessionUser | null | undefined>(undefined);
-
-  useEffect(() => {
-    void fetchSession().then(setUser);
-  }, []);
-
-  const signOut = useCallback(async () => {
-    await signOutSession();
-    router.replace("/sign-in");
-  }, [router]);
-
-  if (user === undefined) return null;
-  if (!user) return <SignInScreen onSignedIn={() => void fetchSession().then(setUser)} />;
-  if (user.role !== "manager" && user.role !== "admin") {
-    router.replace("/sign-in");
-    return null;
-  }
-
-  return (
-    <StoreProvider user={user}>
-      <CasePageBody caseId={caseId} onSignOut={() => void signOut()} />
-    </StoreProvider>
-  );
-}
-
 export default function ManagerCasePage() {
+  const params = useParams();
+  const caseId = String(params.id ?? "");
   return (
-    <I18nProvider>
-      <ManagerCaseInner />
-    </I18nProvider>
+    <RolePage
+      roles={["manager", "admin"]}
+      render={(user: SessionUser, signOut) => (
+        <StoreProvider user={user}>
+          <CasePageBody caseId={caseId} onSignOut={signOut} />
+        </StoreProvider>
+      )}
+    />
   );
 }

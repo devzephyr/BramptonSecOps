@@ -64,7 +64,10 @@ export function DocumentUpload({ caseId, loadId }: { caseId?: string; loadId?: s
           type="file"
           aria-label={t.documents}
           disabled={busy}
-          onChange={(event) => void onFile(event.target.files?.[0])}
+          onChange={(event) => {
+            void onFile(event.target.files?.[0]);
+            event.target.value = "";
+          }}
         />
         {busy && <p className="text-sm text-muted-foreground">{t.uploading}</p>}
         {docs.length > 0 && (

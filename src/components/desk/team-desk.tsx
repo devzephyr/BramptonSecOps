@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,12 +21,13 @@ export function TeamDesk() {
   const [role, setRole] = useState("supplier");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const [creds, setCreds] = useState<Record<string, MemberCredential[]>>({});
   const [issued, setIssued] = useState<{ username: string | null; code: string } | null>(null);
 
-  async function issue(member: TeamMember) {
+  async function issue(member: Pick<TeamMember, "id">) {
     setError(null);
     setIssued(null);
     try {
@@ -76,17 +77,18 @@ export function TeamDesk() {
   async function add() {
     if (busy) return;
     setBusy(true);
-    setError(null);
+    setFormError(null);
     setNotice(null);
+    setIssued(null);
     try {
       const created = await addTeammate({ username: username.trim(), name: name.trim(), role });
       setUsername("");
       setName("");
       setNotice(`${t.teammateAdded} ${created.username}`);
       await refresh();
+      await issue(created);
     } catch (err) {
-      if (err instanceof DeskApiError) setError(err.message);
-      else setError(err instanceof Error ? err.message : "Could not add teammate.");
+      setFormError(err instanceof Error ? err.message : "Could not add teammate.");
     } finally {
       setBusy(false);
     }
@@ -99,7 +101,20 @@ export function TeamDesk() {
           <CardTitle>{t.team}</CardTitle>
           <CardDescription>{t.teamHint}</CardDescription>
         </CardHeader>
-        <CardPanel>
+        <CardPanel className="flex flex-col gap-3">
+          {error && (
+            <Alert variant="error">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {issued && (
+            <Alert variant="success">
+              <AlertDescription>
+                {t.codeIssued} <span className="font-mono">{issued.code}</span>
+                {issued.username ? ` (${issued.username})` : ""}
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="overflow-x-auto">
           <Table variant="card">
             <TableHeader>
@@ -113,8 +128,8 @@ export function TeamDesk() {
             </TableHeader>
             <TableBody>
               {team.map((member) => (
-                <>
-                  <TableRow key={member.id}>
+                <Fragment key={member.id}>
+                  <TableRow>
                     <TableCell className="font-mono text-xs">{member.username ?? "—"}</TableCell>
                     <TableCell>{member.name}</TableCell>
                     <TableCell>
@@ -138,7 +153,7 @@ export function TeamDesk() {
                     </TableCell>
                   </TableRow>
                   {openId === member.id && (
-                    <TableRow key={`${member.id}-keys`}>
+                    <TableRow>
                       <TableCell colSpan={5}>
                         {(creds[member.id] ?? []).length === 0 ? (
                           <p className="text-sm text-muted-foreground">{t.noCredentials}</p>
@@ -169,7 +184,7 @@ export function TeamDesk() {
                       </TableCell>
                     </TableRow>
                   )}
-                </>
+                </Fragment>
               ))}
             </TableBody>
           </Table>
@@ -182,22 +197,14 @@ export function TeamDesk() {
           <CardDescription>{t.addTeammateHint}</CardDescription>
         </CardHeader>
         <CardPanel className="flex flex-col gap-3">
-          {error && (
+          {formError && (
             <Alert variant="error">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{formError}</AlertDescription>
             </Alert>
           )}
           {notice && (
             <Alert variant="success">
               <AlertDescription>{notice}</AlertDescription>
-            </Alert>
-          )}
-          {issued && (
-            <Alert variant="success">
-              <AlertDescription>
-                {t.codeIssued} <span className="font-mono">{issued.code}</span>
-                {issued.username ? ` (${issued.username})` : ""}
-              </AlertDescription>
             </Alert>
           )}
           <div className="grid gap-3 sm:grid-cols-3">

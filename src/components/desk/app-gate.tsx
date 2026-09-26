@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { RoleDesk } from "@/components/desk/role-desk";
 import { SignInScreen } from "@/components/desk/sign-in";
 import { GateLoading } from "@/components/desk/gate-loading";
-import { DeskApiError, fetchSession, isServerUnavailable, signOutSession, type SessionUser } from "@/lib/desk-client";
+import { fetchSession, signOutSession, type SessionUser } from "@/lib/desk-client";
 
-function roleHome(role: string) {
+export function roleHome(role: string) {
   switch (role) {
     case "supplier":
       return "/supplier";
@@ -27,14 +27,9 @@ export function AppGate() {
 
   const refresh = useCallback(async () => {
     try {
-      const session = await fetchSession();
-      setUser(session);
-    } catch (err) {
-      if (err instanceof DeskApiError && isServerUnavailable(err.status)) {
-        setUser(null);
-      } else {
-        setUser(null);
-      }
+      setUser(await fetchSession());
+    } catch {
+      setUser(null);
     }
   }, []);
 

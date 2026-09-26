@@ -1,60 +1,77 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { approveWithPasskey, fetchCases, fetchCase, fetchLoads, fetchNotifications, patchOob, postLoadStatus, submitCase, type SessionUser } from "@/lib/desk-client";
 import {
-  PARTNERS,
-  SCENARIOS,
-  seedLoads,
-  type DeskCase,
-  type Load,
-  type Note,
-  type Role,
-} from "@/preview/data";
-import { randomId } from "@/preview/hash";
+  approveWithPasskey,
+  fetchCase,
+  fetchCases,
+  fetchDirectory,
+  fetchLoads,
+  fetchNotifications,
+  markNotificationRead,
+  patchOob,
+  postLoadStatus,
+  revokeCase,
+  submitCase,
+  type Contact,
+  type SessionUser,
+} from "@/lib/desk-client";
+import { SCENARIOS, type DeskCase, type Load, type Note, type Role } from "@/preview/data";
+
+type ManagerTab = "board" | "directory" | "receipt" | "team";
+type Draft = { requestType: string; contactId: string; rawText: string; requested: Record<string, string> };
 
 type Store = {
   user: SessionUser;
   cases: DeskCase[];
   loads: Load[];
   notes: Note[];
+  contacts: Contact[];
   caseId: string | null;
   openCase: (id: string) => void;
   closeCase: () => void;
   receiptToken: string | null;
   openReceipt: (token: string) => void;
   fillScenario: (id: string) => void;
-  draft: { requestType: string; partnerId: string; rawText: string; requested: Record<string, string> };
-  setDraft: (patch: Partial<Store["draft"]>) => void;
-  submitDraft: () => Promise<void>;
+  draft: Draft;
+  setDraft: (patch: Partial<Draft>) => void;
+  submitDraft: () => Promise<DeskCase | null>;
   submitError: string | null;
-  toggleOob: (caseId: string, index: number, note: string) => void;
+  saveOob: (caseId: string, patch: { index?: number; note?: string }) => Promise<string | null>;
   approve: (caseId: string) => Promise<string | null>;
+  revoke: (caseId: string) => Promise<string | null>;
   passkeyError: string | null;
-  pushStatus: (loadId: string, status: string) => Promise<void>;
+  pushStatus: (loadId: string, status: string) => Promise<string | null>;
+  dismissNote: (id: string) => Promise<void>;
   refreshRemote: () => Promise<void>;
-  managerTab: "board" | "directory" | "receipt" | "team";
-  setManagerTab: (tab: "board" | "directory" | "receipt" | "team") => void;
+  refreshDirectory: () => Promise<void>;
+  managerTab: ManagerTab;
+  setManagerTab: (tab: ManagerTab) => void;
   ready: boolean;
 };
 
 const Ctx = createContext<Store | null>(null);
 
+function messageOf(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
 export function StoreProvider({ user, children }: { user: SessionUser; children: ReactNode }) {
   const [cases, setCases] = useState<DeskCase[]>([]);
-  const [loads, setLoads] = useState<Load[]>(seedLoads);
+  const [loads, setLoads] = useState<Load[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [caseId, setCaseId] = useState<string | null>(null);
   const [receiptToken, setReceiptToken] = useState<string | null>(null);
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [managerTab, setManagerTab] = useState<"board" | "directory" | "receipt" | "team">("board");
+  const [managerTab, setManagerTab] = useState<ManagerTab>("board");
   const [ready, setReady] = useState(false);
-  const [draft, setDraftState] = useState<Store["draft"]>({
+  const [draft, setDraftState] = useState<Draft>({
     requestType: SCENARIOS[0].requestType,
-    partnerId: SCENARIOS[0].partnerId,
-    rawText: SCENARIOS[0].rawText,
-    requested: SCENARIOS[0].requested,
+    contactId: "",
+    rawText: "",
+    requested: {},
   });
 
   const refreshRemote = useCallback(async () => {
@@ -63,17 +80,32 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
       fetchNotifications(),
       fetchCases(),
     ]);
-    if (remoteLoads.length > 0) setLoads(remoteLoads);
-    if (remoteNotes.length > 0) setNotes(remoteNotes);
+    setLoads(remoteLoads);
+    setNotes(remoteNotes);
     setCases(remoteCases);
     setReady(true);
   }, []);
 
+  const refreshDirectory = useCallback(async () => {
+    setContacts(await fetchDirectory());
+  }, []);
+
   useEffect(() => {
     void refreshRemote();
+    void refreshDirectory();
     const timer = window.setInterval(() => void refreshRemote(), 15000);
     return () => window.clearInterval(timer);
-  }, [refreshRemote]);
+  }, [refreshDirectory, refreshRemote]);
+
+  const replaceCase = useCallback((updated: DeskCase) => {
+    setCases((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)));
+  }, []);
+
+  const openCase = useCallback((id: string) => {
+    setPasskeyError(null);
+    setCaseId(id);
+    setManagerTab("board");
+  }, []);
 
   const api = useMemo<Store>(() => {
     const role = user.role as Role;
@@ -82,131 +114,153 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
       cases,
       loads,
       notes,
+      contacts,
       caseId,
-      openCase: (id) => {
-        setCaseId(id);
-        setManagerTab("board");
-      },
+      openCase,
       closeCase: () => setCaseId(null),
       receiptToken,
       openReceipt: (token) => {
         setReceiptToken(token);
+        setCaseId(null);
         setManagerTab("receipt");
       },
       fillScenario: (id) => {
         const scenario = SCENARIOS.find((item) => item.id === id);
         if (!scenario) return;
-        setDraftState({
+        const contact = contacts.find((item) => item.seedKey === scenario.partnerId);
+        setDraftState((current) => ({
           requestType: scenario.requestType,
-          partnerId: scenario.partnerId,
+          contactId: contact?.id ?? current.contactId,
           rawText: scenario.rawText,
           requested: scenario.requested,
-        });
+        }));
       },
       draft,
       setDraft: (patch) => setDraftState((current) => ({ ...current, ...patch })),
       submitDraft: async () => {
-        if (role !== "supplier") return;
+        if (role !== "supplier") return null;
         setSubmitError(null);
-        const partner = PARTNERS.find((item) => item.id === draft.partnerId) ?? PARTNERS[0];
-        const requested = { ...partner.onFile, ...draft.requested };
+        if (!draft.contactId) {
+          setSubmitError("Pick a counterparty from the directory first.");
+          return null;
+        }
         try {
           const created = await submitCase({
             requestType: draft.requestType,
-            counterparty: partner.company,
+            contactId: draft.contactId,
             rawText: draft.rawText,
-            onFile: partner.onFile,
-            requested,
+            requested: draft.requested,
           });
           setCases((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+          setDraftState((current) => ({ ...current, rawText: "", requested: {} }));
+          return created;
         } catch (err) {
-          setSubmitError(err instanceof Error ? err.message : "Could not submit.");
+          setSubmitError(messageOf(err, "Could not submit."));
+          return null;
         }
       },
-      toggleOob: (id, index, note) => {
-        const applyLocal = () =>
-          setCases((current) =>
-            current.map((item) => {
-              if (item.id !== id) return item;
-              const oobDone = item.oobDone.map((done, step) => (index >= 0 && step === index ? !done : done));
-              const ready = oobDone.every(Boolean) && note.trim().length > 3;
-              return { ...item, oobDone, oobNote: note, status: ready ? "pending_approval" : "flagged" };
-            }),
-          );
+      saveOob: async (id, patch) => {
         const item = cases.find((entry) => entry.id === id);
-        const next = item && index >= 0 ? !item.oobDone[index] : undefined;
-        void patchOob(id, {
-          ...(index >= 0 ? { oobStepIndex: index, oobStepDone: next } : {}),
-          oobNote: note,
-        })
-          .then((updated) =>
-            setCases((current) => current.map((entry) => (entry.id === id ? updated : entry))),
-          )
-          .catch(applyLocal);
+        if (!item) return "Case not found.";
+        const index = patch.index;
+        try {
+          const updated = await patchOob(id, {
+            ...(index !== undefined ? { oobStepIndex: index, oobStepDone: !item.oobDone[index] } : {}),
+            ...(patch.note !== undefined ? { oobNote: patch.note } : {}),
+          });
+          replaceCase(updated);
+          return null;
+        } catch (err) {
+          return messageOf(err, "Could not save the checklist.");
+        }
       },
       approve: async (id) => {
         setPasskeyError(null);
+        const fail = (message: string) => {
+          setPasskeyError(message);
+          return message;
+        };
         const item = cases.find((entry) => entry.id === id);
-        if (!item) return "Case not found.";
-        if (role !== "manager" && role !== "admin") return "Only a manager can approve.";
+        if (!item) return fail("Case not found.");
+        if (role !== "manager" && role !== "admin") return fail("Only a manager can approve.");
         if (item.approvals.some((approval) => approval.userId === user.id)) {
-          return "You already signed this exact payload. A different person must sign.";
+          return fail("You already signed this exact payload. A different person must sign.");
         }
         if (!item.oobDone.every(Boolean) || item.oobNote.trim().length < 4) {
-          return "Finish the call checklist and write who you spoke with.";
+          return fail("Finish the call checklist and write who you spoke with.");
         }
         try {
           await approveWithPasskey(id);
         } catch (error) {
-          const message = error instanceof Error ? error.message : "Passkey was not completed.";
-          setPasskeyError(message);
-          return message;
+          return fail(messageOf(error, "Passkey was not completed."));
         }
         const updated = await fetchCase(id);
-        if (updated) {
-          setCases((current) => current.map((entry) => (entry.id === id ? updated : entry)));
-          if (updated.status === "fully_approved" && updated.token) {
-            setReceiptToken(updated.token);
-            setManagerTab("receipt");
-          }
-        } else {
+        if (!updated) {
           await refreshRemote();
+          return null;
         }
+        replaceCase(updated);
+        if (updated.status === "fully_approved" && updated.token) {
+          setReceiptToken(updated.token);
+          setCaseId(null);
+          setManagerTab("receipt");
+        }
+        return null;
+      },
+      revoke: async (id) => {
+        try {
+          await revokeCase(id);
+        } catch (err) {
+          return messageOf(err, "Could not revoke the case.");
+        }
+        setCases((current) => current.filter((entry) => entry.id !== id));
+        setCaseId(null);
         return null;
       },
       passkeyError,
       pushStatus: async (loadId, status) => {
-        if (role !== "driver") return;
-        const load = loads.find((item) => item.id === loadId);
-        if (!load) return;
+        if (role !== "driver") return "Only a driver can post status.";
         try {
           await postLoadStatus(loadId, status);
-        } catch {
-          /* keep local update when API missing in dev */
+        } catch (err) {
+          return messageOf(err, "Could not update load status.");
         }
         setLoads((current) => current.map((item) => (item.id === loadId ? { ...item, status } : item)));
-        if (status === "fifteen_min") {
-          setNotes((current) => [
-            {
-              id: randomId("note"),
-              audience: ["manager", "admin", "receiver"],
-              title: "Driver is 15 minutes away",
-              body: `${load.loadRef} · ${load.commodity} · ${load.dock} · ${user.name}`,
-              href: "receiver",
-              createdAt: new Date().toISOString(),
-              read: false,
-            },
-            ...current,
-          ]);
+        return null;
+      },
+      dismissNote: async (id) => {
+        setNotes((current) => current.map((note) => (note.id === id ? { ...note, read: true } : note)));
+        try {
+          await markNotificationRead(id);
+        } catch {
+          await refreshRemote();
         }
       },
       refreshRemote,
+      refreshDirectory,
       managerTab,
       setManagerTab,
       ready,
       submitError,
     };
-  }, [caseId, cases, draft, loads, managerTab, notes, passkeyError, ready, receiptToken, refreshRemote, submitError, user]);
+  }, [
+    caseId,
+    cases,
+    contacts,
+    draft,
+    loads,
+    managerTab,
+    notes,
+    openCase,
+    passkeyError,
+    ready,
+    receiptToken,
+    refreshDirectory,
+    refreshRemote,
+    replaceCase,
+    submitError,
+    user,
+  ]);
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

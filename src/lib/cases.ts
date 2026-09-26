@@ -1,4 +1,4 @@
-import type { CaseStatus, VerifyCase } from "@prisma/client";
+import type { CaseStatus, Prisma, VerifyCase } from "@prisma/client";
 import { buildPayload, type PayloadFields } from "@/lib/payload";
 import { playbookFor } from "@/lib/playbooks";
 import { runHeuristics } from "@/lib/heuristics";
@@ -62,11 +62,13 @@ export function mergeRequestedPatch(
   body: Record<string, unknown>,
 ): PayloadFields {
   const next = { ...current };
-  if (body.requested && typeof body.requested === "object") {
-    Object.assign(next, body.requested as PayloadFields);
-  }
-  if (body.requestedJson && typeof body.requestedJson === "object") {
-    Object.assign(next, body.requestedJson as PayloadFields);
+  for (const source of [body.requested, body.requestedJson]) {
+    if (!source || typeof source !== "object") continue;
+    for (const [key, value] of Object.entries(source as Record<string, unknown>)) {
+      if (/^[a-z]{1,32}$/i.test(key) && typeof value === "string") {
+        next[key] = value.trim().slice(0, 200);
+      }
+    }
   }
   for (const key of ["bank", "dock", "carrier", "seal"] as const) {
     if (typeof body[key] === "string") next[key] = body[key] as string;
@@ -126,9 +128,23 @@ export function caseCreateData(input: {
   };
 }
 
+export const caseInclude = {
+  org: { select: { name: true } },
+  contact: { select: { numberOnFile: true } },
+  attestations: {
+    orderBy: { verifiedAt: "asc" },
+    select: {
+      userId: true,
+      verifiedAt: true,
+      user: { select: { name: true, role: true } },
+    },
+  },
+} satisfies Prisma.VerifyCaseInclude;
+
 export function serializeCase(
   row: VerifyCase & {
     org?: { name: string };
+    contact?: { numberOnFile: string } | null;
     attestations?: {
       userId: string;
       verifiedAt: Date;
@@ -148,6 +164,7 @@ export function serializeCase(
     requestType: row.requestType,
     counterparty: row.counterparty,
     contactId: row.contactId,
+    numberOnFile: row.contact?.numberOnFile ?? null,
     rawText: opts?.includeRawText ? row.rawText : undefined,
     onFile: row.onFileJson,
     requested: row.requestedJson,
