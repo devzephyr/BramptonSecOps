@@ -57,6 +57,9 @@ export function ReceiverDesk() {  const desk = useDesk();
   const live = desk.loads.filter(
     (load) => load.lat != null && load.lng != null && isLive(load.positionAt),
   );
+  const stale = desk.loads.filter(
+    (load) => load.lat != null && load.lng != null && !isLive(load.positionAt),
+  );
 
   useEffect(() => {
     const timer = window.setInterval(() => void desk.refreshRemote(), 5000);
@@ -86,7 +89,9 @@ export function ReceiverDesk() {  const desk = useDesk();
           <CardDescription>{t.liveLocationHint}</CardDescription>
         </CardHeader>
         <CardPanel className="flex flex-col gap-3">
-          {live.length === 0 && <p className="text-sm text-muted-foreground">{t.noLive}</p>}
+          {live.length === 0 && stale.length === 0 && (
+            <p className="text-sm text-muted-foreground">{t.noLive}</p>
+          )}
           {live.map((load) => (
             <div key={load.id} className="flex flex-col gap-2 rounded-lg border p-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -96,6 +101,24 @@ export function ReceiverDesk() {  const desk = useDesk();
                 </span>
                 <span className="text-sm font-medium">{load.loadRef}</span>
                 <Badge variant="outline">{t.simulated}</Badge>
+                <span className="text-xs text-muted-foreground">
+                  {load.lat?.toFixed(4)}, {load.lng?.toFixed(4)} · {updatedAgo(load.positionAt)}
+                </span>
+              </div>
+              <Progress value={tripProgress(load.lat ?? 0, load.lng ?? 0)} max={1}>
+                <ProgressTrack>
+                  <ProgressIndicator />
+                </ProgressTrack>
+              </Progress>
+              <EtaRail load={load} labels={[t.loaded, t.rolling, t.away, t.arrived]} />
+            </div>
+          ))}
+          {stale.map((load) => (
+            <div key={load.id} className="flex flex-col gap-2 rounded-lg border border-dashed p-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40" />
+                <span className="text-sm font-medium">{load.loadRef}</span>
+                <Badge variant="secondary">{t.lastKnown}</Badge>
                 <span className="text-xs text-muted-foreground">
                   {load.lat?.toFixed(4)}, {load.lng?.toFixed(4)} · {updatedAgo(load.positionAt)}
                 </span>

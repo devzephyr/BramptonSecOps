@@ -1,6 +1,3 @@
-// Simulated trip geometry for the live-location mockup. Real GPS plugs in
-// here later; every consumer reads through these helpers.
-
 export const DEPOT = { lat: 43.59, lng: -79.64 };
 export const YARD = { lat: 43.73, lng: -79.76 };
 export const SIM_STEPS = 40;
