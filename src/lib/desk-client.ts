@@ -34,7 +34,9 @@ async function parseJson(res: Response) {
 }
 
 export function isServerUnavailable(status: number) {
-  return status === 404 || status === 501 || status === 502 || status === 503;
+  // 404 is a normal API "not found" (unknown account, missing route message).
+  // Only treat gateway/upstream failures as "Next is not reachable".
+  return status === 502 || status === 503 || status === 504;
 }
 
 export async function fetchSession(): Promise<SessionUser | null> {
