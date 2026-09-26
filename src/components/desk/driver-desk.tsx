@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
+import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toastManager } from "@/components/ui/toast";
 import { CustodyForm } from "@/components/desk/custody";
 import { DocumentUpload } from "@/components/desk/document-upload";
@@ -19,6 +20,7 @@ import type { Load } from "@/preview/data";
 import { useDesk } from "@/preview/store";
 
 const FIFTEEN_MIN_STEP = SIM_STEPS - 8;
+const SHOW_ALL = "all";
 
 function nextStatus(status: string): string | null {
   if (status === "delayed") return "rolling";
@@ -46,6 +48,7 @@ export function DriverDesk() {
   const [sim, setSim] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [posting, setPosting] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
   const timer = useRef<number | null>(null);
   const running = useRef<string | null>(null);
   const labels: Record<string, string> = {
@@ -125,6 +128,10 @@ export function DriverDesk() {
   }
 
   const activeLoad = mine.find((load) => load.status !== "arrived");
+  const fallback = activeLoad?.id ?? mine[0]?.id ?? SHOW_ALL;
+  const selection =
+    picked === SHOW_ALL || (picked !== null && mine.some((load) => load.id === picked)) ? picked : fallback;
+  const visible = selection === SHOW_ALL ? mine : mine.filter((load) => load.id === selection);
   const facilities = [
     ...new Set(desk.loads.flatMap((load) => [load.facility ?? "", load.origin, load.destination]).filter(Boolean)),
   ];
@@ -146,13 +153,38 @@ export function DriverDesk() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       <DutyPanel driverId={desk.user.id} activeLoadId={activeLoad?.id} />
-      <h1 className="font-heading text-lg font-semibold">{t.yourLoads}</h1>
+      <div className="flex flex-col gap-2">
+        <h1 className="font-heading text-lg font-semibold">{t.yourLoads}</h1>
+        {mine.length > 1 && (
+          <Select value={selection} onValueChange={(value) => setPicked(String(value))}>
+            <SelectTrigger aria-label={t.pickLoad}>
+              <SelectValue>
+                {(value) => {
+                  if (value === SHOW_ALL) return `${t.showAllLoads} (${mine.length})`;
+                  const load = mine.find((item) => item.id === value);
+                  return load ? `${load.loadRef} · ${load.origin} → ${load.destination}` : t.pickLoad;
+                }}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectPopup>
+              <SelectItem value={SHOW_ALL}>
+                {t.showAllLoads} ({mine.length})
+              </SelectItem>
+              {mine.map((load) => (
+                <SelectItem key={load.id} value={load.id}>
+                  {load.loadRef} · {load.origin} → {load.destination}
+                </SelectItem>
+              ))}
+            </SelectPopup>
+          </Select>
+        )}
+      </div>
       {error && (
         <Alert variant="error">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      {mine.map((load) => {
+      {visible.map((load) => {
         const next = nextStatus(load.status);
         const hasPosition = load.lat != null && load.lng != null;
         const live = hasPosition && isLive(load.positionAt);

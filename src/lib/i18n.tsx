@@ -264,6 +264,7 @@ export type Messages = {
   trailerPlate: string;
   sharingPosition: string;
   yourLoads: string;
+  showAllLoads: string;
   correctStatus: string;
   tripHint: string;
   newRequest: string;
@@ -617,6 +618,7 @@ const en: Messages = {
   trailerPlate: "Trailer · plate",
   sharingPosition: "Sharing position",
   yourLoads: "Your loads",
+  showAllLoads: "Show all",
   correctStatus: "Correct the status",
   tripHint: "The simulated trip drives the depot-to-yard route and sends Rolling, 15 minutes away, and Arrived for you.",
   newRequest: "New request",
@@ -977,6 +979,7 @@ const fr: Messages = {
   trailerPlate: "Remorque · plaque",
   sharingPosition: "Position partagée",
   yourLoads: "Vos chargements",
+  showAllLoads: "Tout afficher",
   correctStatus: "Corriger le statut",
   tripHint: "Le trajet simulé suit la route entrepôt-cour et envoie les statuts à votre place.",
   newRequest: "Nouvelle demande",
