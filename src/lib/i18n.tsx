@@ -37,6 +37,21 @@ export type Messages = {
   empty: string;
   dual: string;
   signIn: string;
+  firstTime: string;
+  firstTimeHint: string;
+  firstTimeRequired: string;
+  newOrgTab: string;
+  newOrgRequired: string;
+  orgReady: string;
+  orgReadyBody: string;
+  receiptTitle: string;
+  receiptChange: string;
+  receiptOnFile: string;
+  receiptRequested: string;
+  receiptApprovals: string;
+  receiptSignature: string;
+  receiptStamp: string;
+  receiptCaption: string;
   signOut: string;
   createPasskey: string;
   supplier: string;
@@ -86,7 +101,6 @@ export type Messages = {
   holdCall: string;
   notApproval: string;
   signedInAs: string;
-  noSession: string;
   signInWithPasskey: string;
   username: string;
   usernamePlaceholder: string;
@@ -114,7 +128,6 @@ export type Messages = {
   orgName: string;
   province: string;
   yourName: string;
-  orgCreated: string;
   orgLabel: string;
   orgPlaceholder: string;
   accountHint: string;
@@ -386,6 +399,21 @@ const en: Messages = {
   empty: "Nothing here yet.",
   dual: "Two different people must each use a passkey.",
   signIn: "Sign in",
+  firstTime: "First time here",
+  firstTimeHint: "Use the enrollment code from your admin to create a passkey on this device.",
+  firstTimeRequired: "Enter your username, organization and enrollment code.",
+  newOrgTab: "New organization",
+  newOrgRequired: "Enter the organization name, your name and a username.",
+  orgReady: "Your organization is ready",
+  orgReadyBody: "Save this enrollment code. It is shown once. Then create your passkey below.",
+  receiptTitle: "Verification receipt",
+  receiptChange: "Bank change · Maple Malt",
+  receiptOnFile: "Account on file",
+  receiptRequested: "Requested",
+  receiptApprovals: "Passkey approvals",
+  receiptSignature: "Signature",
+  receiptStamp: "Verified",
+  receiptCaption: "Every bank, dock and carrier change is checked against the number on file, then signed by two people before anyone acts on it.",
   signOut: "Sign out",
   createPasskey: "Create passkey",
   supplier: "Supplier",
@@ -435,7 +463,6 @@ const en: Messages = {
   holdCall: "Approve stays off until every step is checked and you name who you called.",
   notApproval: "Uploading a photo does not approve a change.",
   signedInAs: "Signed in as",
-  noSession: "No active session. Sign in with a passkey tied to one account.",
   signInWithPasskey: "Sign in with passkey",
   username: "Username",
   usernamePlaceholder: "First name, lower case",
@@ -463,7 +490,6 @@ const en: Messages = {
   orgName: "Organization name",
   province: "Province",
   yourName: "Your name",
-  orgCreated: "Organization ready. Sign in below with your username, then create your passkey.",
   orgLabel: "Organization",
   orgPlaceholder: "Organization name or slug",
   accountHint: "Enter your own username and organization. Accounts are not listed here.",
@@ -747,6 +773,21 @@ const fr: Messages = {
   empty: "Rien ici pour le moment.",
   dual: "Deux personnes différentes doivent chacune utiliser une clé d’accès.",
   signIn: "Connexion",
+  firstTime: "Première connexion",
+  firstTimeHint: "Utilisez le code d’inscription de votre admin pour créer une clé d’accès sur cet appareil.",
+  firstTimeRequired: "Entrez votre nom d’utilisateur, votre organisation et votre code d’inscription.",
+  newOrgTab: "Nouvelle organisation",
+  newOrgRequired: "Entrez le nom de l’organisation, votre nom et un nom d’utilisateur.",
+  orgReady: "Votre organisation est prête",
+  orgReadyBody: "Conservez ce code d’inscription. Il n’est affiché qu’une fois. Créez ensuite votre clé d’accès ci-dessous.",
+  receiptTitle: "Reçu de vérification",
+  receiptChange: "Changement bancaire · Maple Malt",
+  receiptOnFile: "Compte au dossier",
+  receiptRequested: "Demandé",
+  receiptApprovals: "Approbations par clé",
+  receiptSignature: "Signature",
+  receiptStamp: "Vérifié",
+  receiptCaption: "Chaque changement bancaire, de quai ou de transporteur est vérifié auprès du numéro au dossier, puis signé par deux personnes avant toute action.",
   signOut: "Déconnexion",
   createPasskey: "Créer une clé d’accès",
   supplier: "Fournisseur",
@@ -797,7 +838,6 @@ const fr: Messages = {
     "L’approbation reste désactivée tant que chaque étape n’est pas cochée et que vous n’avez pas nommé la personne appelée.",
   notApproval: "Envoyer une photo n’approuve pas un changement.",
   signedInAs: "Connecté en tant que",
-  noSession: "Aucune session active. Connectez-vous avec une clé d’accès liée à un seul compte.",
   signInWithPasskey: "Connexion avec clé d’accès",
   username: "Nom d’utilisateur",
   usernamePlaceholder: "Prénom, en minuscules",
@@ -825,7 +865,6 @@ const fr: Messages = {
   orgName: "Nom de l’organisation",
   province: "Province",
   yourName: "Votre nom",
-  orgCreated: "Organisation prête. Connectez-vous ci-dessous, puis créez votre clé d’accès.",
   orgLabel: "Organisation",
   orgPlaceholder: "Nom ou identifiant de l’organisation",
   accountHint: "Saisissez votre nom d’utilisateur et votre organisation. Aucun compte n’est listé ici.",
