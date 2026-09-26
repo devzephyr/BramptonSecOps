@@ -64,6 +64,7 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
       });
       setUsername(created.username);
       setOrg(created.org.slug);
+      setCode(created.enrollmentToken);
       setShowSignup(false);
       setNotice(`${t.orgCreated} (${created.org.slug} · ${created.username}) ${t.enrollmentCode}: ${created.enrollmentToken}`);
     } catch (err) {
@@ -86,6 +87,7 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
     try {
       if (kind === "create") {
         await createPasskey(identity());
+        setCode("");
         setNotice(t.passkeyCreated);
       } else {
         await signInWithPasskey(identity());
@@ -135,7 +137,14 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
             <CardTitle>{t.signIn}</CardTitle>
             <CardDescription>{t.accountHint}</CardDescription>
           </CardHeader>
-          <CardPanel className="flex flex-col gap-3">
+          <CardPanel>
+            <form
+              className="flex flex-col gap-3"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void run("sign-in");
+              }}
+            >
             {serverDown && (
               <Alert variant="error">
                 <AlertTitle>{t.serverDown}</AlertTitle>
@@ -190,20 +199,22 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
               />
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button disabled={busy !== null} onClick={() => void run("sign-in")}>
+              <Button type="submit" disabled={busy !== null}>
                 {busy === "sign-in" ? t.signingIn : t.signInWithPasskey}
               </Button>
               <Button
+                type="button"
                 variant="outline"
                 disabled={busy !== null}
                 onClick={() => void run("create")}
               >
                 {busy === "create" ? t.creatingPasskey : t.createPasskey}
               </Button>
-              <Button variant="ghost" onClick={() => setShowSignup((value) => !value)}>
+              <Button type="button" variant="ghost" onClick={() => setShowSignup((value) => !value)}>
                 {t.createOrg}
               </Button>
             </div>
+            </form>
           </CardPanel>
         </Card>
         {showSignup && (

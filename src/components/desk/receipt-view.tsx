@@ -6,7 +6,7 @@ import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/compo
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
 import { CopyButton } from "@/components/desk/copy-button";
-import { useI18n } from "@/lib/i18n";
+import { roleTitle, useI18n } from "@/lib/i18n";
 import { requestTitle } from "@/preview/data";
 import { useDesk } from "@/preview/store";
 
@@ -16,10 +16,6 @@ function stamp(iso: string) {
     timeStyle: "medium",
     timeZone: "America/Toronto",
   }).format(new Date(iso));
-}
-
-function shortHash(hash: string) {
-  return `${hash.slice(0, 12)}…${hash.slice(-8)}`;
 }
 
 export function ReceiptView() {
@@ -55,14 +51,13 @@ export function ReceiptView() {
             label={t.partnerCheck}
           />
         </div>
-        <p className="font-mono text-xs">{shortHash(item.payloadHash)}</p>
         <p>
           {t.matches}: <strong>{t.yes}</strong>
         </p>
         <Separator />
         {item.approvals.map((approval) => (
           <p key={approval.userId}>
-            {approval.role} · {approval.name} · {stamp(approval.at)}
+            {roleTitle(approval.role, t)} · {approval.name} · {stamp(approval.at)}
           </p>
         ))}
         <p>

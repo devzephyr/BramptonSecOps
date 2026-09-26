@@ -1,4 +1,4 @@
-import type { RequestType } from "@prisma/client";
+import { RequestType } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
@@ -6,9 +6,11 @@ import {
   buildCasePayload,
   caseCreateData,
   parseOobAck,
+  caseInclude,
   serializeCase,
 } from "@/lib/cases";
 import type { PayloadFields } from "@/lib/payload";
+import { contactOnFile } from "@/lib/directory";
 
 export async function GET() {
   const user = await requireUser();
@@ -18,17 +20,7 @@ export async function GET() {
     where: { orgId: user.orgId, revokedAt: null },
     orderBy: { createdAt: "desc" },
     take: 50,
-    include: {
-      org: { select: { name: true } },
-      attestations: {
-        orderBy: { verifiedAt: "asc" },
-        select: {
-          userId: true,
-          verifiedAt: true,
-          user: { select: { name: true, role: true } },
-        },
-      },
-    },
+    include: caseInclude,
   });
   return json({
     cases: rows.map((row) => serializeCase(row, { includeRawText: true })),
@@ -54,29 +46,39 @@ export async function POST(request: Request) {
   }
 
   const requestType = body.requestType;
-  const counterparty = body.counterparty;
   const rawText = body.rawText;
-  if (typeof requestType !== "string" || typeof counterparty !== "string") {
-    return badRequest("requestType and counterparty are required.");
+  const contactId = body.contactId;
+  if (
+    typeof requestType !== "string" ||
+    !(Object.values(RequestType) as string[]).includes(requestType)
+  ) {
+    return badRequest("requestType is not a known request type.");
   }
   if (typeof rawText !== "string" || !rawText.trim()) {
     return badRequest("rawText is required.");
   }
+  if (rawText.length > 5000) {
+    return badRequest("The sealed note is limited to 5,000 characters.");
+  }
+  if (typeof contactId !== "string") {
+    return badRequest("Pick a counterparty from the directory.");
+  }
 
-  const onFile = (body.onFile ?? body.onFileJson ?? {}) as PayloadFields;
-  const requested = (body.requested ??
-    body.requestedJson ??
-    {}) as PayloadFields;
-  const contactId =
-    typeof body.contactId === "string" ? body.contactId : undefined;
+  const contact = await prisma.directoryContact.findFirst({
+    where: { id: contactId, orgId: user.orgId },
+  });
+  if (!contact) return badRequest("Contact not found in your org.");
 
-  let onFileDomain: string | undefined;
-  if (contactId) {
-    const contact = await prisma.directoryContact.findFirst({
-      where: { id: contactId, orgId: user.orgId },
-    });
-    if (!contact) return badRequest("Contact not found in your org.");
-    onFileDomain = contact.domain;
+  const counterparty = contact.company;
+  const onFileDomain = contact.domain;
+  const onFile = contactOnFile(contact);
+  const requested: PayloadFields = { ...onFile };
+  if (body.requested && typeof body.requested === "object") {
+    for (const [key, value] of Object.entries(body.requested as Record<string, unknown>)) {
+      if (/^[a-z]{1,32}$/i.test(key) && typeof value === "string" && value.trim()) {
+        requested[key] = value.trim().slice(0, 200);
+      }
+    }
   }
 
   const meta = caseCreateData({
@@ -95,7 +97,7 @@ export async function POST(request: Request) {
     data: {
       orgId: user.orgId,
       createdById: user.id,
-      contactId: contactId ?? null,
+      contactId,
       requestType: requestType as RequestType,
       counterparty,
       rawText,
@@ -110,7 +112,7 @@ export async function POST(request: Request) {
       dualControl: meta.dualControl,
       jevJson: meta.jev ?? undefined,
     },
-    include: { org: { select: { name: true } } },
+    include: caseInclude,
   });
 
   const payload = buildCasePayload(created);
@@ -120,7 +122,7 @@ export async function POST(request: Request) {
       payloadCanonical: payload.canonical,
       payloadHash: payload.payloadHash,
     },
-    include: { org: { select: { name: true } } },
+    include: caseInclude,
   });
 
   return json(serializeCase(updated, { includeRawText: true }), 201);

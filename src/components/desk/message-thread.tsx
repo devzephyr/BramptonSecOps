@@ -14,8 +14,10 @@ import {
   postMessage,
   type CaseMessage,
 } from "@/lib/desk-client";
-import { useI18n } from "@/lib/i18n";
+import { roleTitle, useI18n } from "@/lib/i18n";
 import {
+  cachedPlaintext,
+  cachePlaintext,
   decryptFromPeer,
   encryptForPeers,
   ensureSession,
@@ -84,6 +86,11 @@ export function MessageThread({ caseId, userId }: Props) {
       const deviceId = getDeviceId();
       const out: Decrypted[] = [];
       for (const row of rows) {
+        const cached = cachedPlaintext(userId, row.id);
+        if (cached !== null) {
+          out.push({ ...row, text: cached });
+          continue;
+        }
         const mine = (row.envelopes as Record<string, { type: number; body: string }>)?.[
           envelopeId(userId, deviceId)
         ];
@@ -100,6 +107,7 @@ export function MessageThread({ caseId, userId }: Props) {
           try {
             await ensureSession(userId, row.sender.id, senderDevice);
             text = await decryptFromPeer(userId, row.sender.id, senderDevice, mine);
+            cachePlaintext(userId, row.id, text);
             break;
           } catch (err) {
             unlockError = err instanceof Error ? err.message.slice(0, 140) : "Unknown error";
@@ -137,7 +145,7 @@ export function MessageThread({ caseId, userId }: Props) {
               device.identityKey,
             );
           } catch {
-            /* fingerprint optional */
+            continue;
           }
         }
       }
@@ -182,7 +190,8 @@ export function MessageThread({ caseId, userId }: Props) {
       }
       const envelopes = await encryptForPeers(userId, targets, text);
       const bodyHash = await sha256Hex(text);
-      await postMessage(caseId, envelopes, bodyHash);
+      const sent = await postMessage(caseId, envelopes, bodyHash);
+      cachePlaintext(userId, sent.id, text);
       setDraft("");
       toastManager.add({ type: "success", title: t.toastSent, description: `sha256 ${bodyHash.slice(0, 12)}…` });
       await refresh();
@@ -199,7 +208,8 @@ export function MessageThread({ caseId, userId }: Props) {
       <CardHeader>
         <CardTitle>{t.messages}</CardTitle>
         <CardDescription>{t.messagesHint}</CardDescription>
-      </CardHeader>      <CardPanel className="flex flex-col gap-3">
+      </CardHeader>
+      <CardPanel className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           {ownFingerprint && (
             <span className="font-mono text-[10px] text-muted-foreground" title={ownFingerprint}>
@@ -224,7 +234,7 @@ export function MessageThread({ caseId, userId }: Props) {
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-medium">{row.sender.name}</span>
-                <Badge variant="outline">{row.sender.role}</Badge>
+                <Badge variant="outline">{roleTitle(row.sender.role, t)}</Badge>
                 {peerKeyChanged(userId, row.sender.id) && <Badge variant="warning">{t.keyChanged}</Badge>}
                 {Object.entries(fingerprints)
                   .filter(([key]) => key.startsWith(`${row.sender.id}.`))

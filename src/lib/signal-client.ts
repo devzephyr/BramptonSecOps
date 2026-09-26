@@ -325,6 +325,14 @@ export async function decryptFromPeer(
   return new TextDecoder().decode(plain);
 }
 
+export function cachedPlaintext(userId: string, messageId: string): string | null {
+  return readJson(userId, "plain")[messageId] ?? null;
+}
+
+export function cachePlaintext(userId: string, messageId: string, text: string): void {
+  writeJson(userId, "plain", { ...readJson(userId, "plain"), [messageId]: text });
+}
+
 export function peerKeyChanged(userId: string, peerUserId: string): boolean {
   return readJson(userId, "changed")[peerUserId] === "1";
 }

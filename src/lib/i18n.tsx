@@ -183,6 +183,48 @@ export type Messages = {
   passkeyCreated: string;
   creatingPasskey: string;
   signingIn: string;
+  counterpartySearch: string;
+  noCounterparty: string;
+  onFileCount: string;
+  pickCounterparty: string;
+  noteInOwnWords: string;
+  sealPending: string;
+  sealed: string;
+  sealHint: string;
+  phoneOnlyTitle: string;
+  phoneOnlyBody: string;
+  submitted: string;
+  submittedBody: string;
+  emptyDirectory: string;
+  emptyDirectorySupplier: string;
+  emptyDirectoryManager: string;
+  addContact: string;
+  addContactHint: string;
+  contactName: string;
+  bankOnFileOptional: string;
+  institution: string;
+  transit: string;
+  account: string;
+  contactAdded: string;
+  caseLabel: string;
+  checkingHash: string;
+  hashVerified: string;
+  hashMismatch: string;
+  hashMismatchBody: string;
+  canonicalPayload: string;
+  approvalProgress: string;
+  twoManagers: string;
+  ceremonyHint: string;
+  jevTitle: string;
+  waitingPasskey: string;
+  approvalRecorded: string;
+  secondSignerNeeded: string;
+  revokeCase: string;
+  revokeCaseConfirm: string;
+  cancel: string;
+  dismiss: string;
+  statusSent: string;
+  saveFailed: string;
 };
 
 const en: Messages = {
@@ -356,6 +398,48 @@ const en: Messages = {
   passkeyCreated: "Passkey created for this account.",
   creatingPasskey: "Creating passkey…",
   signingIn: "Signing in…",
+  counterpartySearch: "Search counterparty by name, domain, city…",
+  noCounterparty: "No counterparty matches.",
+  onFileCount: "on file",
+  pickCounterparty: "Pick a counterparty",
+  noteInOwnWords: "Describe the change in your own words. Do not paste email or links.",
+  sealPending: "seal pending",
+  sealed: "sealed",
+  sealHint: "The hash locks at send. Managers verify it before a passkey unlocks the note.",
+  phoneOnlyTitle: "Confirm by phone, not email",
+  phoneOnlyBody: "This request never goes out by email. Confirm by calling the number on file:",
+  submitted: "Sent to managers",
+  submittedBody: "It is now on the manager board. Nothing is approved yet.",
+  emptyDirectory: "No counterparties on file yet",
+  emptyDirectorySupplier: "Ask a manager to add counterparties in the Directory tab.",
+  emptyDirectoryManager: "Add the companies you deal with, using the phone number you already trust.",
+  addContact: "Add counterparty",
+  addContactHint: "Use details you already hold, never ones from an incoming message.",
+  contactName: "Contact name",
+  bankOnFileOptional: "Bank on file (optional)",
+  institution: "Institution",
+  transit: "Transit",
+  account: "Account",
+  contactAdded: "Counterparty added",
+  caseLabel: "Case",
+  checkingHash: "checking hash…",
+  hashVerified: "hash verified",
+  hashMismatch: "hash mismatch",
+  hashMismatchBody: "These bytes do not match the sealed hash. Do not sign.",
+  canonicalPayload: "Canonical payload",
+  approvalProgress: "{done} of {needed} approved",
+  twoManagers: "two different managers required",
+  ceremonyHint: "The passkey ceremony unlocks these bytes. Its challenge binds to the hash below.",
+  jevTitle: "Jev labels",
+  waitingPasskey: "Waiting for passkey…",
+  approvalRecorded: "Approval recorded",
+  secondSignerNeeded: "A different manager must sign next.",
+  revokeCase: "Revoke case",
+  revokeCaseConfirm: "Revoke this case? Its partner receipt stops working.",
+  cancel: "Cancel",
+  dismiss: "Dismiss",
+  statusSent: "Status sent",
+  saveFailed: "Could not save",
 };
 
 const fr: Messages = {
@@ -535,6 +619,48 @@ const fr: Messages = {
   passkeyCreated: "Clé d’accès créée pour ce compte.",
   creatingPasskey: "Création de la clé d’accès…",
   signingIn: "Connexion…",
+  counterpartySearch: "Rechercher un partenaire par nom, domaine, ville…",
+  noCounterparty: "Aucun partenaire ne correspond.",
+  onFileCount: "au dossier",
+  pickCounterparty: "Choisissez un partenaire",
+  noteInOwnWords: "Décrivez le changement dans vos mots. Ne collez ni courriel ni lien.",
+  sealPending: "sceau en attente",
+  sealed: "scellé",
+  sealHint: "Le hachage se fige à l’envoi. Les gestionnaires le vérifient avant qu’une clé d’accès déverrouille la note.",
+  phoneOnlyTitle: "Confirmez par téléphone, pas par courriel",
+  phoneOnlyBody: "Cette demande ne passe jamais par courriel. Confirmez en appelant le numéro au dossier :",
+  submitted: "Envoyé aux gestionnaires",
+  submittedBody: "La demande est sur le tableau des gestionnaires. Rien n’est encore approuvé.",
+  emptyDirectory: "Aucun partenaire au dossier",
+  emptyDirectorySupplier: "Demandez à un gestionnaire d’ajouter des partenaires dans l’onglet Répertoire.",
+  emptyDirectoryManager: "Ajoutez les entreprises avec qui vous travaillez, avec le numéro que vous connaissez déjà.",
+  addContact: "Ajouter un partenaire",
+  addContactHint: "Utilisez les coordonnées que vous avez déjà, jamais celles d’un message reçu.",
+  contactName: "Nom du contact",
+  bankOnFileOptional: "Banque au dossier (facultatif)",
+  institution: "Institution",
+  transit: "Transit",
+  account: "Compte",
+  contactAdded: "Partenaire ajouté",
+  caseLabel: "Dossier",
+  checkingHash: "vérification du hachage…",
+  hashVerified: "hachage vérifié",
+  hashMismatch: "hachage non conforme",
+  hashMismatchBody: "Ces octets ne correspondent pas au hachage scellé. Ne signez pas.",
+  canonicalPayload: "Contenu canonique",
+  approvalProgress: "{done} sur {needed} approuvé(s)",
+  twoManagers: "deux gestionnaires différents requis",
+  ceremonyHint: "La cérémonie de clé d’accès déverrouille ces octets. Son défi est lié au hachage ci-dessous.",
+  jevTitle: "Étiquettes Jev",
+  waitingPasskey: "En attente de la clé d’accès…",
+  approvalRecorded: "Approbation enregistrée",
+  secondSignerNeeded: "Un autre gestionnaire doit signer ensuite.",
+  revokeCase: "Révoquer le dossier",
+  revokeCaseConfirm: "Révoquer ce dossier? Son reçu partenaire cessera de fonctionner.",
+  cancel: "Annuler",
+  dismiss: "Fermer",
+  statusSent: "Statut envoyé",
+  saveFailed: "Enregistrement impossible",
 };
 
 const MAP = { en, fr } as const;
