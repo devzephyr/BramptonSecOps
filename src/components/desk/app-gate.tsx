@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { RoleDesk } from "@/components/desk/role-desk";
 import { SignInScreen } from "@/components/desk/sign-in";
+import { GateLoading } from "@/components/desk/gate-loading";
 import { DeskApiError, fetchSession, isServerUnavailable, signOutSession, type SessionUser } from "@/lib/desk-client";
 
 function roleHome(role: string) {
@@ -54,7 +55,7 @@ export function AppGate() {
   }, []);
 
   if (user === undefined) {
-    return null;
+    return <GateLoading />;
   }
 
   if (!user) {
