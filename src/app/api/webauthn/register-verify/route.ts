@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   if (!user) return notFound("No account matches that username and organization.");
 
   const existing = await prisma.webAuthnCredential.count({ where: { userId: user.id } });
-  let consumedToken = false;
+  let enrollmentHash: string | undefined;
   if (existing > 0) {
     const session = await requireUser();
     if (!session || session.id !== user.id) {
@@ -42,22 +42,15 @@ export async function POST(request: Request) {
     ) {
       return forbidden("An enrollment code from your admin is required.");
     }
-    consumedToken = true;
+    enrollmentHash = user.enrollmentTokenHash;
   }
 
   try {
-    await verifyRegistration({ userId: user.id, response: body.response });
+    await verifyRegistration({ userId: user.id, response: body.response, enrollmentHash });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Registration failed.";
     return badRequest(message);
-  }
-
-  if (consumedToken) {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { enrollmentTokenHash: null, enrollmentTokenExpires: null },
-    });
   }
 
   return json({ ok: true, userId: user.id });

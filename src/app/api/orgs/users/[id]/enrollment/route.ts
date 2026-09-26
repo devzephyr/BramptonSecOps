@@ -17,8 +17,8 @@ export async function POST(_request: Request, { params }: Params) {
     select: { id: true, role: true, username: true },
   });
   if (!target) return notFound();
-  if (target.role === "admin" && user.role !== "admin") {
-    return forbidden("Only an admin can issue codes for another admin.");
+  if ((target.role === "admin" || target.role === "manager") && user.role !== "admin") {
+    return forbidden("Only an admin can issue codes for approvers (managers or admins).");
   }
 
   const { code, hash } = newEnrollmentCode();

@@ -1,12 +1,14 @@
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
-import { json, notFound, unauthorized } from "@/lib/http";
+import { hasRole, requireUser } from "@/lib/auth";
+import { CASE_STAFF } from "@/lib/policy";
+import { forbidden, json, notFound, unauthorized } from "@/lib/http";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(_request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can view cases.");
   const { id } = await params;
   const kase = await prisma.verifyCase.findFirst({
     where: { id, orgId: user.orgId },

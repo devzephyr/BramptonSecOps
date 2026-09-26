@@ -10,11 +10,14 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/c
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DeskApiError, addTeammate, fetchCredentials, fetchTeam, issueEnrollmentCode, revokeCredential, type MemberCredential, type TeamMember } from "@/lib/desk-client";
 import { roleTitle, useI18n } from "@/lib/i18n";
+import { useDesk } from "@/preview/store";
 
 const ROLES = ["supplier", "manager", "driver", "receiver", "admin"];
 
 export function TeamDesk() {
   const { t } = useI18n();
+  const isAdmin = useDesk().user.role === "admin";
+  const roles = isAdmin ? ROLES : ROLES.filter((item) => item !== "manager" && item !== "admin");
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
@@ -146,9 +149,11 @@ export function TeamDesk() {
                         <Button size="sm" variant="outline" onClick={() => void toggleKeys(member)}>
                           {t.passkeys}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => void issue(member)}>
-                          {t.issueCode}
-                        </Button>
+                        {(isAdmin || (member.role !== "manager" && member.role !== "admin")) && (
+                          <Button size="sm" variant="outline" onClick={() => void issue(member)}>
+                            {t.issueCode}
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -238,7 +243,7 @@ export function TeamDesk() {
                   <SelectValue>{(value) => roleTitle(String(value), t)}</SelectValue>
                 </SelectTrigger>
                 <SelectPopup>
-                  {ROLES.map((item) => (
+                  {roles.map((item) => (
                     <SelectItem key={item} value={item}>
                       {roleTitle(item, t)}
                     </SelectItem>

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
-import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
+import { badRequest, forbidden, isUniqueViolation, json, unauthorized } from "@/lib/http";
 
 const ROLES = ["supplier", "manager", "driver", "receiver", "admin"] as const;
 
@@ -66,29 +66,29 @@ export async function POST(request: Request) {
   if (!(ROLES as readonly string[]).includes(role)) {
     return badRequest("Role must be supplier, manager, driver, receiver, or admin.");
   }
-  if (role === "admin" && user.role !== "admin") {
-    return forbidden("Only an admin can add another admin.");
+  if ((role === "admin" || role === "manager") && user.role !== "admin") {
+    return forbidden("Only an admin can add approvers (managers or admins).");
   }
   if (!validUsername(body.username)) {
     return badRequest("Username must be 3 to 32 characters: letters, numbers, dot, dash, underscore.");
   }
   const username = (body.username as string).trim().toLowerCase();
 
-  const taken = await prisma.user.findFirst({
-    where: { orgId: user.orgId, username },
-    select: { id: true },
-  });
-  if (taken) return badRequest("That username is already taken in your organization.");
-
-  const created = await prisma.user.create({
-    data: {
-      orgId: user.orgId,
-      username,
-      email: `${username}@${user.org.slug}.invalid`,
-      name,
-      role: role as (typeof ROLES)[number],
-    },
-    select: { id: true, username: true, name: true, role: true },
-  });
+  const created = await prisma.user
+    .create({
+      data: {
+        orgId: user.orgId,
+        username,
+        email: `${username}@${user.org.slug}.invalid`,
+        name,
+        role: role as (typeof ROLES)[number],
+      },
+      select: { id: true, username: true, name: true, role: true },
+    })
+    .catch((error: unknown) => {
+      if (isUniqueViolation(error)) return null;
+      throw error;
+    });
+  if (!created) return badRequest("That username is already taken in your organization.");
   return json(created, 201);
 }

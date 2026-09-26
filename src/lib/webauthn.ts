@@ -93,6 +93,8 @@ export async function registrationOptions(user: {
 export async function verifyRegistration(input: {
   userId: string;
   response: unknown;
+  /** When set, the matching unexpired enrollment code is consumed with the credential write. */
+  enrollmentHash?: string;
 }) {
   const body = input.response as RegistrationResponseJSON;
   const clientData = JSON.parse(
@@ -121,17 +123,30 @@ export async function verifyRegistration(input: {
   }
   const { credential, aaguid, credentialDeviceType, credentialBackedUp } =
     verification.registrationInfo;
-  await prisma.webAuthnCredential.create({
-    data: {
-      userId: input.userId,
-      credentialId: credential.id,
-      publicKey: Buffer.from(credential.publicKey).toString("base64"),
-      counter: credential.counter,
-      transports: credential.transports?.join(",") ?? null,
-      aaguid: aaguid ?? null,
-      deviceType: credentialDeviceType ?? null,
-      backedUp: credentialBackedUp ?? false,
-    },
+  await prisma.$transaction(async (tx) => {
+    if (input.enrollmentHash) {
+      const consumed = await tx.user.updateMany({
+        where: {
+          id: input.userId,
+          enrollmentTokenHash: input.enrollmentHash,
+          enrollmentTokenExpires: { gt: new Date() },
+        },
+        data: { enrollmentTokenHash: null, enrollmentTokenExpires: null },
+      });
+      if (consumed.count !== 1) throw new Error("Enrollment code already used or expired.");
+    }
+    await tx.webAuthnCredential.create({
+      data: {
+        userId: input.userId,
+        credentialId: credential.id,
+        publicKey: Buffer.from(credential.publicKey).toString("base64"),
+        counter: credential.counter,
+        transports: credential.transports?.join(",") ?? null,
+        aaguid: aaguid ?? null,
+        deviceType: credentialDeviceType ?? null,
+        backedUp: credentialBackedUp ?? false,
+      },
+    });
   });
   return verification;
 }

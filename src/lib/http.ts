@@ -17,3 +17,12 @@ export function forbidden(message = "Forbidden") {
 export function notFound(message = "Not found") {
   return json({ error: message }, 404);
 }
+
+export function isUniqueViolation(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: unknown }).code === "P2002"
+  );
+}

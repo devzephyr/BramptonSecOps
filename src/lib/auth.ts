@@ -12,9 +12,12 @@ export async function requireUser(): Promise<AuthedUser | null> {
   if (!session) return null;
   const user = await prisma.user.findUnique({
     where: { id: session.sub },
-    include: { org: { select: { id: true, name: true, slug: true } } },
+    include: {
+      org: { select: { id: true, name: true, slug: true } },
+      credentials: { where: { id: session.cid }, select: { id: true } },
+    },
   });
-  if (!user || user.orgId !== session.orgId) return null;
+  if (!user || user.orgId !== session.orgId || user.credentials.length === 0) return null;
   return user;
 }
 

@@ -128,6 +128,17 @@ export function caseCreateData(input: {
   };
 }
 
+/** Row lock that serializes approve, edit, and revoke on one case. */
+export async function lockCase(
+  tx: Prisma.TransactionClient,
+  id: string,
+  orgId: string,
+): Promise<boolean> {
+  const rows = await tx.$queryRaw<{ id: string }[]>`
+    SELECT id FROM "VerifyCase" WHERE id = ${id} AND "orgId" = ${orgId} FOR UPDATE`;
+  return rows.length === 1;
+}
+
 export const caseInclude = {
   org: { select: { name: true } },
   contact: { select: { numberOnFile: true } },
@@ -164,6 +175,7 @@ export function serializeCase(
     requestType: row.requestType,
     counterparty: row.counterparty,
     contactId: row.contactId,
+    createdById: row.createdById,
     numberOnFile: row.contact?.numberOnFile ?? null,
     rawText: opts?.includeRawText ? row.rawText : undefined,
     onFile: row.onFileJson,

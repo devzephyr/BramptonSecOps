@@ -51,13 +51,22 @@ export async function POST(request: Request, { params }: Params) {
     where: { id, orgId: user.orgId },
   });
   if (!load) return notFound();
-  if (load.driverUserId && load.driverUserId !== user.id) {
+
+  const rawNote = typeof body.rawNote === "string" ? body.rawNote.slice(0, 500) : null;
+  const lastKnown =
+    typeof body.lastKnown === "string" ? body.lastKnown.slice(0, 200) : load.lastKnown;
+
+  const claimed = await prisma.load.updateMany({
+    where: {
+      id: load.id,
+      orgId: user.orgId,
+      OR: [{ driverUserId: null }, { driverUserId: user.id }],
+    },
+    data: { currentStatus: eventType, lastKnown, driverUserId: user.id },
+  });
+  if (claimed.count !== 1) {
     return forbidden("This load is assigned to another driver.");
   }
-
-  const rawNote = typeof body.rawNote === "string" ? body.rawNote : null;
-  const lastKnown =
-    typeof body.lastKnown === "string" ? body.lastKnown : load.lastKnown;
 
   const event = await prisma.trackingEvent.create({
     data: {
@@ -66,15 +75,6 @@ export async function POST(request: Request, { params }: Params) {
       eventType,
       rawNote,
       actorId: user.id,
-    },
-  });
-
-  await prisma.load.update({
-    where: { id: load.id },
-    data: {
-      currentStatus: eventType,
-      lastKnown,
-      driverUserId: load.driverUserId ?? user.id,
     },
   });
 

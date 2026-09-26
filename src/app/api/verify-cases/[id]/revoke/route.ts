@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
+import { lockCase } from "@/lib/cases";
 import { forbidden, json, notFound, unauthorized } from "@/lib/http";
 
 type Params = { params: Promise<{ id: string }> };
@@ -12,22 +13,24 @@ export async function POST(_request: Request, { params }: Params) {
   }
 
   const { id } = await params;
-  const row = await prisma.verifyCase.findFirst({
-    where: { id, orgId: user.orgId },
-  });
-  if (!row) return notFound();
-
   const now = new Date();
-  await prisma.$transaction([
-    prisma.verifyCase.update({
-      where: { id: row.id },
+  const revoked = await prisma.$transaction(async (tx) => {
+    if (!(await lockCase(tx, id, user.orgId))) return false;
+    await tx.verifyCase.update({
+      where: { id },
       data: { status: "revoked", revokedAt: now },
-    }),
-    prisma.verifyReceipt.updateMany({
-      where: { caseId: row.id, revokedAt: null },
+    });
+    await tx.verifyReceipt.updateMany({
+      where: { caseId: id, revokedAt: null },
       data: { revokedAt: now },
-    }),
-  ]);
+    });
+    await tx.pendingCeremony.updateMany({
+      where: { caseId: id, usedAt: null },
+      data: { usedAt: now },
+    });
+    return true;
+  });
+  if (!revoked) return notFound();
 
-  return json({ id: row.id, status: "revoked", revokedAt: now.toISOString() });
+  return json({ id, status: "revoked", revokedAt: now.toISOString() });
 }

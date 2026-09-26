@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { enrollmentExpiry, newEnrollmentCode } from "@/lib/auth";
-import { badRequest, json } from "@/lib/http";
+import { badRequest, isUniqueViolation, json } from "@/lib/http";
 
 function slugify(name: string): string {
   const base =
@@ -74,12 +74,7 @@ export async function POST(request: Request) {
         201,
       );
     } catch (err) {
-      const conflict =
-        typeof err === "object" &&
-        err !== null &&
-        "code" in err &&
-        (err as { code: string }).code === "P2002";
-      if (!conflict || attempt === 4) throw err;
+      if (!isUniqueViolation(err) || attempt === 4) throw err;
     }
   }
   return badRequest("Could not pick an organization slug. Try a different name.");
