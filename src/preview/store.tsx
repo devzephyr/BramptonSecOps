@@ -33,8 +33,8 @@ type Store = {
   passkeyError: string | null;
   pushStatus: (loadId: string, status: string) => Promise<void>;
   refreshRemote: () => Promise<void>;
-  managerTab: "board" | "directory" | "receipt";
-  setManagerTab: (tab: "board" | "directory" | "receipt") => void;
+  managerTab: "board" | "directory" | "receipt" | "team";
+  setManagerTab: (tab: "board" | "directory" | "receipt" | "team") => void;
   ready: boolean;
 };
 
@@ -48,7 +48,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
   const [receiptToken, setReceiptToken] = useState<string | null>(null);
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [managerTab, setManagerTab] = useState<"board" | "directory" | "receipt">("board");
+  const [managerTab, setManagerTab] = useState<"board" | "directory" | "receipt" | "team">("board");
   const [ready, setReady] = useState(false);
   const [draft, setDraftState] = useState<Store["draft"]>({
     requestType: SCENARIOS[0].requestType,

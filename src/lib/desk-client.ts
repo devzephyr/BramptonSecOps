@@ -163,8 +163,6 @@ const ALL_ROLES: Role[] = [
 
 function audienceForNote(row: ApiNote): Role[] {
   if (row.role) return [row.role];
-  // User-targeted rows (userId set, role null) are visible to every desk role
-  // until the UI filters by the signed-in user alone.
   return ALL_ROLES;
 }
 
@@ -525,8 +523,7 @@ export async function submitCase(input: {
   return mapApiCase((await parseJson(res)) as ApiCase);
 }
 
-export async function patchOob(
-  id: string,
+export async function patchOob(  id: string,
   patch: { oobStepIndex?: number; oobStepDone?: boolean; oobNote?: string },
 ): Promise<DeskCase> {
   const res = await fetch(`/api/verify-cases/${encodeURIComponent(id)}`, {
@@ -539,4 +536,61 @@ export async function patchOob(
     throw new DeskApiError(res.status, await failMessage(res, "Could not save checklist"));
   }
   return mapApiCase((await parseJson(res)) as ApiCase);
+}
+
+export type NewOrg = {
+  org: { id: string; slug: string; name: string };
+  username: string;
+};
+
+export async function createOrg(input: {
+  name: string;
+  city?: string;
+  province?: string;
+  displayName: string;
+  username: string;
+}): Promise<NewOrg> {
+  const res = await fetch("/api/orgs", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not create organization"));
+  }
+  return (await parseJson(res)) as NewOrg;
+}
+
+export type TeamMember = {
+  id: string;
+  username: string | null;
+  name: string;
+  role: string;
+  title: string | null;
+  hasKeys: boolean;
+  createdAt: string;
+};
+
+export async function fetchTeam(): Promise<TeamMember[]> {
+  const res = await fetch("/api/orgs/users", { credentials: "include" });
+  if (!res.ok) return [];
+  const body = (await parseJson(res)) as { users?: TeamMember[] } | null;
+  return body?.users ?? [];
+}
+
+export async function addTeammate(input: {
+  username: string;
+  name: string;
+  role: string;
+}): Promise<TeamMember> {
+  const res = await fetch("/api/orgs/users", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not add teammate"));
+  }
+  return (await parseJson(res)) as TeamMember;
 }

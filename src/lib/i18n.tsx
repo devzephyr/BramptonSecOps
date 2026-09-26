@@ -81,6 +81,22 @@ export type Messages = {
   signInWithPasskey: string;
   username: string;
   usernamePlaceholder: string;
+  team: string;
+  teamHint: string;
+  addTeammate: string;
+  addTeammateHint: string;
+  teammateAdded: string;
+  fullName: string;
+  role: string;
+  encryption: string;
+  keysReady: string;
+  noKeys: string;
+  createOrg: string;
+  newOrgHint: string;
+  orgName: string;
+  province: string;
+  yourName: string;
+  orgCreated: string;
   orgLabel: string;
   orgPlaceholder: string;
   accountHint: string;
@@ -223,6 +239,22 @@ const en: Messages = {
   signInWithPasskey: "Sign in with passkey",
   username: "Username",
   usernamePlaceholder: "First name, lower case",
+  team: "Team",
+  teamHint: "Everyone in your organization. Keys show who finished encryption setup.",
+  addTeammate: "Add teammate",
+  addTeammateHint: "They sign in with this username and your organization, then create their passkey.",
+  teammateAdded: "Teammate added:",
+  fullName: "Name",
+  role: "Role",
+  encryption: "Encryption",
+  keysReady: "keys ready",
+  noKeys: "no keys",
+  createOrg: "Create organization",
+  newOrgHint: "Start a new organization. You become its admin.",
+  orgName: "Organization name",
+  province: "Province",
+  yourName: "Your name",
+  orgCreated: "Organization ready. Sign in below with your username, then create your passkey.",
   orgLabel: "Organization",
   orgPlaceholder: "Organization name or slug",
   accountHint: "Enter your own username and organization. Accounts are not listed here.",
@@ -368,6 +400,22 @@ const fr: Messages = {
   signInWithPasskey: "Connexion avec clé d’accès",
   username: "Nom d’utilisateur",
   usernamePlaceholder: "Prénom, en minuscules",
+  team: "Équipe",
+  teamHint: "Tout le monde dans votre organisation. Les clés montrent qui a terminé le chiffrement.",
+  addTeammate: "Ajouter un collègue",
+  addTeammateHint: "Cette personne se connecte avec ce nom d’utilisateur et votre organisation, puis crée sa clé d’accès.",
+  teammateAdded: "Collègue ajouté :",
+  fullName: "Nom",
+  role: "Rôle",
+  encryption: "Chiffrement",
+  keysReady: "clés prêtes",
+  noKeys: "sans clés",
+  createOrg: "Créer une organisation",
+  newOrgHint: "Démarrez une nouvelle organisation. Vous en devenez l’admin.",
+  orgName: "Nom de l’organisation",
+  province: "Province",
+  yourName: "Votre nom",
+  orgCreated: "Organisation prête. Connectez-vous ci-dessous, puis créez votre clé d’accès.",
   orgLabel: "Organisation",
   orgPlaceholder: "Nom ou identifiant de l’organisation",
   accountHint: "Saisissez votre nom d’utilisateur et votre organisation. Aucun compte n’est listé ici.",
