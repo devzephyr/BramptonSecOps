@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,12 +15,14 @@ import { isLive, updatedAgo } from "@/lib/tracking";
 import { useDesk } from "@/preview/store";
 import { TripMap } from "@/components/desk/trip-map";
 import { TripSteps } from "@/components/desk/trip-steps";
+import { LoadDialog } from "@/components/desk/load-dialog";
 
 export function ReceiverDesk() {
   const desk = useDesk();
   const { refreshRemote } = desk;
   const { t } = useI18n();
   const [podLoad, setPodLoad] = useState("");
+  const [openId, setOpenId] = useState<string | null>(null);
   const [podBusy, setPodBusy] = useState(false);
   const [podError, setPodError] = useState<string | null>(null);
   const live = desk.loads.filter(
@@ -117,6 +120,7 @@ export function ReceiverDesk() {
                 <TableHead>{t.eta}</TableHead>
                 <TableHead>{t.dock}</TableHead>
                 <TableHead>{t.status}</TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -130,11 +134,17 @@ export function ReceiverDesk() {
                       {loadStatusTitle(load.status, t)}
                     </Badge>
                   </TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="outline" onClick={() => setOpenId(load.id)}>
+                      {t.details}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
           </div>
+          <LoadDialog load={desk.loads.find((item) => item.id === openId) ?? null} onClose={() => setOpenId(null)} />
         </CardPanel>
       </Card>
       <Card>

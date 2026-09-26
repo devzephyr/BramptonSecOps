@@ -1,5 +1,6 @@
 "use client";
 
+import type { DutyStatusName, HosSummary } from "@/lib/hos";
 import type { DocTypeName } from "@/lib/policy";
 import {
   startAuthentication,
@@ -205,6 +206,7 @@ type ApiLoad = {
   lat?: number | null;
   lng?: number | null;
   positionAt?: string | null;
+  facility?: string | null;
 };
 
 export type NewLoad = {
@@ -259,11 +261,170 @@ export type LoadEvent = {
   createdAt: string;
 };
 
-export async function fetchLoadEvents(id: string): Promise<LoadEvent[]> {
+export type Holder = { kind: "driver" | "facility"; name: string } | null;
+
+export type CustodyHop = {
+  id: string;
+  from: Holder;
+  to: Holder;
+  sealNumber: string | null;
+  sealIntact: boolean | null;
+  lat: number | null;
+  lng: number | null;
+  note: string | null;
+  actor: string;
+  createdAt: string;
+};
+
+export type TrailPoint = { lat: number; lng: number; at: string };
+
+export type LoadJourney = { events: LoadEvent[]; custody: CustodyHop[]; trail: TrailPoint[] };
+
+export async function fetchLoadJourney(id: string): Promise<LoadJourney> {
   const res = await fetch(`/api/loads/${encodeURIComponent(id)}`, { credentials: "include" });
-  if (!res.ok) return [];
-  const body = (await parseJson(res)) as { events?: LoadEvent[] } | null;
-  return body?.events ?? [];
+  if (!res.ok) return { events: [], custody: [], trail: [] };
+  const body = (await parseJson(res)) as Partial<LoadJourney> | null;
+  return { events: body?.events ?? [], custody: body?.custody ?? [], trail: body?.trail ?? [] };
+}
+
+export async function fetchLoadEvents(id: string): Promise<LoadEvent[]> {
+  return (await fetchLoadJourney(id)).events;
+}
+
+export type CustodyInput = {
+  toUserId?: string;
+  toFacility?: string;
+  sealNumber?: string;
+  sealIntact?: boolean;
+  note?: string;
+};
+
+export async function transferCustody(loadId: string, input: CustodyInput): Promise<{ sealIntact: boolean | null }> {
+  const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/custody`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not record the handoff"));
+  }
+  return (await parseJson(res)) as { sealIntact: boolean | null };
+}
+
+export type DutyEntryRow = {
+  id: string;
+  seq: number;
+  kind: "status" | "note";
+  status: DutyStatusName | null;
+  at: string;
+  lat: number | null;
+  lng: number | null;
+  loadId: string | null;
+  note: string | null;
+  source: "driver" | "gps" | "status" | "manager";
+  refId: string | null;
+  actor: string;
+  hash: string;
+};
+
+export type DutyLog = {
+  driver: { id: string; name: string; photoVersion: string | null };
+  hos: HosSummary;
+  chain: { intact: boolean; count: number; brokenAt: number | null };
+  entries: DutyEntryRow[];
+};
+
+export async function fetchDutyLog(driverId: string, days = 1): Promise<DutyLog | null> {
+  const res = await fetch(`/api/drivers/${encodeURIComponent(driverId)}/duty?days=${days}`, { credentials: "include" });
+  if (!res.ok) return null;
+  return (await parseJson(res)) as DutyLog;
+}
+
+async function postDuty(driverId: string, body: Record<string, unknown>) {
+  const res = await fetch(`/api/drivers/${encodeURIComponent(driverId)}/duty`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not update the duty log"));
+  }
+}
+
+export function setDutyStatus(driverId: string, status: DutyStatusName, loadId?: string) {
+  return postDuty(driverId, { status, ...(loadId ? { loadId } : {}) });
+}
+
+export function addDutyNote(driverId: string, note: string, refId?: string) {
+  return postDuty(driverId, { note, ...(refId ? { refId } : {}) });
+}
+
+export function driverPhotoUrl(driverId: string, version: string | null) {
+  return version ? `/api/drivers/${encodeURIComponent(driverId)}/photo?v=${version}` : null;
+}
+
+/** Square-crops and shrinks to 512 px JPEG so a phone photo lands well under the 1 MB limit. */
+async function squarePhoto(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const side = Math.min(bitmap.width, bitmap.height);
+  const edge = Math.min(512, side);
+  const canvas = document.createElement("canvas");
+  canvas.width = edge;
+  canvas.height = edge;
+  canvas
+    .getContext("2d")
+    ?.drawImage(bitmap, (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side, 0, 0, edge, edge);
+  bitmap.close();
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+  if (!blob) throw new DeskApiError(400, "Could not read that image.");
+  return blob;
+}
+
+export async function uploadDriverPhoto(driverId: string, file: File): Promise<string> {
+  const body = await squarePhoto(file);
+  const res = await fetch(`/api/drivers/${encodeURIComponent(driverId)}/photo`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "image/jpeg" },
+    body,
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not upload the photo"));
+  }
+  return ((await parseJson(res)) as { photoVersion: string }).photoVersion;
+}
+
+export type FleetLoad = {
+  id: string;
+  loadRef: string;
+  commodity: string;
+  origin: string;
+  destination: string;
+  currentStatus: string;
+  driverUserId: string | null;
+  facility: string | null;
+  lat: number | null;
+  lng: number | null;
+  positionAt: string | null;
+};
+
+export type FleetDriver = {
+  id: string;
+  name: string;
+  title: string | null;
+  photoVersion: string | null;
+  hos: HosSummary;
+  loads: FleetLoad[];
+};
+
+export type Fleet = { now: string; drivers: FleetDriver[]; atFacilities: FleetLoad[] };
+
+export async function fetchFleet(): Promise<Fleet | null> {
+  const res = await fetch("/api/fleet", { credentials: "include" });
+  if (!res.ok) return null;
+  return (await parseJson(res)) as Fleet;
 }
 
 export async function markNotificationRead(id: string) {
@@ -306,6 +467,7 @@ export async function fetchLoads(): Promise<Load[]> {
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     positionAt: row.positionAt ?? null,
+    facility: row.facility ?? "",
   }));
 }
 

@@ -13,6 +13,8 @@ import { roleTitle, useI18n } from "@/lib/i18n";
 import type { Note, Role } from "@/preview/data";
 import { StoreProvider, useDesk } from "@/preview/store";
 
+const URGENT = new Set(["hos_violation", "seal_exception"]);
+
 function noteForRole(note: Note, role: Role) {
   const audience = Array.isArray(note.audience) ? note.audience : [];
   return audience.includes(role);
@@ -27,7 +29,7 @@ function DeskBody() {
   return (
     <>
       {unread.map((note) => (
-        <Alert key={note.id} variant={note.kind === "load_fifteen_min" ? "warning" : "info"}>
+        <Alert key={note.id} variant={URGENT.has(note.kind) ? "error" : note.kind === "load_fifteen_min" ? "warning" : "info"}>
           <AlertTitle>{note.title}</AlertTitle>
           <AlertDescription>{note.body}</AlertDescription>
           <AlertAction>

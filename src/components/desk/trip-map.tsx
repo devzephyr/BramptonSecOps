@@ -43,12 +43,15 @@ function pinElement(label: string) {
 /** Live trip map on Mapbox. Renders nothing when NEXT_PUBLIC_MAPBOX_TOKEN is unset. */
 export function TripMap({
   trucks,
+  trail,
   follow,
   className = "h-72",
   depotLabel,
   yardLabel,
 }: {
   trucks: MapTruck[];
+  /** Where the truck actually went, oldest first. Drawn solid over the dashed planned route. */
+  trail?: { lat: number; lng: number }[];
   follow?: string | null;
   className?: string;
   depotLabel: string;
@@ -100,6 +103,17 @@ export function TripMap({
             layout: { "line-cap": "round", "line-join": "round" },
             paint: { "line-color": "#2563eb", "line-width": 4, "line-opacity": 0.55, "line-dasharray": [2, 1.5] },
           });
+          instance.addSource("trail", {
+            type: "geojson",
+            data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [] } },
+          });
+          instance.addLayer({
+            id: "trail",
+            type: "line",
+            source: "trail",
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: { "line-color": "#0d9488", "line-width": 4, "line-opacity": 0.9 },
+          });
           new mapbox.Marker({ element: pinElement(depotLabel), anchor: "bottom" })
             .setLngLat([ROUTE[0].lng, ROUTE[0].lat])
             .addTo(instance);
@@ -148,6 +162,16 @@ export function TripMap({
     const target = trucks.find((truck) => truck.id === follow);
     if (target) instance.easeTo({ center: [target.lng, target.lat], duration: 800 });
   }, [follow, ready, trucks]);
+
+  useEffect(() => {
+    const source = map.current?.getSource("trail");
+    if (!ready || !source || source.type !== "geojson") return;
+    source.setData({
+      type: "Feature",
+      properties: {},
+      geometry: { type: "LineString", coordinates: (trail ?? []).map((point) => [point.lng, point.lat]) },
+    });
+  }, [ready, trail]);
 
   if (failed) return null;
   return <div ref={container} className={`w-full overflow-hidden rounded-lg border ${className}`} />;
