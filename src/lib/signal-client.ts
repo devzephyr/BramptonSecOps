@@ -264,7 +264,7 @@ export async function encryptForPeers(
     const cipher = new SessionCipher(storeFor(userId), addressOf(peer));
     const result = await cipher.encrypt(data.slice(0));
     if (!result.body) throw new Error("Encryption produced no body.");
-    out[peer] = { type: result.type, body: result.body };
+    out[peer] = { type: result.type, body: btoa(result.body) };
   }
   return out;
 }
@@ -275,10 +275,11 @@ export async function decryptFromPeer(
   envelope: { type: number; body: string },
 ): Promise<string> {
   const cipher = new SessionCipher(storeFor(userId), addressOf(senderUserId));
+  const raw = atob(envelope.body);
   const plain =
     envelope.type === 3
-      ? await cipher.decryptPreKeyWhisperMessage(envelope.body)
-      : await cipher.decryptWhisperMessage(envelope.body);
+      ? await cipher.decryptPreKeyWhisperMessage(raw)
+      : await cipher.decryptWhisperMessage(raw);
   return new TextDecoder().decode(plain);
 }
 
