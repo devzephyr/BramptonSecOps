@@ -13,6 +13,8 @@ enum Role {
   driver
   receiver
   admin
+  logistics
+  warehouse
 }
 
 enum CaseStatus {

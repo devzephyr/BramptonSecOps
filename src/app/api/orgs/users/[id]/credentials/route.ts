@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
+import { MANAGERS } from "@/lib/policy";
 import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
 
 type Params = { params: Promise<{ id: string }> };
@@ -14,7 +15,7 @@ async function orgMember(orgId: string, id: string) {
 export async function GET(_request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
+  if (!hasRole(user, MANAGERS)) {
     return forbidden("Only managers can see credentials.");
   }
   const { id } = await params;
@@ -37,7 +38,7 @@ export async function GET(_request: Request, { params }: Params) {
 export async function DELETE(request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
+  if (!hasRole(user, MANAGERS)) {
     return forbidden("Only managers can revoke credentials.");
   }
   const { id } = await params;

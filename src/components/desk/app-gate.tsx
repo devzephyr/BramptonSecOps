@@ -12,10 +12,12 @@ export function roleHome(role: string) {
       return "/supplier";
     case "manager":
     case "admin":
+    case "logistics":
       return "/manager";
     case "driver":
       return "/driver";
     case "receiver":
+    case "warehouse":
       return "/receiver";
     default:
       return "/sign-in";

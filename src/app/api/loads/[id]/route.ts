@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
+import { MANAGERS } from "@/lib/policy";
 import {
   badRequest,
   forbidden,
@@ -99,7 +100,7 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PATCH(request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
+  if (!hasRole(user, MANAGERS)) {
     return forbidden("Only a manager or admin can edit or hand off a load.");
   }
   const { id } = await params;

@@ -1,7 +1,13 @@
 import type { Role } from "@prisma/client";
 
 /** Roles that may read or act on verify cases, their threads, documents, and the directory. */
-export const CASE_STAFF: Role[] = ["supplier", "manager", "admin"];
+export const CASE_STAFF: Role[] = ["supplier", "manager", "admin", "logistics"];
+
+/** Roles with manager-grade power: approvals, team management, duty oversight. */
+export const MANAGERS: Role[] = ["manager", "admin", "logistics"];
+
+/** Roles that work receiving docks and custody transfers. */
+export const RECEIVERS: Role[] = ["receiver", "warehouse"];
 
 /** Mirrors the DocType enum in prisma/schema.prisma; the client needs it without importing Prisma. */
 export const DOC_TYPES = [

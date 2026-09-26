@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { hasRole, requireUser } from "@/lib/auth";
+import { MANAGERS, RECEIVERS } from "@/lib/policy";
 import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
 import { serializeLoad } from "@/lib/loads";
 
@@ -30,9 +31,9 @@ export async function POST(request: Request, { params }: Params) {
   if (Boolean(toUserId) === Boolean(toFacility)) {
     return badRequest("Send exactly one of toUserId (a driver) or toFacility (a warehouse or yard).");
   }
-  const staff = user.role === "manager" || user.role === "admin";
+  const staff = hasRole(user, MANAGERS);
   if (toUserId && !staff) return forbidden("Only a manager can hand a load to another driver.");
-  if (!staff && user.role !== "driver" && user.role !== "receiver") {
+  if (!staff && user.role !== "driver" && !hasRole(user, RECEIVERS)) {
     return forbidden("Your role cannot record custody transfers.");
   }
 

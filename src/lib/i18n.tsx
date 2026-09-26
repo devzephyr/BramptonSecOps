@@ -45,6 +45,8 @@ export type Messages = {
   driver: string;
   receiver: string;
   admin: string;
+  logistics: string;
+  warehouse: string;
   directory: string;
   scenarios: string;
   sendToManager: string;
@@ -374,6 +376,8 @@ const en: Messages = {
   driver: "Driver",
   receiver: "Receiver",
   admin: "Admin",
+  logistics: "Logistics",
+  warehouse: "Warehouse",
   directory: "Directory",
   scenarios: "Scenarios",
   sendToManager: "Send to the manager desk",
@@ -715,6 +719,8 @@ const fr: Messages = {
   driver: "Chauffeur",
   receiver: "Réception",
   admin: "Administration",
+  logistics: "Logistique",
+  warehouse: "Entrepôt",
   directory: "Répertoire",
   scenarios: "Scénarios",
   sendToManager: "Envoyer au bureau du gestionnaire",
@@ -1094,6 +1100,10 @@ export function roleTitle(role: string, t: Messages): string {
       return t.receiver;
     case "admin":
       return t.admin;
+    case "logistics":
+      return t.logistics;
+    case "warehouse":
+      return t.warehouse;
     default:
       return role;
   }

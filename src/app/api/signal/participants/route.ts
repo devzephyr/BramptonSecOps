@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
-import { CASE_STAFF } from "@/lib/policy";
+import { CASE_STAFF, MANAGERS } from "@/lib/policy";
 import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
 
 export async function GET(request: Request) {
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const staff = await prisma.user.findMany({
     where: {
       orgId: user.orgId,
-      OR: [{ id: kase.createdById }, { role: { in: ["manager", "admin"] } }],
+      OR: [{ id: kase.createdById }, { role: { in: MANAGERS } }],
     },
     select: {
       id: true,

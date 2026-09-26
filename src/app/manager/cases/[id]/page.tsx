@@ -30,7 +30,7 @@ export default function ManagerCasePage() {
   const caseId = String(params.id ?? "");
   return (
     <RolePage
-      roles={["manager", "admin"]}
+      roles={["manager", "admin", "logistics"]}
       render={(user: SessionUser, signOut) => (
         <StoreProvider user={user}>
           <CasePageBody caseId={caseId} onSignOut={signOut} />

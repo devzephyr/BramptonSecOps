@@ -3,7 +3,7 @@ import { buildPayload, type PayloadFields } from "@/lib/payload";
 import { playbookFor } from "@/lib/playbooks";
 import { runHeuristics } from "@/lib/heuristics";
 import { jevClassify } from "@/lib/jev";
-import { DUAL_CONTROL_TYPES } from "@/lib/policy";
+import { DUAL_CONTROL_TYPES, MANAGERS } from "@/lib/policy";
 
 export type OobAck = {
   steps: boolean[];
@@ -230,7 +230,7 @@ export async function notifyApprovers(
   },
 ) {
   const approvers = await db.user.findMany({
-    where: { orgId: input.orgId, role: { in: ["manager", "admin"] }, id: { notIn: input.exclude } },
+    where: { orgId: input.orgId, role: { in: MANAGERS }, id: { notIn: input.exclude } },
     select: { id: true, role: true },
   });
   if (approvers.length === 0) return;

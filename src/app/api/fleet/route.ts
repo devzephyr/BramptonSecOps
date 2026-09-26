@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
+import { MANAGERS } from "@/lib/policy";
 import { driverHos } from "@/lib/duty";
 import { forbidden, json, unauthorized } from "@/lib/http";
 
@@ -7,7 +8,7 @@ import { forbidden, json, unauthorized } from "@/lib/http";
 export async function GET() {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) return forbidden("Only managers can see the fleet.");
+  if (!hasRole(user, MANAGERS)) return forbidden("Only managers can see the fleet.");
 
   const now = new Date();
   const [drivers, loads] = await Promise.all([

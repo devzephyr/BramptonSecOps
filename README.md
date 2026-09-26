@@ -53,7 +53,7 @@ Nobody can enroll on someone else's account. First-time setup needs an **enrollm
 
 Drivers' duty status (off duty, sleeper berth, on duty, driving) is an append-only log in `DutyEntry`. The server clock stamps every entry and the API refuses a client-supplied time, so entries cannot be back-dated. Each entry hashes the one before it (per driver); editing or deleting a row in the database breaks the chain, and the log view names the first broken entry. Corrections are notes that point at an entry; the entry itself never changes.
 
-The rule in `src/lib/hos.ts`: after 8 hours of driving, a break of 30 consecutive non-driving minutes is required. While a break is owed the driver cannot switch to Driving or tap Rolling (409). GPS movement over 8 km/h is logged as driving regardless, and driving past the limit alerts managers, admins, and the driver once per driving stretch. Daily and cycle limits are not modelled. This is a record-keeping tool, not a certified ELD.
+The rule in `src/lib/hos.ts`: after 8 hours of driving, a break of 30 consecutive non-driving minutes is required. While a break is owed the driver cannot switch to Driving or tap Rolling (409). GPS movement over 8 km/h is logged as driving regardless, and driving past the limit alerts managers, admins, and the driver once per driving stretch. Daily and cycle limits are not modelled. This is a record-keeping tool, not a compliant ELD.
 
 After pulling these changes, run `npx prisma db push` against each database (new tables: `DutyEntry`, `CustodyTransfer`, `PositionPing`; new columns on `User`, `Load`, `Notification`). The Vercel build does not push the schema, and the app fails on loads until it is applied.
 

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
-import { CASE_STAFF } from "@/lib/policy";
+import { CASE_STAFF, MANAGERS } from "@/lib/policy";
 import { serializeContact } from "@/lib/directory";
 import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
 
@@ -23,7 +23,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
+  if (!hasRole(user, MANAGERS)) {
     return forbidden("Only a manager or admin can add to the directory.");
   }
 

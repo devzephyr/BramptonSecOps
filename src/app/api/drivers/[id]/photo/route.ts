@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
+import { MANAGERS } from "@/lib/policy";
 import { evidenceKey, readEvidence, sha256Buffer, StorageNotConfigured, storeEvidence } from "@/lib/evidence-storage";
 import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
 
@@ -55,7 +56,7 @@ export async function POST(request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
   const { id } = await params;
-  if (user.id !== id && !hasRole(user, ["manager", "admin"])) {
+  if (user.id !== id && !hasRole(user, MANAGERS)) {
     return forbidden("Only a manager can change someone else's photo.");
   }
   const target = await prisma.user.findFirst({ where: { id, orgId: user.orgId, role: "driver" }, select: { id: true } });

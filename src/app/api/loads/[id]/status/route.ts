@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
 import { BreakRequired, driverHos, setDutyStatus } from "@/lib/duty";
-import { DRIVER_STATUS } from "@/lib/policy";
+import { DRIVER_STATUS, MANAGERS } from "@/lib/policy";
 import {
   badRequest,
   forbidden,
@@ -87,6 +87,19 @@ export async function POST(request: Request, { params }: Params) {
       })
     ).count === 1;
 
+  const minutesEarly =
+    eventType === "arrived" && load.eta
+      ? Math.floor((load.eta.getTime() - Date.now()) / 60000)
+      : 0;
+  const arrivedEarly =
+    minutesEarly >= 15 &&
+    (
+      await prisma.load.updateMany({
+        where: { ...owned, currentStatus: { not: "arrived" } },
+        data,
+      })
+    ).count === 1;
+
   const claimed = await prisma.load.updateMany({ where: owned, data });
   if (claimed.count !== 1) {
     return forbidden("This load is assigned to another driver.");
@@ -128,7 +141,7 @@ export async function POST(request: Request, { params }: Params) {
     const staff = await prisma.user.findMany({
       where: {
         orgId: user.orgId,
-        role: { in: ["manager", "admin", "receiver"] },
+        role: { in: [...MANAGERS, "receiver"] },
       },
       select: { id: true, email: true, role: true },
     });
@@ -141,6 +154,35 @@ export async function POST(request: Request, { params }: Params) {
           kind: "load_fifteen_min",
           title: `Load ${load.loadRef} — 15 minutes out`,
           body: `${user.name} is about 15 minutes from ${load.destination}${load.scheduledDock ? ` · ${load.scheduledDock}` : ""}.`,
+          href: person.role === "receiver" ? "/receiver" : "/manager",
+          emailTo: person.email,
+          emailStatus: "in-app",
+        })),
+      });
+    }
+  }
+
+  if (arrivedEarly) {
+    const earlyBy =
+      minutesEarly >= 60
+        ? `${Math.floor(minutesEarly / 60)}h ${minutesEarly % 60}m early`
+        : `${minutesEarly}m early`;
+    const staff = await prisma.user.findMany({
+      where: {
+        orgId: user.orgId,
+        role: { in: [...MANAGERS, "receiver"] },
+      },
+      select: { id: true, email: true, role: true },
+    });
+    if (staff.length) {
+      await prisma.notification.createMany({
+        data: staff.map((person) => ({
+          orgId: user.orgId,
+          userId: person.id,
+          role: person.role,
+          kind: "load_arrived_early",
+          title: `Load ${load.loadRef} — arrived early`,
+          body: `${user.name} arrived at ${load.destination} ${earlyBy}${load.scheduledDock ? ` · ${load.scheduledDock}` : ""}.`,
           href: person.role === "receiver" ? "/receiver" : "/manager",
           emailTo: person.email,
           emailStatus: "in-app",

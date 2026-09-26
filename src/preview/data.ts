@@ -1,4 +1,4 @@
-export type Role = "supplier" | "manager" | "driver" | "receiver" | "admin";
+export type Role = "supplier" | "manager" | "driver" | "receiver" | "admin" | "logistics" | "warehouse";
 export type DeskCase = {
   id: string;
   requestType: string;
@@ -64,6 +64,8 @@ export const JOB_TITLES: Record<Role, string[]> = {
   driver: ["Driver", "Long-haul driver", "Local delivery driver", "Owner-operator", "Relay driver"],
   receiver: ["Receiver", "Dock supervisor", "Shipping and receiving clerk", "Warehouse lead", "Inventory control"],
   admin: ["Owner", "General manager", "IT administrator", "Controller"],
+  logistics: ["Logistics coordinator", "Freight broker", "Customs compliance", "Route planner", "3PL manager"],
+  warehouse: ["Warehouse associate", "Forklift operator", "Yard jockey", "Cold storage lead", "Inventory control"],
 };
 
 export const REQUESTS: { id: string; dual: boolean; en: string; fr: string }[] =

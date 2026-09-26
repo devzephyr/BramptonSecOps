@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
+import { MANAGERS } from "@/lib/policy";
 import { badRequest, forbidden, isUniqueViolation, json, unauthorized } from "@/lib/http";
 import { serializeLoad } from "@/lib/loads";
 
@@ -18,7 +19,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin", "supplier"])) {
+  if (!hasRole(user, ["supplier", ...MANAGERS])) {
     return forbidden("You cannot create loads with this role.");
   }
 

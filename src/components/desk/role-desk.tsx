@@ -40,9 +40,9 @@ function DeskBody() {
         </Alert>
       ))}
       {role === "supplier" && <SupplierDesk />}
-      {(role === "manager" || role === "admin") && <ManagerDesk />}
+      {(role === "manager" || role === "admin" || role === "logistics") && <ManagerDesk />}
       {role === "driver" && <DriverDesk />}
-      {role === "receiver" && <ReceiverDesk />}
+      {(role === "receiver" || role === "warehouse") && <ReceiverDesk />}
     </>
   );
 }

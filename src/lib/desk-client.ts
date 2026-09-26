@@ -164,6 +164,8 @@ const ALL_ROLES: Role[] = [
   "driver",
   "receiver",
   "admin",
+  "logistics",
+  "warehouse",
 ];
 
 function audienceForNote(row: ApiNote): Role[] {

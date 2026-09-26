@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser, type AuthedUser } from "@/lib/auth";
+import { MANAGERS } from "@/lib/policy";
 import { appendDuty, BreakRequired, driverHos, serializeDuty, setDutyStatus, verifyDutyChain } from "@/lib/duty";
 import { isDutyStatus } from "@/lib/hos";
 import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
@@ -11,7 +12,7 @@ const MAX_DAYS = 14;
 /** Drivers read their own log; managers and admins read any driver's in the org. */
 async function driverFor(user: AuthedUser, id: string) {
   if (user.role === "driver" && user.id !== id) return null;
-  if (user.role !== "driver" && !hasRole(user, ["manager", "admin"])) return null;
+  if (user.role !== "driver" && !hasRole(user, MANAGERS)) return null;
   return prisma.user.findFirst({
     where: { id, orgId: user.orgId, role: "driver" },
     select: { id: true, name: true, photoHash: true },

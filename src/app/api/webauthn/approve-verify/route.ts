@@ -3,6 +3,7 @@ import { hasRole, requireUser } from "@/lib/auth";
 import { lockCase, notifyApprovers, oobComplete, parseOobAck } from "@/lib/cases";
 import {
   approvalProgress,
+  MANAGERS,
   redactValue,
   sameUserAlreadyApproved,
 } from "@/lib/policy";
@@ -31,7 +32,7 @@ function redactMap(value: unknown): Record<string, string> | undefined {
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
+  if (!hasRole(user, MANAGERS)) {
     return forbidden("Only a manager or admin can approve.");
   }
 

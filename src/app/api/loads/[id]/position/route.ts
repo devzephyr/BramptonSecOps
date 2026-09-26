@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
+import { MANAGERS } from "@/lib/policy";
 import { alertIfOverLimit, driverHos, setDutyStatus } from "@/lib/duty";
 import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
 
@@ -27,7 +28,7 @@ function metersBetween(a: { lat: number; lng: number }, b: { lat: number; lng: n
 export async function POST(request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["driver", "manager", "admin"])) {
+  if (!hasRole(user, ["driver", ...MANAGERS])) {
     return forbidden("Only drivers and managers can post positions.");
   }
   const { id } = await params;

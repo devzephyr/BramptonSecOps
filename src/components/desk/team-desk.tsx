@@ -15,7 +15,7 @@ import { roleTitle, useI18n } from "@/lib/i18n";
 import { JOB_TITLES, type Role } from "@/preview/data";
 import { useDesk } from "@/preview/store";
 
-const ROLES = ["supplier", "manager", "driver", "receiver", "admin"];
+const ROLES = ["supplier", "manager", "driver", "receiver", "admin", "logistics", "warehouse"];
 
 function TitleInput({
   id,

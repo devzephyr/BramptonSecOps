@@ -3,6 +3,7 @@ import { canonicalize, sha256Hex } from "@/lib/canonical";
 import { prisma } from "@/lib/db";
 import { isUniqueViolation } from "@/lib/http";
 import { DRIVING_LIMIT_MS, formatDuration, summarizeHos, type DutyStatusName, type HosSummary } from "@/lib/hos";
+import { MANAGERS } from "@/lib/policy";
 
 export const GENESIS_HASH = "0".repeat(64);
 
@@ -142,7 +143,7 @@ export async function alertIfOverLimit(orgId: string, driverId: string, summary:
   const [driver, staff] = await Promise.all([
     prisma.user.findFirst({ where: { id: driverId, orgId }, select: { id: true, name: true } }),
     prisma.user.findMany({
-      where: { orgId, role: { in: ["manager", "admin"] } },
+      where: { orgId, role: { in: MANAGERS } },
       select: { id: true, role: true, email: true },
     }),
   ]);

@@ -11,8 +11,8 @@ import {
 
 type Params = { params: Promise<{ id: string }> };
 
-const ROLES: Role[] = ["supplier", "manager", "driver", "receiver", "admin"];
-const APPROVER: Role[] = ["manager", "admin"];
+const ROLES: Role[] = ["supplier", "manager", "driver", "receiver", "admin", "logistics", "warehouse"];
+const APPROVER: Role[] = ["manager", "admin", "logistics"];
 
 export async function PATCH(request: Request, { params }: Params) {
   const user = await requireUser();
