@@ -248,6 +248,18 @@ model VerifyReceipt {
   @@index([orgId, caseId])
 }
 
+enum DocType {
+  bill_of_lading
+  proof_of_delivery
+  invoice
+  receipt
+  rate_confirmation
+  packing_list
+  customs
+  insurance
+  other
+}
+
 model EvidenceAsset {
   id          String   @id @default(cuid())
   orgId       String
@@ -259,9 +271,15 @@ model EvidenceAsset {
   contentType String
   label       String
   byteSize    Int
+  docType     DocType  @default(other)
+  docNumber   String?
+  amountCents Int?
+  currency    String?
+  uploadedById String?
   createdAt   DateTime @default(now())
 
   @@index([orgId])
+  @@index([orgId, docType])
 }
 
 model Truck {

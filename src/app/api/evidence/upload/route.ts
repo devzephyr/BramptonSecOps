@@ -8,7 +8,7 @@ import {
   storeEvidence,
 } from "@/lib/evidence-storage";
 import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
-import { CASE_STAFF } from "@/lib/policy";
+import { CASE_STAFF, CURRENCIES, isDocType, parseAmountCents } from "@/lib/policy";
 
 const TOO_LARGE = "File is larger than 4 MB.";
 
@@ -20,7 +20,18 @@ export async function POST(request: Request) {
   const label = (params.get("label") ?? "evidence").slice(0, 200);
   const caseId = params.get("caseId");
   const loadId = params.get("loadId");
-  if (!caseId && !loadId) return badRequest("caseId or loadId is required.");
+  if (!caseId && !loadId && !hasRole(user, CASE_STAFF)) {
+    return badRequest("caseId or loadId is required.");
+  }
+
+  const rawType = params.get("docType");
+  if (rawType && !isDocType(rawType)) return badRequest("Unknown document type.");
+  const docType = isDocType(rawType) ? rawType : "other";
+  const docNumber = params.get("docNumber")?.trim().slice(0, 80) || null;
+  const amountCents = parseAmountCents(params.get("amount"));
+  if (amountCents === undefined) return badRequest("Amount must be a number like 1250.00.");
+  const currency = params.get("currency") ?? "CAD";
+  if (!(CURRENCIES as readonly string[]).includes(currency)) return badRequest("Currency must be CAD or USD.");
 
   if (caseId) {
     if (!hasRole(user, CASE_STAFF)) {
@@ -66,6 +77,11 @@ export async function POST(request: Request) {
       contentType,
       label,
       byteSize: buffer.length,
+      docType,
+      docNumber,
+      amountCents,
+      currency: amountCents === null ? null : currency,
+      uploadedById: user.id,
     },
   });
   if (caseId) {
