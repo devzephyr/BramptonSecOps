@@ -21,6 +21,7 @@ import {
   ensureSession,
   ensureSignalKeys,
   fingerprintFor,
+  localIdentityPublicKey,
   peerKeyChanged,
   resetSignalKeys,
 } from "@/lib/signal-client";
@@ -31,7 +32,7 @@ type Props = {
   userId: string;
 };
 
-type Decrypted = CaseMessage & { text: string | null };
+type Decrypted = CaseMessage & { text: string | null; unlockError?: string };
 
 export function MessageThread({ caseId, userId }: Props) {
   const { t } = useI18n();
@@ -54,8 +55,12 @@ export function MessageThread({ caseId, userId }: Props) {
           await ensureSession(userId, row.sender.id);
           const text = await decryptFromPeer(userId, row.sender.id, mine);
           out.push({ ...row, text });
-        } catch {
-          out.push({ ...row, text: null });
+        } catch (err) {
+          out.push({
+            ...row,
+            text: null,
+            unlockError: err instanceof Error ? err.message.slice(0, 140) : "Unknown error",
+          });
         }
       }
       setMessages(out);
@@ -86,6 +91,12 @@ export function MessageThread({ caseId, userId }: Props) {
       if (self && !self.hasKeys) {
         resetSignalKeys(userId);
         await ensureSignalKeys(userId);
+      } else if (self?.identityKey) {
+        const local = localIdentityPublicKey(userId);
+        if (local && local !== self.identityKey) {
+          resetSignalKeys(userId);
+          await ensureSignalKeys(userId);
+        }
       }
       for (const peer of peers) {
         if (peer.userId === userId || !peer.identityKey) continue;
@@ -171,7 +182,12 @@ export function MessageThread({ caseId, userId }: Props) {
                 )}
               </div>
               {row.text === null ? (
-                <p className="text-sm text-muted-foreground">{t.lockedMessage}</p>
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm text-muted-foreground">{t.lockedMessage}</p>
+                  {row.unlockError && (
+                    <p className="font-mono text-[10px] text-muted-foreground">{row.unlockError}</p>
+                  )}
+                </div>
               ) : (
                 <p className="text-sm whitespace-pre-wrap">{row.text}</p>
               )}

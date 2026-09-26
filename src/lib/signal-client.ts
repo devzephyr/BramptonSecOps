@@ -167,31 +167,32 @@ export function ensureSignalKeys(userId: string): Promise<void> {
   return task;
 }
 
+export function localIdentityPublicKey(userId: string): string | null {
+  try {
+    const raw = window.localStorage.getItem(lsKey(userId, "identity"));
+    if (!raw) return null;
+    return (JSON.parse(raw) as { pub?: string }).pub ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function publishKeys(userId: string): Promise<void> {
   if (hasSignalIdentity(userId)) return;
   const identity = await KeyHelper.generateIdentityKeyPair();
   const registrationId = KeyHelper.generateRegistrationId();
   const signed = await KeyHelper.generateSignedPreKey(identity, 1);
-  const store = storeFor(userId);
-  await store.storeSignedPreKey(signed.keyId, signed.keyPair);
 
   const oneTime: { keyId: number; publicKey: string }[] = [];
+  const pairs: { keyId: number; keyPair: KeyPairType }[] = [];
   for (let i = 1; i <= ONETIME_COUNT; i++) {
     const pre = await KeyHelper.generatePreKey(i);
-    await store.storePreKey(pre.keyId, pre.keyPair);
+    pairs.push({ keyId: pre.keyId, keyPair: pre.keyPair });
     oneTime.push({
       keyId: pre.keyId,
       publicKey: b64encode(pre.keyPair.pubKey as ArrayBuffer),
     });
   }
-  window.localStorage.setItem(
-    lsKey(userId, "identity"),
-    JSON.stringify({
-      pub: b64encode(identity.pubKey as ArrayBuffer),
-      priv: b64encode(identity.privKey as ArrayBuffer),
-    }),
-  );
-  window.localStorage.setItem(lsKey(userId, "registrationId"), String(registrationId));
 
   const res = await fetch("/api/signal/keys", {
     method: "POST",
@@ -209,6 +210,18 @@ async function publishKeys(userId: string): Promise<void> {
     }),
   });
   if (!res.ok) throw new Error("Could not publish encryption keys.");
+
+  const store = storeFor(userId);
+  await store.storeSignedPreKey(signed.keyId, signed.keyPair);
+  for (const pair of pairs) await store.storePreKey(pair.keyId, pair.keyPair);
+  window.localStorage.setItem(
+    lsKey(userId, "identity"),
+    JSON.stringify({
+      pub: b64encode(identity.pubKey as ArrayBuffer),
+      priv: b64encode(identity.privKey as ArrayBuffer),
+    }),
+  );
+  window.localStorage.setItem(lsKey(userId, "registrationId"), String(registrationId));
 }
 
 type Bundle = {
