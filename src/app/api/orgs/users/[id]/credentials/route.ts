@@ -14,8 +14,8 @@ async function orgMember(orgId: string, id: string) {
 export async function GET(_request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
-    return forbidden("Only managers can see credentials.");
+  if (!hasRole(user, ["logistics", "admin"])) {
+    return forbidden("Only logistics staff can see credentials.");
   }
   const { id } = await params;
   if (!(await orgMember(user.orgId, id))) return notFound();
@@ -37,14 +37,14 @@ export async function GET(_request: Request, { params }: Params) {
 export async function DELETE(request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
-    return forbidden("Only managers can revoke credentials.");
+  if (!hasRole(user, ["logistics", "admin"])) {
+    return forbidden("Only logistics staff can revoke credentials.");
   }
   const { id } = await params;
   const target = await orgMember(user.orgId, id);
   if (!target) return notFound();
   if (
-    (target.role === "admin" || target.role === "manager") &&
+    (target.role === "admin" || target.role === "logistics") &&
     target.id !== user.id &&
     user.role !== "admin"
   ) {

@@ -18,7 +18,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin", "supplier"])) {
+  if (!hasRole(user, ["logistics", "admin", "supplier"])) {
     return forbidden("You cannot create loads with this role.");
   }
 

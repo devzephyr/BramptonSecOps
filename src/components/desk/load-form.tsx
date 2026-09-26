@@ -39,7 +39,9 @@ export function LoadForm({ onCreated }: { onCreated?: () => void }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    void fetchTeam().then((team) => setDrivers(team.filter((member) => member.role === "driver")));
+    void fetchTeam()
+      .then((team) => setDrivers(team.filter((member) => member.role === "driver")))
+      .catch(() => setDrivers([]));
   }, []);
 
   function field(key: keyof Fields, label: string, extra?: { required?: boolean; type?: string }) {

@@ -8,8 +8,8 @@ type Params = { params: Promise<{ id: string }> };
 export async function POST(_request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
-    return forbidden("Only a manager or admin can revoke a case.");
+  if (!hasRole(user, ["logistics", "admin"])) {
+    return forbidden("Only logistics or admin or admin can revoke a case.");
   }
 
   const { id } = await params;

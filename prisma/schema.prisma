@@ -9,7 +9,8 @@ datasource db {
 
 enum Role {
   supplier
-  manager
+  logistics
+  warehouse
   driver
   receiver
   admin
@@ -49,6 +50,7 @@ model Org {
   contacts         DirectoryContact[]
   cases            VerifyCase[]
   loads            Load[]
+  inventory        InventoryLot[]
   trucks           Truck[]
   notifications    Notification[]
   mailbox          MailboxConnection[]
@@ -325,6 +327,26 @@ model Load {
   events                          TrackingEvent[]
 
   @@unique([orgId, loadRef])
+  @@index([orgId])
+}
+
+/** Stock sitting in the org's warehouse / cold rooms — warehouse desk inventory. */
+model InventoryLot {
+  id         String    @id @default(cuid())
+  orgId      String
+  org        Org       @relation(fields: [orgId], references: [id])
+  seedKey    String?   @unique
+  sku        String
+  commodity  String
+  quantity   Int
+  unit       String
+  location   String
+  status     String    @default("stored")
+  receivedAt DateTime?
+  notes      String?
+  createdAt  DateTime  @default(now())
+
+  @@unique([orgId, sku])
   @@index([orgId])
 }
 

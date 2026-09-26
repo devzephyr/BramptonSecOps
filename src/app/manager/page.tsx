@@ -1,7 +1,6 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { RolePage } from "@/components/desk/role-page";
-
-export default function ManagerPage() {
-  return <RolePage roles={["manager", "admin"]} />;
+/** Old manager desk URL — keep bookmarks working after the logistics rename. */
+export default function ManagerRedirect() {
+  redirect("/logistics");
 }

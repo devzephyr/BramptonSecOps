@@ -41,7 +41,8 @@ export type Messages = {
   signOut: string;
   createPasskey: string;
   supplier: string;
-  manager: string;
+  logistics: string;
+  warehouse: string;
   driver: string;
   receiver: string;
   admin: string;
@@ -129,6 +130,16 @@ export type Messages = {
   sealedNoteHint: string;
   loadsHint: string;
   incomingHint: string;
+  yardTraffic: string;
+  yardTrafficHint: string;
+  inventory: string;
+  inventoryHint: string;
+  sku: string;
+  quantity: string;
+  location: string;
+  dropoff: string;
+  pickup: string;
+  emptyInventory: string;
   podHint: string;
   podSaved: string;
   pickLoad: string;
@@ -313,13 +324,14 @@ const en: Messages = {
   signOut: "Sign out",
   createPasskey: "Create passkey",
   supplier: "Supplier",
-  manager: "Manager",
+  logistics: "Logistics",
+  warehouse: "Warehouse",
   driver: "Driver",
   receiver: "Receiver",
   admin: "Admin",
   directory: "Directory",
   scenarios: "Scenarios",
-  sendToManager: "Send to the manager desk",
+  sendToManager: "Send to the logistics desk",
   reviewBytes: "Review the bytes",
   passkeyStopped: "Passkey stopped",
   whoSpoke: "Who you spoke with, and when",
@@ -402,6 +414,16 @@ const en: Messages = {
   loadsHint: "Approved dock and seal stay on the board until a new ceremony changes them.",
   incomingHint:
     "You see the dock on the board. A destination change does not move it until it is fully approved.",
+  yardTraffic: "Yard traffic",
+  yardTrafficHint: "Drivers arriving for pickup or dropoff. Status comes from the driver — this is not an approval.",
+  inventory: "Inventory on hand",
+  inventoryHint: "Lots currently stored in this warehouse.",
+  sku: "SKU",
+  quantity: "Qty",
+  location: "Location",
+  dropoff: "Dropoff",
+  pickup: "Pickup",
+  emptyInventory: "No inventory lots on file yet.",
   podHint: "A photo stays with its own hash.",
   podSaved: "Photo saved with its hash.",
   pickLoad: "Pick a load",
@@ -464,7 +486,7 @@ const en: Messages = {
   toastTripStopped: "Stopped sharing position.",
   directoryHint: "Numbers already on file. Do not use a number that arrives inside a request.",
   emptyManager: "Write a sealed note on the supplier desk.",
-  emptyCase: "Pick one from the manager desk.",
+  emptyCase: "Pick one from the logistics desk.",
   confirmBytes: "Confirm these bytes",
   signedSoFar: "Signed so far",
   nobody: "nobody",
@@ -480,7 +502,7 @@ const en: Messages = {
   oobHint: "Approve stays off until every step is checked and you name who you called.",
   backToBoard: "Back to board",
   noRequestOpen: "No request open",
-  pickFromBoard: "Pick one from the manager desk.",
+  pickFromBoard: "Pick one from the logistics desk.",
   serverDown: "Server not reachable",
   serverDownBody: "Start the Next server on port 3000. Passkeys need the API. There is no pretend login.",
   passkeyCreated: "Passkey created for this account.",
@@ -493,13 +515,13 @@ const en: Messages = {
   noteInOwnWords: "Describe the change in your own words. Do not paste email or links.",
   sealPending: "seal pending",
   sealed: "sealed",
-  sealHint: "The hash locks at send. Managers verify it before a passkey unlocks the note.",
+  sealHint: "The hash locks at send. Logistics verifies it before a passkey unlocks the note.",
   phoneOnlyTitle: "Confirm by phone, not email",
   phoneOnlyBody: "This request never goes out by email. Confirm by calling the number on file:",
-  submitted: "Sent to managers",
-  submittedBody: "It is now on the manager board. Nothing is approved yet.",
+  submitted: "Sent to logistics",
+  submittedBody: "It is now on the logistics board. Nothing is approved yet.",
   emptyDirectory: "No counterparties on file yet",
-  emptyDirectorySupplier: "Ask a manager to add counterparties in the Directory tab.",
+  emptyDirectorySupplier: "Ask logistics staff to add counterparties in the Directory tab.",
   emptyDirectoryManager: "Add the companies you deal with, using the phone number you already trust.",
   addContact: "Add counterparty",
   addContactHint: "Use details you already hold, never ones from an incoming message.",
@@ -516,12 +538,12 @@ const en: Messages = {
   hashMismatchBody: "These bytes do not match the sealed hash. Do not sign.",
   canonicalPayload: "Canonical payload",
   approvalProgress: "{done} of {needed} approved",
-  twoManagers: "two different managers required",
+  twoManagers: "two different logistics approvers required",
   ceremonyHint: "The passkey ceremony unlocks these bytes. Its challenge binds to the hash below.",
   jevTitle: "Jev labels",
   waitingPasskey: "Waiting for passkey…",
   approvalRecorded: "Approval recorded",
-  secondSignerNeeded: "A different manager must sign next.",
+  secondSignerNeeded: "A different logistics approver must sign next.",
   revokeCase: "Revoke case",
   revokeCaseConfirm: "Revoke this case? Its partner receipt stops working.",
   cancel: "Cancel",
@@ -540,7 +562,7 @@ const en: Messages = {
   correctStatus: "Correct the status",
   tripHint: "The simulated trip drives the depot-to-yard route and sends Rolling, 15 minutes away, and Arrived for you.",
   newRequest: "New request",
-  newRequestHint: "Log a request a counterparty made, in your own words. A different manager must approve it.",
+  newRequestHint: "Log a request a counterparty made, in your own words. A different logistics approver must approve it.",
   newLoad: "New load",
   newLoadHint: "The assigned driver sees it on their next refresh and gets an alert.",
   loadRef: "Load reference",
@@ -597,13 +619,14 @@ const fr: Messages = {
   signOut: "Déconnexion",
   createPasskey: "Créer une clé d’accès",
   supplier: "Fournisseur",
-  manager: "Gestionnaire",
+  logistics: "Logistique",
+  warehouse: "Entrepôt",
   driver: "Chauffeur",
   receiver: "Réception",
   admin: "Administration",
   directory: "Répertoire",
   scenarios: "Scénarios",
-  sendToManager: "Envoyer au bureau du gestionnaire",
+  sendToManager: "Envoyer au bureau de la logistique",
   reviewBytes: "Relire les octets",
   passkeyStopped: "Clé d’accès interrompue",
   whoSpoke: "Avec qui vous avez parlé, et quand",
@@ -688,6 +711,17 @@ const fr: Messages = {
     "Quai et sceau approuvés restent au tableau jusqu’à ce qu’une nouvelle cérémonie les change.",
   incomingHint:
     "Vous voyez le quai au tableau. Un changement de destination ne le déplace pas tant que tout n’est pas approuvé.",
+  yardTraffic: "Circulation à la cour",
+  yardTrafficHint:
+    "Chauffeurs qui arrivent pour un ramassage ou une livraison. L’état vient du chauffeur — ce n’est pas une approbation.",
+  inventory: "Inventaire sur place",
+  inventoryHint: "Lots actuellement entreposés dans cet entrepôt.",
+  sku: "UGS",
+  quantity: "Qté",
+  location: "Emplacement",
+  dropoff: "Livraison",
+  pickup: "Ramassage",
+  emptyInventory: "Aucun lot d’inventaire au dossier pour l’instant.",
   podHint: "Une photo garde sa propre empreinte.",
   podSaved: "Photo enregistrée avec son empreinte.",
   pickLoad: "Choisir un chargement",
@@ -751,7 +785,7 @@ const fr: Messages = {
   emptyManager: "Rédigez une note scellée au bureau fournisseur.",
   directoryHint:
     "Numéros déjà au dossier. N’utilisez pas un numéro qui arrive dans une demande.",
-  emptyCase: "Choisissez-en une au bureau du gestionnaire.",
+  emptyCase: "Choisissez-en une au bureau de la logistique.",
   confirmBytes: "Confirmer ces octets",
   signedSoFar: "Signé jusqu’ici",
   nobody: "personne",
@@ -769,7 +803,7 @@ const fr: Messages = {
     "L’approbation reste désactivée tant que chaque étape n’est pas cochée et que vous n’avez pas nommé la personne appelée.",
   backToBoard: "Retour au tableau",
   noRequestOpen: "Aucune demande ouverte",
-  pickFromBoard: "Choisissez-en une au bureau du gestionnaire.",
+  pickFromBoard: "Choisissez-en une au bureau de la logistique.",
   serverDown: "Serveur injoignable",
   serverDownBody:
     "Démarrez le serveur Next sur le port 3000. Les clés d’accès ont besoin de l’API. Il n’y a pas de connexion fictive.",
@@ -783,13 +817,13 @@ const fr: Messages = {
   noteInOwnWords: "Décrivez le changement dans vos mots. Ne collez ni courriel ni lien.",
   sealPending: "sceau en attente",
   sealed: "scellé",
-  sealHint: "Le hachage se fige à l’envoi. Les gestionnaires le vérifient avant qu’une clé d’accès déverrouille la note.",
+  sealHint: "Le hachage se fige à l’envoi. La logistique le vérifie avant qu’une clé d’accès déverrouille la note.",
   phoneOnlyTitle: "Confirmez par téléphone, pas par courriel",
   phoneOnlyBody: "Cette demande ne passe jamais par courriel. Confirmez en appelant le numéro au dossier :",
-  submitted: "Envoyé aux gestionnaires",
-  submittedBody: "La demande est sur le tableau des gestionnaires. Rien n’est encore approuvé.",
+  submitted: "Envoyé à la logistique",
+  submittedBody: "C’est maintenant sur le tableau de la logistique. Rien n’est encore approuvé.",
   emptyDirectory: "Aucun partenaire au dossier",
-  emptyDirectorySupplier: "Demandez à un gestionnaire d’ajouter des partenaires dans l’onglet Répertoire.",
+  emptyDirectorySupplier: "Demandez à la logistique d’ajouter des partenaires dans l’onglet Répertoire.",
   emptyDirectoryManager: "Ajoutez les entreprises avec qui vous travaillez, avec le numéro que vous connaissez déjà.",
   addContact: "Ajouter un partenaire",
   addContactHint: "Utilisez les coordonnées que vous avez déjà, jamais celles d’un message reçu.",
@@ -806,12 +840,12 @@ const fr: Messages = {
   hashMismatchBody: "Ces octets ne correspondent pas au hachage scellé. Ne signez pas.",
   canonicalPayload: "Contenu canonique",
   approvalProgress: "{done} sur {needed} approuvé(s)",
-  twoManagers: "deux gestionnaires différents requis",
+  twoManagers: "deux approbateurs logistique différents requis",
   ceremonyHint: "La cérémonie de clé d’accès déverrouille ces octets. Son défi est lié au hachage ci-dessous.",
   jevTitle: "Étiquettes Jev",
   waitingPasskey: "En attente de la clé d’accès…",
   approvalRecorded: "Approbation enregistrée",
-  secondSignerNeeded: "Un autre gestionnaire doit signer ensuite.",
+  secondSignerNeeded: "Un autre approbateur logistique doit signer ensuite.",
   revokeCase: "Révoquer le dossier",
   revokeCaseConfirm: "Révoquer ce dossier? Son reçu partenaire cessera de fonctionner.",
   cancel: "Annuler",
@@ -830,7 +864,7 @@ const fr: Messages = {
   correctStatus: "Corriger le statut",
   tripHint: "Le trajet simulé suit la route entrepôt-cour et envoie les statuts à votre place.",
   newRequest: "Nouvelle demande",
-  newRequestHint: "Consignez la demande d’un partenaire dans vos mots. Un autre gestionnaire doit l’approuver.",
+  newRequestHint: "Consignez la demande d’un partenaire dans vos mots. Un autre approbateur logistique doit l’approuver.",
   newLoad: "Nouveau chargement",
   newLoadHint: "Le chauffeur assigné le voit à la prochaine actualisation et reçoit une alerte.",
   loadRef: "Référence du chargement",
@@ -915,8 +949,10 @@ export function roleTitle(role: string, t: Messages): string {
   switch (role) {
     case "supplier":
       return t.supplier;
-    case "manager":
-      return t.manager;
+    case "logistics":
+      return t.logistics;
+    case "warehouse":
+      return t.warehouse;
     case "driver":
       return t.driver;
     case "receiver":

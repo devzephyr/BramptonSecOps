@@ -256,8 +256,8 @@ const USERS: {
     username: "amira",
     org: "loc",
     name: "Amira Shah",
-    role: "manager",
-    title: "Plant manager",
+    role: "logistics",
+    title: "Plant logistics",
     numberOnFile: "905-555-0201",
   },
   {
@@ -266,8 +266,8 @@ const USERS: {
     username: "colin",
     org: "loc",
     name: "Colin Berger",
-    role: "manager",
-    title: "Cold store manager",
+    role: "logistics",
+    title: "Cold store logistics",
     numberOnFile: "905-555-0202",
   },
   {
@@ -307,13 +307,22 @@ const USERS: {
     title: "Receiver",
   },
   {
+    id: "seed_user_kai",
+    email: "kai.okonkwo@lakeontariocold.example",
+    username: "kai",
+    org: "loc",
+    name: "Kai Okonkwo",
+    role: "warehouse",
+    title: "Warehouse lead",
+  },
+  {
     id: "seed_user_noah",
     email: "noah.reid@bramptoncrossdock.example",
     username: "noah",
     org: "bcdf",
     name: "Noah Reid",
-    role: "manager",
-    title: "Cross-dock manager",
+    role: "logistics",
+    title: "Cross-dock logistics",
     numberOnFile: "905-555-0301",
   },
   {
@@ -414,7 +423,7 @@ async function main() {
     });
 
     // Enrollment demands a code while an account has no passkey, and only a
-    // signed-in manager can issue one, so seeded accounts need a first code here.
+    // signed-in logistics staff can issue one, so seeded accounts need a first code here.
     const passkeys = await prisma.webAuthnCredential.count({
       where: { userId: seeded.id },
     });
@@ -688,25 +697,120 @@ async function main() {
     });
   }
 
+  const inventory: {
+    seedKey: string;
+    org: "loc" | "bcdf";
+    sku: string;
+    commodity: string;
+    quantity: number;
+    unit: string;
+    location: string;
+    status: string;
+    receivedAt: Date;
+    notes?: string;
+  }[] = [
+    {
+      seedKey: "inv-malt-a12",
+      org: "loc",
+      sku: "MALT-4419",
+      commodity: "malt",
+      quantity: 24,
+      unit: "pallets",
+      location: "Cold room A · Bay 12",
+      status: "stored",
+      receivedAt: new Date("2026-09-20T14:00:00.000Z"),
+    },
+    {
+      seedKey: "inv-poultry-b3",
+      org: "loc",
+      sku: "PLY-2201",
+      commodity: "poultry",
+      quantity: 18,
+      unit: "pallets",
+      location: "Freezer B · Bay 3",
+      status: "stored",
+      receivedAt: new Date("2026-09-22T09:30:00.000Z"),
+      notes: "Hold for QC release",
+    },
+    {
+      seedKey: "inv-dairy-c1",
+      org: "loc",
+      sku: "DRY-7730",
+      commodity: "dairy",
+      quantity: 40,
+      unit: "pallets",
+      location: "Cooler C · Bay 1",
+      status: "stored",
+      receivedAt: new Date("2026-09-18T16:15:00.000Z"),
+    },
+    {
+      seedKey: "inv-flour-d9",
+      org: "loc",
+      sku: "FLR-1008",
+      commodity: "flour",
+      quantity: 12,
+      unit: "pallets",
+      location: "Dry dock · Bay 9",
+      status: "staged_out",
+      receivedAt: new Date("2026-09-15T11:00:00.000Z"),
+      notes: "Staged for LO-4388 pickup",
+    },
+    {
+      seedKey: "inv-produce-x1",
+      org: "bcdf",
+      sku: "PRD-5001",
+      commodity: "produce",
+      quantity: 30,
+      unit: "pallets",
+      location: "Cross-dock · Lane 1",
+      status: "stored",
+      receivedAt: new Date("2026-09-24T08:00:00.000Z"),
+    },
+  ];
+
+  for (const lot of inventory) {
+    const { org: owner, ...rest } = lot;
+    const orgId = orgs[owner].id;
+    await prisma.inventoryLot.upsert({
+      where: { seedKey: lot.seedKey },
+      create: {
+        id: `seed_${lot.seedKey}`,
+        orgId,
+        ...rest,
+      },
+      update: {
+        orgId,
+        sku: lot.sku,
+        commodity: lot.commodity,
+        quantity: lot.quantity,
+        unit: lot.unit,
+        location: lot.location,
+        status: lot.status,
+        receivedAt: lot.receivedAt,
+        notes: lot.notes ?? null,
+      },
+    });
+  }
+
   await prisma.notification.upsert({
     where: { seedKey: "dual-bank" },
     create: {
       id: "seed_notif_dual_bank",
       orgId: org.id,
       seedKey: "dual-bank",
-      role: "manager",
+      role: "logistics",
       kind: "dual_control",
       title: "Bank change is waiting",
-      body: "A supplier bank change needs two different managers. Nothing is approved yet.",
-      href: "/manager",
+      body: "A supplier bank change needs two different logistics approvers. Nothing is approved yet.",
+      href: "/logistics",
     },
     update: {
       orgId: org.id,
-      role: "manager",
+      role: "logistics",
       kind: "dual_control",
       title: "Bank change is waiting",
-      body: "A supplier bank change needs two different managers. Nothing is approved yet.",
-      href: "/manager",
+      body: "A supplier bank change needs two different logistics approvers. Nothing is approved yet.",
+      href: "/logistics",
     },
   });
 

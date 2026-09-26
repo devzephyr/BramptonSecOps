@@ -230,7 +230,7 @@ export async function notifyApprovers(
   },
 ) {
   const approvers = await db.user.findMany({
-    where: { orgId: input.orgId, role: { in: ["manager", "admin"] }, id: { notIn: input.exclude } },
+    where: { orgId: input.orgId, role: { in: ["logistics", "admin"] }, id: { notIn: input.exclude } },
     select: { id: true, role: true },
   });
   if (approvers.length === 0) return;
@@ -243,7 +243,7 @@ export async function notifyApprovers(
       kind: input.kind,
       title: `${label} from ${input.counterparty}`,
       body: input.body,
-      href: "/manager",
+      href: "/logistics",
       emailStatus: "in-app",
     })),
   });

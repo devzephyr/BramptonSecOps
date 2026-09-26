@@ -7,8 +7,8 @@ type Params = { params: Promise<{ id: string }> };
 export async function POST(_request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
-    return forbidden("Only managers can issue enrollment codes.");
+  if (!hasRole(user, ["logistics", "admin"])) {
+    return forbidden("Only logistics staff can issue enrollment codes.");
   }
   const { id } = await params;
 
@@ -17,8 +17,8 @@ export async function POST(_request: Request, { params }: Params) {
     select: { id: true, role: true, username: true },
   });
   if (!target) return notFound();
-  if ((target.role === "admin" || target.role === "manager") && user.role !== "admin") {
-    return forbidden("Only an admin can issue codes for approvers (managers or admins).");
+  if ((target.role === "admin" || target.role === "logistics") && user.role !== "admin") {
+    return forbidden("Only an admin can issue codes for approvers (logistics or admins).");
   }
 
   const { code, hash } = newEnrollmentCode();

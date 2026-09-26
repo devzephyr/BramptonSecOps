@@ -70,8 +70,8 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PATCH(request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
-    return forbidden("Only a manager or admin can edit or hand off a load.");
+  if (!hasRole(user, ["logistics", "admin"])) {
+    return forbidden("Only logistics or admin or admin can edit or hand off a load.");
   }
   const { id } = await params;
 

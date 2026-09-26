@@ -159,7 +159,8 @@ type ApiNote = {
 
 const ALL_ROLES: Role[] = [
   "supplier",
-  "manager",
+  "logistics",
+  "warehouse",
   "driver",
   "receiver",
   "admin",
@@ -307,6 +308,25 @@ export async function fetchLoads(): Promise<Load[]> {
     lng: row.lng ?? null,
     positionAt: row.positionAt ?? null,
   }));
+}
+
+export type InventoryLot = {
+  id: string;
+  sku: string;
+  commodity: string;
+  quantity: number;
+  unit: string;
+  location: string;
+  status: string;
+  receivedAt?: string | null;
+  notes?: string | null;
+};
+
+export async function fetchInventory(): Promise<InventoryLot[]> {
+  const res = await fetch("/api/inventory", { credentials: "include" });
+  if (!res.ok) return [];
+  const body = (await parseJson(res)) as { lots?: InventoryLot[] } | null;
+  return body?.lots ?? [];
 }
 
 export async function postLoadStatus(loadId: string, status: string) {
@@ -735,7 +755,9 @@ export type TeamMember = {
 
 export async function fetchTeam(): Promise<TeamMember[]> {
   const res = await fetch("/api/orgs/users", { credentials: "include" });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not load team"));
+  }
   const body = (await parseJson(res)) as { users?: TeamMember[] } | null;
   return body?.users ?? [];
 }

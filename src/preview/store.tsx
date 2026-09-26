@@ -18,9 +18,9 @@ import {
 } from "@/lib/desk-client";
 import { REQUEST_FIELDS, SCENARIOS, type DeskCase, type Load, type Note, type Role } from "@/preview/data";
 
-const CASE_STAFF: Role[] = ["supplier", "manager", "admin"];
+const CASE_STAFF: Role[] = ["supplier", "logistics", "admin"];
 
-type ManagerTab = "board" | "request" | "load" | "directory" | "records" | "receipt" | "team";
+type LogisticsTab = "board" | "request" | "load" | "directory" | "records" | "receipt" | "team";
 type Draft = { requestType: string; contactId: string; rawText: string; requested: Record<string, string> };
 
 type Store = {
@@ -47,8 +47,8 @@ type Store = {
   dismissNote: (id: string) => Promise<void>;
   refreshRemote: () => Promise<void>;
   refreshDirectory: () => Promise<void>;
-  managerTab: ManagerTab;
-  setManagerTab: (tab: ManagerTab) => void;
+  logisticsTab: LogisticsTab;
+  setLogisticsTab: (tab: LogisticsTab) => void;
   ready: boolean;
 };
 
@@ -67,7 +67,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
   const [receiptToken, setReceiptToken] = useState<string | null>(null);
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [managerTab, setManagerTab] = useState<ManagerTab>("board");
+  const [logisticsTab, setLogisticsTab] = useState<LogisticsTab>("board");
   const [ready, setReady] = useState(false);
   const [draft, setDraftState] = useState<Draft>({
     requestType: SCENARIOS[0].requestType,
@@ -108,7 +108,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
   const openCase = useCallback((id: string) => {
     setPasskeyError(null);
     setCaseId(id);
-    setManagerTab("board");
+    setLogisticsTab("board");
   }, []);
 
   const api = useMemo<Store>(() => {
@@ -126,7 +126,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
       openReceipt: (token) => {
         setReceiptToken(token);
         setCaseId(null);
-        setManagerTab("receipt");
+        setLogisticsTab("receipt");
       },
       fillScenario: (id) => {
         const scenario = SCENARIOS.find((item) => item.id === id);
@@ -188,7 +188,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
         };
         const item = cases.find((entry) => entry.id === id);
         if (!item) return fail("Case not found.");
-        if (role !== "manager" && role !== "admin") return fail("Only a manager can approve.");
+        if (role !== "logistics" && role !== "admin") return fail("Only logistics or admin can approve.");
         if (item.createdById === user.id) return fail("The person who opened a case cannot approve it.");
         if (item.approvals.some((approval) => approval.userId === user.id)) {
           return fail("You already signed this exact payload. A different person must sign.");
@@ -210,7 +210,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
         if (updated.status === "fully_approved" && updated.token) {
           setReceiptToken(updated.token);
           setCaseId(null);
-          setManagerTab("receipt");
+          setLogisticsTab("receipt");
         }
         return null;
       },
@@ -245,8 +245,8 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
       },
       refreshRemote,
       refreshDirectory,
-      managerTab,
-      setManagerTab,
+      logisticsTab,
+      setLogisticsTab,
       ready,
       submitError,
     };
@@ -256,7 +256,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
     contacts,
     draft,
     loads,
-    managerTab,
+    logisticsTab,
     notes,
     openCase,
     passkeyError,

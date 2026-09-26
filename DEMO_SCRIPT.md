@@ -20,7 +20,7 @@ Open `/v/{token}` in a fresh window. Show: payload hash, both signers, timestamp
 Devon signs in on the phone as username **devon**. Tap **15 minutes away**. Confirm the tap saved.
 
 **2:05 — Manager + receiver**  
-On desktop, manager notification and receiver screen show the in-app warning for Devon’s ETA.
+On desktop, logistics notification and receiver/warehouse screens show the in-app warning for Devon’s ETA.
 
 **2:20 — Close**  
 One line: **Four role screens, passkeys only, no chat channel.**
@@ -30,4 +30,4 @@ Optional: show landing at `/` and PWA “Add to Home Screen” on Android (shell
 
 ---
 
-**Cast:** Jordan Pell (supplier), Amira Shah + Colin Berger (managers), Devon Blake (driver), partner viewer (no account).
+**Cast:** Jordan Pell (supplier), Amira Shah + Colin Berger (logistics), Devon Blake (driver), partner viewer (no account).

@@ -34,9 +34,9 @@ SupplyChek is operational verification for Canadian cold-chain SMEs: sealed note
 
 | Risk | Desk behavior |
 | --- | --- |
-| Scheme #2 bank change | Sealed note → flags → call on file → two manager passkeys on one hash |
+| Scheme #2 bank change | Sealed note → flags → call on file → two logistics passkeys on one hash |
 | Diverted dock / load | Destination playbook + same dual-control pattern where policy requires |
 | Double brokering | New-carrier heuristics + policy for introductions |
-| In-transit surprise | Driver ETA tap → manager and receiver in-app warning |
+| In-transit surprise | Driver ETA tap → logistics, warehouse, and receiver in-app warning |
 
 Attestation on every screen: **SupplyChek attestation — not a government certification.**

@@ -23,7 +23,7 @@ function shortHash(hash: string) {
   return `${hash.slice(0, 12)}…${hash.slice(-8)}`;
 }
 
-export function ManagerDesk() {
+export function LogisticsDesk() {
   const desk = useDesk();
   const { lang, t } = useI18n();
 
@@ -33,8 +33,8 @@ export function ManagerDesk() {
 
   return (
     <Tabs
-      value={desk.managerTab}
-      onValueChange={(value) => desk.setManagerTab(value as typeof desk.managerTab)}
+      value={desk.logisticsTab}
+      onValueChange={(value) => desk.setLogisticsTab(value as typeof desk.logisticsTab)}
     >
       <TabsList>
         <TabsTab value="board">{t.requests}</TabsTab>
@@ -106,7 +106,7 @@ export function ManagerDesk() {
         <SupplierDesk />
       </TabsPanel>
       <TabsPanel value="load" className="pt-4">
-        <LoadForm onCreated={() => desk.setManagerTab("board")} />
+        <LoadForm onCreated={() => desk.setLogisticsTab("board")} />
       </TabsPanel>
       <TabsPanel value="directory" className="pt-4">
         <DirectoryDesk />

@@ -4,7 +4,7 @@
 
 SupplyChek helps Canadian cold-chain teams check risky requests before banking, docks, or loads change. Staff write a sealed note, follow the playbook (call the number already on file), and two different managers confirm the same payload with a passkey. Case threads are end-to-end encrypted with the Signal protocol. Drivers share live trip positions receivers watch like a ride-share map. Partners open a public receipt link to see the payload hash, signers, timestamps, and an Ed25519 signature from the server—without a side channel for approvals.
 
-Four role screens (supplier desk, manager, driver, receiver). Passkeys only for sign-in and approvals. Two demo orgs with separated data.
+Role screens for supplier, logistics, warehouse, driver, and receiver (admin shares the logistics desk). Passkeys only for sign-in and approvals. Two demo orgs with separated data.
 
 ## Teammate quickstart
 
@@ -25,14 +25,15 @@ Org **Lake Ontario Cold Storage** (slug `lake-ontario-cold-storage`):
 | Username | Role | Screen |
 | --- | --- | --- |
 | `jordan` | supplier | Supplier desk |
-| `amira` | manager | Manager board |
-| `colin` | manager | Manager board (second approver) |
-| `priya` | admin | Manager board |
+| `amira` | logistics | Logistics board |
+| `colin` | logistics | Logistics board (second approver) |
+| `priya` | admin | Logistics board |
 | `devon` | driver | Driver taps + trip sim |
 | `samir` | driver | Driver taps + trip sim |
 | `elena` | receiver | Incoming + live map + POD |
+| `kai` | warehouse | Yard traffic + inventory |
 
-Org **Brampton Cross-Dock Freight** (slug `brampton-cross-dock`): `noah` (manager), `maya` (supplier), `omar` (driver). Sees none of org 1's data.
+Org **Brampton Cross-Dock Freight** (slug `brampton-cross-dock`): `noah` (logistics), `maya` (supplier), `omar` (driver). Sees none of org 1's data.
 
 Each account needs one passkey enrollment first. `npx prisma db seed` prints an enrollment code for every seeded account that has no passkey yet (24-hour expiry, one use each). Enter username + organization + that code, click **Create a passkey**, approve the browser prompt, then **Sign in with passkey**. (`DEMO_ENROLL=true` must be set.) Codes expired? Re-run the seed; it issues fresh ones and leaves enrolled accounts alone.
 
@@ -41,11 +42,11 @@ Nobody can enroll on someone else's account. First-time setup needs an **enrollm
 ### Five-minute tour
 
 1. As `jordan`: supplier desk → write a sealed note → submit.
-2. As `amira`: manager board now lists it → open → checklist → approve with passkey.
+2. As `amira`: logistics board now lists it → open → checklist → approve with passkey.
 3. As `colin`: second approval on the identical hash → partner receipt appears.
 4. Same case: Messages tab sends Signal-encrypted notes (both must open the case once first); Documents tab uploads hash-recorded files.
-5. As `devon`: **Start simulated trip**. As `elena`: watch the truck move on the map and the status steps advance.
-6. As `amira`: **New load** tab → fill it in and assign a driver. That driver sees it (and an alert) within 15 seconds. **New request** opens a bank change or other request from the manager side, including the requested bank details; a different manager approves it.
+5. As `devon`: **Start simulated trip**. As `elena`: watch the truck move on the map and the status steps advance. As `kai`: see the same yard traffic plus inventory on hand.
+6. As `amira`: **New load** tab → fill it in and assign a driver. That driver sees it (and an alert) within 15 seconds. **New request** opens a bank change or other request from the logistics side, including the requested bank details; a different logistics approver approves it.
 
 ## Local Next.js
 
@@ -152,11 +153,11 @@ It fails if forbidden substrings (chat-app names, legacy auth wording, overclaim
 ## Architecture notes for contributors
 
 - **Tenancy.** Every table carries `orgId`. Sessions carry `orgId` and `requireUser()` enforces it. Never add a query without an org filter. Directory/autocomplete must come from the API, never the hardcoded preview list, or orgs leak into each other.
-- **Access model.** Cases, their threads, documents, and the directory are readable by supplier, manager, and admin roles only. Only an admin can create, re-code, or reset the passkeys of managers and admins, so no manager can mint a second approver identity. The person who opened a case cannot approve it. A session is bound to the passkey that signed in; revoking that passkey ends the session on the next request.
+- **Access model.** Cases, their threads, documents, and the directory are readable by supplier, logistics, and admin roles only. Only an admin can create, re-code, or reset the passkeys of logistics and admins, so no logistics user can mint a second approver identity. The person who opened a case cannot approve it. A session is bound to the passkey that signed in; revoking that passkey ends the session on the next request.
 - **Concurrency.** Approve, edit, and revoke on a case take a `SELECT … FOR UPDATE` row lock and re-check state inside the transaction, so an approval can never land on a payload that changed mid-ceremony. Enrollment codes, approval ceremonies, WebAuthn challenges, one-time prekeys, and driver load claims are consumed with single conditional writes, never read-then-write.
 - **Identity.** Sign-in resolves `username + organization` server-side. No endpoint lists users. The old `userId`-in-body shape is gone.
 - **Messaging crypto.** `libsignal-protocol-typescript` (GPL-3.0, hackathon-only license posture). Server stores public keys and ciphertext envelopes; private keys stay in browser localStorage. Pairwise Double Ratchet fan-out per case thread, no Sender Keys.
 - **Cases.** The preview store is a view over `/api/verify-cases`, not a local mock. Submit/checklist/approve all round-trip the server.
-- **Loads and handoffs.** Managers edit loads and hand them to another driver (optional handoff location) from the load's Details dialog; every change and status tap lands in the load's history, and both drivers get an alert. Dock, destination, and seal lock once a load leaves "scheduled"; changing them mid-route goes through an approved request.
+- **Loads and handoffs.** Logistics edits loads and hands them to another driver (optional handoff location) from the load's Details dialog; every change and status tap lands in the load's history, and both drivers get an alert. Dock, destination, and seal lock once a load leaves "scheduled"; changing them mid-route goes through an approved request. Warehouse staff see yard traffic (pickup/dropoff) and inventory lots on hand.
 - **Tracking.** Positions on `Load` (`lat`/`lng`/`positionAt`). The driver sim follows a fixed depot→yard road route (Hwy 403/410, from Mapbox Directions, stored in `src/lib/tracking.ts`), posts Rolling, 15 minutes away, and Arrived on the way, and is labeled simulated everywhere. Maps render with Mapbox GL (`src/components/desk/trip-map.tsx`).
 - **Copy gate.** `scripts/ban-list.mjs` runs on the repo (minus `.agents/`). Keep UI copy free of chat-app names, legacy auth wording, and overclaims.

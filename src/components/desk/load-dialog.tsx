@@ -26,7 +26,7 @@ function Row({ label, value, mono = false }: { label: string; value: string; mon
 export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () => void }) {
   const { t } = useI18n();
   const desk = useDesk();
-  const canEdit = desk.user.role === "manager" || desk.user.role === "admin";
+  const canEdit = desk.user.role === "logistics" || desk.user.role === "admin";
   const [editing, setEditing] = useState(false);
   const [events, setEvents] = useState<LoadEvent[]>([]);
   const [drivers, setDrivers] = useState<TeamMember[]>([]);
@@ -39,7 +39,10 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
     if (!loadId) return;
     let alive = true;
     void fetchLoadEvents(loadId).then((rows) => alive && setEvents(rows));
-    if (canEdit) void fetchTeam().then((team) => alive && setDrivers(team.filter((member) => member.role === "driver")));
+    if (canEdit)
+      void fetchTeam()
+        .then((team) => alive && setDrivers(team.filter((member) => member.role === "driver")))
+        .catch(() => alive && setDrivers([]));
     return () => {
       alive = false;
     };

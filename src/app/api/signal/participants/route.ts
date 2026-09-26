@@ -6,7 +6,7 @@ import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http"
 export async function GET(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can view cases.");
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or logistics staff can view cases.");
 
   const caseId = new URL(request.url).searchParams.get("caseId");
   if (!caseId) return badRequest("caseId is required.");
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const staff = await prisma.user.findMany({
     where: {
       orgId: user.orgId,
-      OR: [{ id: kase.createdById }, { role: { in: ["manager", "admin"] } }],
+      OR: [{ id: kase.createdById }, { role: { in: ["logistics", "admin"] } }],
     },
     select: {
       id: true,

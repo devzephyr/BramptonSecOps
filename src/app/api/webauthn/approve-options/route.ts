@@ -15,8 +15,8 @@ import { authenticationOptions, approvalChallenge } from "@/lib/webauthn";
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["manager", "admin"])) {
-    return forbidden("Only a manager or admin can approve.");
+  if (!hasRole(user, ["logistics", "admin"])) {
+    return forbidden("Only logistics or admin or admin can approve.");
   }
 
   let body: Record<string, unknown>;

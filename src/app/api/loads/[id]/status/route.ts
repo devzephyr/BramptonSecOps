@@ -82,7 +82,7 @@ export async function POST(request: Request, { params }: Params) {
     const staff = await prisma.user.findMany({
       where: {
         orgId: user.orgId,
-        role: { in: ["manager", "admin", "receiver"] },
+        role: { in: ["logistics", "admin", "receiver", "warehouse"] },
       },
       select: { id: true, email: true, role: true },
     });
@@ -95,7 +95,12 @@ export async function POST(request: Request, { params }: Params) {
           kind: "load_fifteen_min",
           title: `Load ${load.loadRef} — 15 minutes out`,
           body: `${user.name} is about 15 minutes from ${load.destination}${load.scheduledDock ? ` · ${load.scheduledDock}` : ""}.`,
-          href: person.role === "receiver" ? "/receiver" : "/manager",
+          href:
+            person.role === "receiver"
+              ? "/receiver"
+              : person.role === "warehouse"
+                ? "/warehouse"
+                : "/logistics",
           emailTo: person.email,
           emailStatus: "in-app",
         })),

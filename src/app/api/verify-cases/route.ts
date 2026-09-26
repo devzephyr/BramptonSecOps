@@ -18,7 +18,7 @@ import { REQUEST_FIELDS } from "@/preview/data";
 export async function GET() {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can view cases.");
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or logistics staff can view cases.");
 
   const rows = await prisma.verifyCase.findMany({
     where: { orgId: user.orgId, revokedAt: null },
@@ -34,7 +34,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can open a verify case.");
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or logistics staff can open a verify case.");
 
   let body: Record<string, unknown>;
   try {
@@ -139,8 +139,8 @@ export async function POST(request: Request) {
     requestType,
     counterparty,
     body: meta.dualControl
-      ? `${user.name} opened it. It needs two different managers. Nothing is approved yet.`
-      : `${user.name} opened it. It needs one manager to approve.`,
+      ? `${user.name} opened it. It needs two different logistics approvers. Nothing is approved yet.`
+      : `${user.name} opened it. It needs one logistics approver to approve.`,
   });
 
   return json(serializeCase(updated, { includeRawText: true }), 201);

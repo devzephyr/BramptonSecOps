@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
   if (caseId) {
     if (!hasRole(user, CASE_STAFF)) {
-      return forbidden("Only supplier or manager staff can attach case documents.");
+      return forbidden("Only supplier or logistics staff can attach case documents.");
     }
     const kase = await prisma.verifyCase.findFirst({
       where: { id: caseId, orgId: user.orgId, revokedAt: null },
