@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ThemeToggle } from "@/components/desk/theme-toggle";
 import {
   createPasskey,
   DeskApiError,
@@ -21,6 +22,10 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [serverDown, setServerDown] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    document.title = `${t.signIn} · ${t.brand}`;
+  }, [t]);
 
   function identity() {
     return { username: username.trim(), org: org.trim() };
@@ -61,6 +66,12 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <a
+        href="#signin-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-card focus:px-3 focus:py-2 focus:text-sm"
+      >
+        {t.skipToContent}
+      </a>
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-4 py-3">
           <div className="mr-auto">
@@ -73,9 +84,10 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
           <Button size="sm" variant={lang === "fr" ? "default" : "outline"} onClick={() => setLang("fr")}>
             FR
           </Button>
+          <ThemeToggle />
         </div>
       </header>
-      <main className="mx-auto flex max-w-4xl flex-col gap-4 px-4 py-8">
+      <main id="signin-content" className="mx-auto flex max-w-4xl flex-col gap-4 px-4 py-8">
         <Card>
           <CardHeader>
             <CardTitle>{t.signIn}</CardTitle>
@@ -106,6 +118,7 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
               <Input
                 id="si-username"
                 autoComplete="username"
+                placeholder={t.usernamePlaceholder}
                 value={username}
                 onChange={(event) => setUsername(event.target.value)}
               />

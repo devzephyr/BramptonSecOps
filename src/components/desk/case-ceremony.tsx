@@ -17,6 +17,8 @@ import { sha256Hex } from "@/preview/hash";
 import { useDesk } from "@/preview/store";
 import { DocumentUpload } from "@/components/desk/document-upload";
 import { MessageThread } from "@/components/desk/message-thread";
+import { CallLink } from "@/components/desk/call-link";
+import { CopyButton } from "@/components/desk/copy-button";
 
 function shortHash(hash: string) {
   return `${hash.slice(0, 12)}…${hash.slice(-8)}`;
@@ -130,7 +132,7 @@ export function CaseCeremony() {
         <CardPanel>
           <div className="grid gap-3 md:grid-cols-2">
             <div className="rounded-lg bg-muted p-3">
-              <p className="mb-2 text-sm font-medium">{t.onFile}{partner?.numberOnFile ? ` · ${partner.numberOnFile}` : ""}</p>
+              <p className="mb-2 text-sm font-medium">{t.onFile}{partner?.numberOnFile ? <> · <CallLink numberOnFile={partner.numberOnFile} /></> : ""}</p>
               <div className="flex flex-col gap-2 text-sm">
                 {Object.entries(item.onFile).map(([key, value]) => (
                   <div key={key} className="flex justify-between gap-3">
@@ -201,6 +203,9 @@ export function CaseCeremony() {
               The passkey ceremony unlocks these bytes. Its challenge binds to the hash below.
             </p>
             <p className="font-mono text-xs break-all">{item.payloadHash}</p>
+            <div>
+              <CopyButton text={item.payloadHash} label={t.hash} />
+            </div>
             {hashOk === false && (
               <Alert variant="error">
                 <AlertTitle>Hash mismatch</AlertTitle>

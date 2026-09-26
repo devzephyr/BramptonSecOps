@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { toastManager } from "@/components/ui/toast";
+import { CopyButton } from "@/components/desk/copy-button";
 import {
   DeskApiError,
   fetchMessages,
@@ -159,11 +160,14 @@ export function MessageThread({ caseId, userId }: Props) {
                 <Badge variant="outline">{row.sender.role}</Badge>
                 {peerKeyChanged(userId, row.sender.id) && <Badge variant="warning">{t.keyChanged}</Badge>}
                 {fingerprints[row.sender.id] && (
-                  <span
-                    className="font-mono text-[10px] text-muted-foreground"
-                    title={`${t.safetyNumber}: ${fingerprints[row.sender.id]}`}
-                  >
-                    {t.safetyNumber}: {fingerprints[row.sender.id].slice(0, 12)}…
+                  <span className="flex items-center gap-1">
+                    <span
+                      className="font-mono text-[10px] text-muted-foreground"
+                      title={`${t.safetyNumber}: ${fingerprints[row.sender.id]}`}
+                    >
+                      {t.safetyNumber}: {fingerprints[row.sender.id].slice(0, 12)}…
+                    </span>
+                    <CopyButton text={fingerprints[row.sender.id]} label={t.safetyNumber} />
                   </span>
                 )}
               </div>

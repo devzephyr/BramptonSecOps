@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Separator } from "@/components/ui/separator";
+import { CopyButton } from "@/components/desk/copy-button";
 import { useI18n } from "@/lib/i18n";
 import { useDesk } from "@/preview/store";
 
@@ -46,6 +47,13 @@ export function ReceiptView() {
       <CardPanel className="flex flex-col gap-3 text-sm">
         <p>{item.counterparty}</p>
         <p className="font-mono text-xs break-all">{item.payloadHash}</p>
+        <div className="flex flex-wrap gap-2">
+          <CopyButton text={item.payloadHash} label={t.hash} />
+          <CopyButton
+            text={typeof window !== "undefined" ? `${window.location.origin}/v/${item.token}` : `/v/${item.token}`}
+            label={t.partnerCheck}
+          />
+        </div>
         <p className="font-mono text-xs">{shortHash(item.payloadHash)}</p>
         <p>
           {t.matches}: <strong>{t.yes}</strong>

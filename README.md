@@ -151,4 +151,4 @@ It fails if forbidden substrings (chat-app names, legacy auth wording, overclaim
 - **Messaging crypto.** `libsignal-protocol-typescript` (GPL-3.0, hackathon-only license posture). Server stores public keys and ciphertext envelopes; private keys stay in browser localStorage. Pairwise Double Ratchet fan-out per case thread, no Sender Keys.
 - **Cases.** The preview store is a view over `/api/verify-cases`, not a local mock. Submit/checklist/approve all round-trip the server.
 - **Tracking.** Positions on `Load` (`lat`/`lng`/`positionAt`). The driver sim walks a fixed depot→yard segment and is labeled simulated everywhere.
-- **Copy gate.** `scripts/ban-list.mjs` runs on the repo (minus `.agents/`). Keep UI copy free of password/SMS/WhatsApp/certified language.
+- **Copy gate.** `scripts/ban-list.mjs` runs on the repo (minus `.agents/`). Keep UI copy free of chat-app names, legacy auth wording, and overclaims.

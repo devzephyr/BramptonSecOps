@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { CallLink } from "@/components/desk/call-link";
 import { useI18n } from "@/lib/i18n";
 import { PARTNERS, REQUESTS, SCENARIOS, deskFlags, type Partner } from "@/preview/data";
 import { sha256Hex } from "@/preview/hash";
@@ -163,7 +164,7 @@ export function SupplierDesk() {
               </AutocompletePopup>
             </Autocomplete>
             <span className="font-mono text-xs text-muted-foreground">
-              {selected.domain} · {selected.numberOnFile}
+              {selected.domain} · <CallLink numberOnFile={selected.numberOnFile} />
             </span>
           </div>
           <Textarea
@@ -184,7 +185,8 @@ export function SupplierDesk() {
           <Alert variant="info">
             <AlertTitle>SECURE_THREAD_ONLY</AlertTitle>
             <AlertDescription>
-              This thread never touches email. Confirm by calling the number on file: {selected.numberOnFile}.
+              This thread never touches email. Confirm by calling the number on file:{" "}
+              <CallLink numberOnFile={selected.numberOnFile} />.
             </AlertDescription>
           </Alert>
           {previewFlags.length > 0 && (
@@ -203,6 +205,11 @@ export function SupplierDesk() {
             <Badge variant="outline">draft</Badge>
             {request && <Badge variant={request.dual ? "warning" : "secondary"}>{request.id}</Badge>}
           </div>
+          {desk.submitError && (
+            <Alert variant="error">
+              <AlertDescription>{desk.submitError}</AlertDescription>
+            </Alert>
+          )}
         </CardPanel>
       </Card>
     </div>
