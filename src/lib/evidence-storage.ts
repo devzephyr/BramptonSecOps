@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 export function sha256Buffer(data: Buffer | Uint8Array) {
   return createHash("sha256").update(data).digest("hex");
@@ -52,9 +52,15 @@ export async function putObject(
   return { bucket, key };
 }
 
+function localEvidencePath(key: string) {
+  const root = path.resolve(process.cwd(), "data", "evidence");
+  const file = path.resolve(root, key);
+  if (!file.startsWith(root + path.sep)) throw new Error("Evidence key escapes the storage root.");
+  return file;
+}
+
 export async function writeLocalEvidence(key: string, body: Buffer) {
-  const root = path.join(process.cwd(), "data", "evidence");
-  const file = path.join(root, key);
+  const file = localEvidencePath(key);
   await mkdir(path.dirname(file), { recursive: true });
   await writeFile(file, body);
   return file;
@@ -69,4 +75,18 @@ export async function storeEvidence(key: string, body: Buffer, contentType: stri
     throw new StorageNotConfigured("Evidence storage is not configured. Set the S3_* variables for R2.");
   }
   await writeLocalEvidence(key, body);
+}
+
+export async function readEvidence(key: string): Promise<Buffer> {
+  if (s3Enabled()) {
+    const res = await s3Client().send(
+      new GetObjectCommand({ Bucket: process.env.S3_BUCKET ?? "supplychek-evidence", Key: key }),
+    );
+    if (!res.Body) throw new Error("Stored object has no body.");
+    return Buffer.from(await res.Body.transformToByteArray());
+  }
+  if (process.env.VERCEL) {
+    throw new StorageNotConfigured("Evidence storage is not configured. Set the S3_* variables for R2.");
+  }
+  return readFile(localEvidencePath(key));
 }

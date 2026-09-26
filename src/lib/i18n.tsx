@@ -1,5 +1,6 @@
 "use client";
 
+import type { DocTypeName } from "@/lib/policy";
 import {
   createContext,
   useCallback,
@@ -158,6 +159,24 @@ export type Messages = {
   uploading: string;
   toastSent: string;
   toastDocSaved: string;
+  docTypes: Record<DocTypeName, string>;
+  docType: string;
+  docNumber: string;
+  docNumberHint: string;
+  amount: string;
+  currency: string;
+  download: string;
+  records: string;
+  recordsHint: string;
+  allTypes: string;
+  exportCsv: string;
+  totals: string;
+  orgRecord: string;
+  noDocuments: string;
+  uploadedBy: string;
+  date: string;
+  file: string;
+  linkedTo: string;
   toastTrip: string;
   toastTripStopped: string;
   directoryHint: string;
@@ -413,6 +432,34 @@ const en: Messages = {
   uploading: "Uploading…",
   toastSent: "Message sent sealed.",
   toastDocSaved: "Document saved with its hash.",
+  docTypes: {
+    bill_of_lading: "Bill of lading",
+    proof_of_delivery: "Proof of delivery",
+    invoice: "Invoice",
+    receipt: "Receipt",
+    rate_confirmation: "Rate confirmation",
+    packing_list: "Packing list",
+    customs: "Customs",
+    insurance: "Insurance",
+    other: "Other",
+  },
+  docType: "Document type",
+  docNumber: "Number",
+  docNumberHint: "BOL, invoice or receipt number",
+  amount: "Amount",
+  currency: "Currency",
+  download: "Download",
+  records: "Records",
+  recordsHint: "Every bill of lading, invoice and receipt in one ledger. Downloads are re-checked against the hash recorded at upload.",
+  allTypes: "All types",
+  exportCsv: "Export CSV",
+  totals: "Totals",
+  orgRecord: "Org record",
+  noDocuments: "No documents yet.",
+  uploadedBy: "Uploaded by",
+  date: "Date",
+  file: "File",
+  linkedTo: "Linked to",
   toastTrip: "Live trip running. The receiver sees you move.",
   toastTripStopped: "Stopped sharing position.",
   directoryHint: "Numbers already on file. Do not use a number that arrives inside a request.",
@@ -671,6 +718,34 @@ const fr: Messages = {
   uploading: "Téléversement…",
   toastSent: "Message scellé envoyé.",
   toastDocSaved: "Document enregistré avec son empreinte.",
+  docTypes: {
+    bill_of_lading: "Connaissement",
+    proof_of_delivery: "Preuve de livraison",
+    invoice: "Facture",
+    receipt: "Reçu",
+    rate_confirmation: "Confirmation de tarif",
+    packing_list: "Liste de colisage",
+    customs: "Douanes",
+    insurance: "Assurance",
+    other: "Autre",
+  },
+  docType: "Type de document",
+  docNumber: "Numéro",
+  docNumberHint: "Numéro de connaissement, de facture ou de reçu",
+  amount: "Montant",
+  currency: "Devise",
+  download: "Télécharger",
+  records: "Registres",
+  recordsHint: "Connaissements, factures et reçus dans un seul registre. Chaque téléchargement est revérifié contre l’empreinte enregistrée.",
+  allTypes: "Tous les types",
+  exportCsv: "Exporter CSV",
+  totals: "Totaux",
+  orgRecord: "Registre de l’organisation",
+  noDocuments: "Aucun document pour l’instant.",
+  uploadedBy: "Téléversé par",
+  date: "Date",
+  file: "Fichier",
+  linkedTo: "Lié à",
   toastTrip: "Trajet en direct. Le réceptionnaire vous voit bouger.",
   toastTripStopped: "Partage de position arrêté.",
   emptyManager: "Rédigez une note scellée au bureau fournisseur.",
