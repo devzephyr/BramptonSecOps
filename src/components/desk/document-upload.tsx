@@ -190,7 +190,7 @@ export function DocumentUpload({
             onChange={(event) => setAmount(event.target.value)}
           />
           <Select value={currency} onValueChange={(value) => setCurrency(String(value))}>
-            <SelectTrigger aria-label={t.currency}>
+            <SelectTrigger aria-label={t.currency} className="min-w-0">
               <SelectValue />
             </SelectTrigger>
             <SelectPopup>
