@@ -79,8 +79,6 @@ export async function POST(request: Request) {
         keyId: pre.keyId as number,
         publicKey: pre.publicKey as string,
       })),
-      // Re-publish is idempotent: concurrent enrollments race the
-      // delete above, so first writer wins per key id.
       skipDuplicates: true,
     });
   }
