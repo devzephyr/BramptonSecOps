@@ -1,19 +1,17 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { NotificationsMenu } from "@/components/desk/notifications-menu";
 import { ThemeToggle } from "@/components/desk/theme-toggle";
 import type { SessionUser } from "@/lib/desk-client";
 import { roleTitle, useI18n } from "@/lib/i18n";
 
 export function DeskShell({
   user,
-  alertCount,
   onSignOut,
   children,
 }: {
   user: SessionUser;
-  alertCount: number;
   onSignOut: () => void;
   children: React.ReactNode;
 }) {
@@ -45,9 +43,7 @@ export function DeskShell({
             FR
           </Button>
           <ThemeToggle />
-          <Badge variant={alertCount ? "warning" : "outline"}>
-            {alertCount} {t.alerts}
-          </Badge>
+          <NotificationsMenu />
           <Button size="sm" variant="outline" onClick={onSignOut}>
             {t.signOut}
           </Button>

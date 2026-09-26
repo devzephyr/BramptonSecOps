@@ -75,6 +75,7 @@ export type Messages = {
   statusRevoked: string;
   scheduled: string;
   alerts: string;
+  noAlerts: string;
   holdCall: string;
   notApproval: string;
   signedInAs: string;
@@ -414,6 +415,7 @@ const en: Messages = {
   statusRevoked: "Revoked",
   scheduled: "Scheduled",
   alerts: "alerts",
+  noAlerts: "No alerts yet.",
   holdCall: "Approve stays off until every step is checked and you name who you called.",
   notApproval: "Uploading a photo does not approve a change.",
   signedInAs: "Signed in as",
@@ -765,6 +767,7 @@ const fr: Messages = {
   statusRevoked: "Révoqué",
   scheduled: "Planifié",
   alerts: "alertes",
+  noAlerts: "Aucune alerte pour l’instant.",
   holdCall:
     "L’approbation reste désactivée tant que chaque étape n’est pas cochée et que vous n’avez pas nommé la personne appelée.",
   notApproval: "Envoyer une photo n’approuve pas un changement.",
