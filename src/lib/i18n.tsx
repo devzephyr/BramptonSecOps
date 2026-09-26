@@ -236,6 +236,21 @@ export type Messages = {
   yourLoads: string;
   correctStatus: string;
   tripHint: string;
+  newRequest: string;
+  newRequestHint: string;
+  newLoad: string;
+  newLoadHint: string;
+  loadRef: string;
+  origin: string;
+  destination: string;
+  plate: string;
+  trailer: string;
+  unassigned: string;
+  createLoad: string;
+  loadCreated: string;
+  noDrivers: string;
+  requestedChange: string;
+  requestedChangeHint: string;
 };
 
 const en: Messages = {
@@ -462,6 +477,21 @@ const en: Messages = {
   yourLoads: "Your loads",
   correctStatus: "Correct the status",
   tripHint: "The simulated trip drives the depot-to-yard route and sends Rolling, 15 minutes away, and Arrived for you.",
+  newRequest: "New request",
+  newRequestHint: "Log a request a counterparty made, in your own words. A different manager must approve it.",
+  newLoad: "New load",
+  newLoadHint: "The assigned driver sees it on their next refresh and gets an alert.",
+  loadRef: "Load reference",
+  origin: "Origin",
+  destination: "Destination",
+  plate: "Plate",
+  trailer: "Trailer",
+  unassigned: "Unassigned",
+  createLoad: "Create load",
+  loadCreated: "Load created",
+  noDrivers: "No drivers on the team yet. Add one in the Team tab.",
+  requestedChange: "Requested change",
+  requestedChangeHint: "Type what the counterparty asked for. Approvers see it side by side with what is on file.",
 };
 
 const fr: Messages = {
@@ -694,6 +724,21 @@ const fr: Messages = {
   yourLoads: "Vos chargements",
   correctStatus: "Corriger le statut",
   tripHint: "Le trajet simulé suit la route entrepôt-cour et envoie les statuts à votre place.",
+  newRequest: "Nouvelle demande",
+  newRequestHint: "Consignez la demande d’un partenaire dans vos mots. Un autre gestionnaire doit l’approuver.",
+  newLoad: "Nouveau chargement",
+  newLoadHint: "Le chauffeur assigné le voit à la prochaine actualisation et reçoit une alerte.",
+  loadRef: "Référence du chargement",
+  origin: "Origine",
+  destination: "Destination",
+  plate: "Plaque",
+  trailer: "Remorque",
+  unassigned: "Non assigné",
+  createLoad: "Créer le chargement",
+  loadCreated: "Chargement créé",
+  noDrivers: "Aucun chauffeur dans l’équipe. Ajoutez-en un dans l’onglet Équipe.",
+  requestedChange: "Changement demandé",
+  requestedChangeHint: "Saisissez ce que le partenaire a demandé. Les approbateurs le voient à côté de ce qui est au dossier.",
 };
 
 const MAP = { en, fr } as const;

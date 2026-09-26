@@ -16,11 +16,11 @@ import {
   type Contact,
   type SessionUser,
 } from "@/lib/desk-client";
-import { SCENARIOS, type DeskCase, type Load, type Note, type Role } from "@/preview/data";
+import { REQUEST_FIELDS, SCENARIOS, type DeskCase, type Load, type Note, type Role } from "@/preview/data";
 
 const CASE_STAFF: Role[] = ["supplier", "manager", "admin"];
 
-type ManagerTab = "board" | "directory" | "receipt" | "team";
+type ManagerTab = "board" | "request" | "load" | "directory" | "receipt" | "team";
 type Draft = { requestType: string; contactId: string; rawText: string; requested: Record<string, string> };
 
 type Store = {
@@ -142,7 +142,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
       draft,
       setDraft: (patch) => setDraftState((current) => ({ ...current, ...patch })),
       submitDraft: async () => {
-        if (role !== "supplier") return null;
+        if (!CASE_STAFF.includes(role)) return null;
         setSubmitError(null);
         if (!draft.contactId) {
           setSubmitError("Pick a counterparty from the directory first.");
@@ -153,7 +153,9 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
             requestType: draft.requestType,
             contactId: draft.contactId,
             rawText: draft.rawText,
-            requested: draft.requested,
+            requested: REQUEST_FIELDS[draft.requestType]
+              ? Object.fromEntries(REQUEST_FIELDS[draft.requestType].map((key) => [key, draft.requested[key] ?? ""]))
+              : draft.requested,
           });
           setCases((current) => [created, ...current.filter((item) => item.id !== created.id)]);
           setDraftState((current) => ({ ...current, rawText: "", requested: {} }));

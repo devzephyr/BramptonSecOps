@@ -12,6 +12,7 @@ import {
 } from "@/lib/cases";
 import type { PayloadFields } from "@/lib/payload";
 import { contactOnFile } from "@/lib/directory";
+import { REQUEST_FIELDS } from "@/preview/data";
 
 export async function GET() {
   const user = await requireUser();
@@ -75,6 +76,15 @@ export async function POST(request: Request) {
         requested[key] = value.trim().slice(0, 200);
       }
     }
+  }
+
+  const sent = (body.requested ?? {}) as Record<string, unknown>;
+  const missing = (REQUEST_FIELDS[requestType] ?? []).filter((key) => {
+    const value = sent[key];
+    return typeof value !== "string" || !value.trim();
+  });
+  if (missing.length > 0) {
+    return badRequest(`Enter the requested ${missing.join(", ")}.`);
   }
 
   const meta = caseCreateData({

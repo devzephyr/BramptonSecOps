@@ -20,7 +20,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { CallLink } from "@/components/desk/call-link";
 import type { Contact } from "@/lib/desk-client";
 import { useI18n } from "@/lib/i18n";
-import { REQUESTS, SCENARIOS, deskFlags } from "@/preview/data";
+import { REQUEST_FIELDS, REQUESTS, SCENARIOS, deskFlags } from "@/preview/data";
+import { Input } from "@/components/ui/input";
 import { sha256Hex } from "@/preview/hash";
 import { useDesk } from "@/preview/store";
 
@@ -71,7 +72,11 @@ export function SupplierDesk() {
     [desk.draft.rawText, desk.draft.requested, selected],
   );
 
-  const canSubmit = Boolean(selected) && desk.draft.rawText.trim().length >= 8 && !submitting;
+  const changeFields = REQUEST_FIELDS[desk.draft.requestType] ?? [];
+  const fieldLabel = { institution: t.institution, transit: t.transit, account: t.account, dock: t.dock, destination: t.destination, carrier: t.carrier, seal: t.seal };
+  const changeComplete = changeFields.every((key) => (desk.draft.requested[key] ?? "").trim());
+  const canSubmit =
+    Boolean(selected) && desk.draft.rawText.trim().length >= 8 && changeComplete && !submitting;
   const request = REQUESTS.find((r) => r.id === desk.draft.requestType);
 
   async function submit() {
@@ -87,7 +92,9 @@ export function SupplierDesk() {
       <Empty>
         <EmptyHeader>
           <EmptyTitle>{t.emptyDirectory}</EmptyTitle>
-          <EmptyDescription>{t.emptyDirectorySupplier}</EmptyDescription>
+          <EmptyDescription>
+            {desk.user.role === "supplier" ? t.emptyDirectorySupplier : t.emptyDirectoryManager}
+          </EmptyDescription>
         </EmptyHeader>
       </Empty>
     );
@@ -190,6 +197,35 @@ export function SupplierDesk() {
               )}
             </span>
           </div>
+          {changeFields.length > 0 && (
+            <fieldset className="flex flex-col gap-2 rounded-lg border p-3">
+              <legend className="px-1 text-sm font-medium">{t.requestedChange}</legend>
+              <p className="text-xs text-muted-foreground">{t.requestedChangeHint}</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {changeFields.map((key) => (
+                  <div key={key} className="flex flex-col gap-1.5">
+                    <label className="text-sm" htmlFor={`req-${key}`}>
+                      {fieldLabel[key]}
+                      {selected?.onFile[key] && (
+                        <span className="ml-1 font-mono text-xs text-muted-foreground">
+                          ({t.onFile}: {selected.onFile[key]})
+                        </span>
+                      )}
+                    </label>
+                    <Input
+                      id={`req-${key}`}
+                      autoComplete="off"
+                      maxLength={200}
+                      value={desk.draft.requested[key] ?? ""}
+                      onChange={(event) =>
+                        desk.setDraft({ requested: { ...desk.draft.requested, [key]: event.target.value } })
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+          )}
           <Textarea
             className="min-h-44"
             aria-label={t.sealedNote}

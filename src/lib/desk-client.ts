@@ -206,6 +206,33 @@ type ApiLoad = {
   positionAt?: string | null;
 };
 
+export type NewLoad = {
+  loadRef: string;
+  commodity: string;
+  origin: string;
+  destination: string;
+  carrierName: string;
+  plate: string;
+  trailer: string;
+  scheduledDock?: string;
+  sealNumber?: string;
+  reeferSetpoint?: string;
+  eta?: string;
+  driverUserId?: string;
+};
+
+export async function createLoad(input: NewLoad): Promise<void> {
+  const res = await fetch("/api/loads", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not create load"));
+  }
+}
+
 export async function markNotificationRead(id: string) {
   const res = await fetch(`/api/notifications/${encodeURIComponent(id)}/read`, {
     method: "POST",

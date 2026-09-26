@@ -111,6 +111,14 @@ export const REQUESTS: { id: string; dual: boolean; en: string; fr: string }[] =
     },
   ];
 
+/** Fields a request of each type changes; the composer asks for them and the payload records them. */
+export const REQUEST_FIELDS: Record<string, ("institution" | "transit" | "account" | "dock" | "destination" | "carrier" | "seal")[]> = {
+  bank_change: ["institution", "transit", "account"],
+  destination_change: ["dock", "destination"],
+  new_carrier: ["carrier"],
+  bol_pod_alter: ["seal"],
+};
+
 const OOB: Record<string, string[]> = {
   bank_change: [
     "Call the number already on file. Do not use a number written in the message.",

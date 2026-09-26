@@ -82,24 +82,26 @@ export async function POST(request: Request) {
     if (!driver) return badRequest("driverUserId must be a driver in your org.");
   }
 
+  const text = (key: string, max = 120) =>
+    typeof body[key] === "string" ? (body[key] as string).trim().slice(0, max) : "";
+  const optional = (key: string, max = 120) => text(key, max) || null;
+
   const load = await prisma.load
     .create({
       data: {
         orgId: user.orgId,
-        loadRef: (body.loadRef as string).trim(),
-        carrierName: body.carrierName as string,
-        plate: body.plate as string,
-        trailer: body.trailer as string,
-        origin: body.origin as string,
-        destination: body.destination as string,
-        commodity: body.commodity as string,
+        loadRef: text("loadRef", 40),
+        carrierName: text("carrierName"),
+        plate: text("plate", 20),
+        trailer: text("trailer", 20),
+        origin: text("origin"),
+        destination: text("destination"),
+        commodity: text("commodity", 80),
         currentStatus: "scheduled",
-        lastKnown: typeof body.lastKnown === "string" ? body.lastKnown : "yard",
-        reeferSetpoint:
-          typeof body.reeferSetpoint === "string" ? body.reeferSetpoint : null,
-        sealNumber: typeof body.sealNumber === "string" ? body.sealNumber : null,
-        scheduledDock:
-          typeof body.scheduledDock === "string" ? body.scheduledDock : null,
+        lastKnown: text("lastKnown", 200) || text("origin"),
+        reeferSetpoint: optional("reeferSetpoint", 20),
+        sealNumber: optional("sealNumber", 40),
+        scheduledDock: optional("scheduledDock", 40),
         driverUserId,
         eta,
       },
@@ -109,6 +111,21 @@ export async function POST(request: Request) {
       throw error;
     });
   if (!load) return badRequest("That load reference already exists.");
+
+  if (driverUserId) {
+    await prisma.notification.create({
+      data: {
+        orgId: user.orgId,
+        userId: driverUserId,
+        role: "driver",
+        kind: "load_assigned",
+        title: `New load ${load.loadRef}`,
+        body: `${load.commodity} · ${load.origin} → ${load.destination}${load.scheduledDock ? ` · ${load.scheduledDock}` : ""}. Assigned by ${user.name}.`,
+        href: "/driver",
+        emailStatus: "in-app",
+      },
+    });
+  }
 
   return json(serializeLoad(load), 201);
 }

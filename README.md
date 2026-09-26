@@ -44,7 +44,8 @@ Nobody can enroll on someone else's account. First-time setup needs an **enrollm
 2. As `amira`: manager board now lists it → open → checklist → approve with passkey.
 3. As `colin`: second approval on the identical hash → partner receipt appears.
 4. Same case: Messages tab sends Signal-encrypted notes (both must open the case once first); Documents tab uploads hash-recorded files.
-5. As `devon`: **Simulate live trip**. As `elena`: watch the live card and ETA timeline move.
+5. As `devon`: **Start simulated trip**. As `elena`: watch the truck move on the map and the status steps advance.
+6. As `amira`: **New load** tab → fill it in and assign a driver. That driver sees it (and an alert) within 15 seconds. **New request** opens a bank change or other request from the manager side, including the requested bank details; a different manager approves it.
 
 ## Local Next.js
 
