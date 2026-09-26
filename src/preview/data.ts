@@ -29,6 +29,8 @@ export type Load = {
   origin: string;
   destination: string;
   dock: string;
+  scheduledDock: string;
+  etaIso: string;
   carrier: string;
   plate: string;
   trailer: string;
@@ -51,6 +53,15 @@ export type Note = {
   href: string;
   createdAt: string;
   read: boolean;
+};
+
+/** Suggested job titles per role; the field also accepts free text. */
+export const JOB_TITLES: Record<Role, string[]> = {
+  supplier: ["Accounts payable", "Accounts receivable", "Dispatch coordinator", "Vendor relations", "Sales representative"],
+  manager: ["Plant manager", "Cold store manager", "Operations manager", "Finance manager", "Logistics manager"],
+  driver: ["Driver", "Long-haul driver", "Local delivery driver", "Owner-operator", "Relay driver"],
+  receiver: ["Receiver", "Dock supervisor", "Shipping and receiving clerk", "Warehouse lead", "Inventory control"],
+  admin: ["Owner", "General manager", "IT administrator", "Controller"],
 };
 
 export const REQUESTS: { id: string; dual: boolean; en: string; fr: string }[] =

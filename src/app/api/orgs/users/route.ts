@@ -82,8 +82,9 @@ export async function POST(request: Request) {
         email: `${username}@${user.org.slug}.invalid`,
         name,
         role: role as (typeof ROLES)[number],
+        title: typeof body.title === "string" ? body.title.trim().slice(0, 80) || null : null,
       },
-      select: { id: true, username: true, name: true, role: true },
+      select: { id: true, username: true, name: true, role: true, title: true },
     })
     .catch((error: unknown) => {
       if (isUniqueViolation(error)) return null;

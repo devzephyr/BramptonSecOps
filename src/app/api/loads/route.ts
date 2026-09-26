@@ -1,33 +1,7 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
 import { badRequest, forbidden, isUniqueViolation, json, unauthorized } from "@/lib/http";
-
-function serializeLoad(row: Awaited<ReturnType<typeof prisma.load.findFirst>>) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    loadRef: row.loadRef,
-    carrierName: row.carrierName,
-    plate: row.plate,
-    trailer: row.trailer,
-    currentStatus: row.currentStatus,
-    lastKnown: row.lastKnown,
-    reeferSetpoint: row.reeferSetpoint,
-    sealNumber: row.sealNumber,
-    scheduledDock: row.scheduledDock,
-    approvedDock: row.approvedDock,
-    approvedDestination: row.approvedDestination,
-    origin: row.origin,
-    destination: row.destination,
-    commodity: row.commodity,
-    eta: row.eta,
-    driverUserId: row.driverUserId,
-    lat: row.lat,
-    lng: row.lng,
-    positionAt: row.positionAt,
-    createdAt: row.createdAt,
-  };
-}
+import { serializeLoad } from "@/lib/loads";
 
 export async function GET() {
   const user = await requireUser();

@@ -1,27 +1,160 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState, type FormEvent } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogDescription, DialogHeader, DialogPanel, DialogPopup, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { toastManager } from "@/components/ui/toast";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DeskApiError, addTeammate, fetchCredentials, fetchTeam, issueEnrollmentCode, revokeCredential, type MemberCredential, type TeamMember } from "@/lib/desk-client";
+import { DeskApiError, addTeammate, fetchCredentials, fetchTeam, issueEnrollmentCode, revokeCredential, updateTeammate, type MemberCredential, type TeamMember } from "@/lib/desk-client";
 import { roleTitle, useI18n } from "@/lib/i18n";
+import { JOB_TITLES, type Role } from "@/preview/data";
 import { useDesk } from "@/preview/store";
 
 const ROLES = ["supplier", "manager", "driver", "receiver", "admin"];
 
+function TitleInput({
+  id,
+  role,
+  value,
+  onChange,
+}: {
+  id: string;
+  role: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <Input
+        id={id}
+        list={`${id}-options`}
+        autoComplete="off"
+        maxLength={80}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      <datalist id={`${id}-options`}>
+        {(JOB_TITLES[role as Role] ?? []).map((option) => (
+          <option key={option} value={option} />
+        ))}
+      </datalist>
+    </>
+  );
+}
+
+function EditTeammate({
+  member,
+  roles,
+  canChangeRole,
+  onClose,
+  onSaved,
+}: {
+  member: TeamMember;
+  roles: string[];
+  canChangeRole: boolean;
+  onClose: () => void;
+  onSaved: () => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const [name, setName] = useState(member.name);
+  const [role, setRole] = useState(member.role);
+  const [title, setTitle] = useState(member.title ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await updateTeammate(member.id, {
+        name: name.trim(),
+        title: title.trim(),
+        ...(canChangeRole && role !== member.role ? { role } : {}),
+      });
+      toastManager.add({ type: "success", title: t.teammateUpdated, description: name.trim() });
+      await onSaved();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t.saveFailed);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogPopup className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{t.editTeammate}</DialogTitle>
+          <DialogDescription className="font-mono">{member.username ?? ""}</DialogDescription>
+        </DialogHeader>
+        <DialogPanel>
+          <form className="flex flex-col gap-3" onSubmit={(event) => void save(event)}>
+            {error && (
+              <Alert variant="error">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" htmlFor="et-name">
+                {t.fullName}
+              </label>
+              <Input id="et-name" autoComplete="off" value={name} onChange={(event) => setName(event.target.value)} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium">{t.role}</span>
+              <Select value={role} disabled={!canChangeRole} onValueChange={(value) => setRole(String(value))}>
+                <SelectTrigger aria-label={t.role}>
+                  <SelectValue>{(value) => roleTitle(String(value), t)}</SelectValue>
+                </SelectTrigger>
+                <SelectPopup>
+                  {[...new Set([member.role, ...roles])].map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {roleTitle(item, t)}
+                    </SelectItem>
+                  ))}
+                </SelectPopup>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" htmlFor="et-title">
+                {t.jobTitle}
+              </label>
+              <TitleInput id="et-title" role={role} value={title} onChange={setTitle} />
+              <span className="text-xs text-muted-foreground">{t.jobTitleHint}</span>
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" disabled={busy}>
+                {t.saveChanges}
+              </Button>
+              <Button type="button" variant="ghost" onClick={onClose}>
+                {t.cancel}
+              </Button>
+            </div>
+          </form>
+        </DialogPanel>
+      </DialogPopup>
+    </Dialog>
+  );
+}
+
 export function TeamDesk() {
   const { t } = useI18n();
-  const isAdmin = useDesk().user.role === "admin";
+  const me = useDesk().user;
+  const isAdmin = me.role === "admin";
   const roles = isAdmin ? ROLES : ROLES.filter((item) => item !== "manager" && item !== "admin");
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState("supplier");
+  const [title, setTitle] = useState("");
+  const [editing, setEditing] = useState<TeamMember | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -84,9 +217,10 @@ export function TeamDesk() {
     setNotice(null);
     setIssued(null);
     try {
-      const created = await addTeammate({ username: username.trim(), name: name.trim(), role });
+      const created = await addTeammate({ username: username.trim(), name: name.trim(), role, title: title.trim() });
       setUsername("");
       setName("");
+      setTitle("");
       setNotice(`${t.teammateAdded} ${created.username}`);
       await refresh();
       await issue(created);
@@ -134,7 +268,10 @@ export function TeamDesk() {
                 <Fragment key={member.id}>
                   <TableRow>
                     <TableCell className="font-mono text-xs">{member.username ?? "—"}</TableCell>
-                    <TableCell>{member.name}</TableCell>
+                    <TableCell>
+                      <span className="block">{member.name}</span>
+                      {member.title && <span className="block text-xs text-muted-foreground">{member.title}</span>}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{roleTitle(member.role, t)}</Badge>
                     </TableCell>
@@ -146,6 +283,11 @@ export function TeamDesk() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
+                        {(isAdmin || member.id === me.id || (member.role !== "manager" && member.role !== "admin")) && (
+                          <Button size="sm" variant="outline" onClick={() => setEditing(member)}>
+                            {t.edit}
+                          </Button>
+                        )}
                         <Button size="sm" variant="outline" onClick={() => void toggleKeys(member)}>
                           {t.passkeys}
                         </Button>
@@ -212,7 +354,7 @@ export function TeamDesk() {
               <AlertDescription>{notice}</AlertDescription>
             </Alert>
           )}
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium" htmlFor="tm-username">
                 {t.username}
@@ -251,6 +393,13 @@ export function TeamDesk() {
                 </SelectPopup>
               </Select>
             </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium" htmlFor="tm-title">
+                {t.jobTitle}
+              </label>
+              <TitleInput id="tm-title" role={role} value={title} onChange={setTitle} />
+              <span className="text-xs text-muted-foreground">{t.jobTitleHint}</span>
+            </div>
           </div>
           <div>
             <Button size="sm" disabled={busy} onClick={() => void add()}>
@@ -259,6 +408,15 @@ export function TeamDesk() {
           </div>
         </CardPanel>
       </Card>
+      {editing && (
+        <EditTeammate
+          member={editing}
+          roles={roles}
+          canChangeRole={editing.id !== me.id}
+          onClose={() => setEditing(null)}
+          onSaved={refresh}
+        />
+      )}
     </div>
   );
 }
