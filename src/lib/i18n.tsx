@@ -52,6 +52,9 @@ export type Messages = {
   whoSpoke: string;
   back: string;
   open: string;
+  details: string;
+  carrier: string;
+  setpoint: string;
   loads: string;
   incoming: string;
   pod: string;
@@ -106,6 +109,7 @@ export type Messages = {
   liveLocation: string;
   liveLocationHint: string;
   noLive: string;
+  lastKnown: string;
   simulated: string;
   startTrip: string;
   stopTrip: string;
@@ -190,6 +194,9 @@ const en: Messages = {
   whoSpoke: "Who you spoke with, and when",
   back: "Back",
   open: "Open",
+  details: "Details",
+  carrier: "Carrier",
+  setpoint: "Setpoint",
   loads: "Loads",
   incoming: "Incoming",
   pod: "Proof of delivery",
@@ -245,8 +252,9 @@ const en: Messages = {
   liveLocation: "Live location",
   liveLocationHint: "Driver positions update every few seconds while a trip runs.",
   noLive: "No driver is sharing a live position right now.",
+  lastKnown: "Last known",
   simulated: "simulated",
-  startTrip: "Simulate live trip",
+  startTrip: "Share my location",
   stopTrip: "Stop sharing",
   noLoads: "No loads assigned",
   noLoadsHint: "Dispatch assigns loads to your username. Nothing is assigned yet.",
@@ -330,6 +338,9 @@ const fr: Messages = {
   whoSpoke: "Avec qui vous avez parlé, et quand",
   back: "Retour",
   open: "Ouvrir",
+  details: "Détails",
+  carrier: "Transporteur",
+  setpoint: "Consigne",
   loads: "Chargements",
   incoming: "En arrivée",
   pod: "Preuve de livraison",
@@ -387,8 +398,9 @@ const fr: Messages = {
   liveLocation: "Position en direct",
   liveLocationHint: "Les positions du conducteur s’actualisent toutes les quelques secondes pendant un trajet.",
   noLive: "Aucun conducteur ne partage sa position pour l’instant.",
+  lastKnown: "Dernière position",
   simulated: "simulé",
-  startTrip: "Simuler un trajet en direct",
+  startTrip: "Partager ma position",
   stopTrip: "Arrêter le partage",
   noLoads: "Aucun chargement assigné",
   noLoadsHint: "La répartition assigne les chargements à votre nom d’utilisateur. Rien n’est assigné pour l’instant.",
