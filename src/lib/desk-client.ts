@@ -252,7 +252,10 @@ export async function approveWithPasskey(caseId: string) {  const optRes = await
   if (!optRes.ok) {
     throw new DeskApiError(optRes.status, "Could not start approval ceremony");
   }
-  const { optionsJSON } = (await optRes.json()) as { optionsJSON: unknown };
+  const { optionsJSON, ceremonyId } = (await optRes.json()) as {
+    optionsJSON: unknown;
+    ceremonyId: string;
+  };
   const authResp = await startAuthentication({
     optionsJSON: optionsJSON as Parameters<
       typeof startAuthentication
@@ -262,7 +265,7 @@ export async function approveWithPasskey(caseId: string) {  const optRes = await
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ caseId, response: authResp }),
+    body: JSON.stringify({ caseId, ceremonyId, response: authResp }),
   });
   if (!verifyRes.ok) {
     throw new DeskApiError(verifyRes.status, "Approval was not verified");
