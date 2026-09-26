@@ -455,7 +455,14 @@ function stringRecord(value: unknown): Record<string, string> {
 }
 
 function stringList(value: unknown): string[] {
-  return Array.isArray(value) ? value.map((entry) => String(entry)) : [];
+  if (!Array.isArray(value)) return [];
+  return value.map((entry) => {
+    if (typeof entry === "string") return entry;
+    if (typeof entry === "object" && entry !== null && "detail" in entry) {
+      return String((entry as { detail: unknown }).detail);
+    }
+    return String(entry);
+  });
 }
 
 export function mapApiCase(row: ApiCase): DeskCase {
