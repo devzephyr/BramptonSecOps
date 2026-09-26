@@ -2,7 +2,6 @@ import { createHash, randomBytes } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export function sha256Buffer(data: Buffer | Uint8Array) {
   return createHash("sha256").update(data).digest("hex");
@@ -30,24 +29,10 @@ export function evidenceKey(orgId: string, label: string) {
   return `${orgId}/${Date.now()}_${randomBytes(8).toString("hex")}_${safe}`;
 }
 
-export const MAX_EVIDENCE_BYTES = 10 * 1024 * 1024;
+/** Vercel caps function request bodies at 4.5 MB; the client downscales photos to fit. */
+export const MAX_EVIDENCE_BYTES = 4 * 1024 * 1024;
 
-export function isOrgEvidenceKey(key: unknown, orgId: string): key is string {
-  if (typeof key !== "string" || !key.startsWith(`${orgId}/`)) return false;
-  return /^\d+_[a-f0-9]{16}_[A-Za-z0-9._-]{1,80}$/.test(key.slice(orgId.length + 1));
-}
-
-export async function presignPut(key: string, contentType: string) {
-  const client = s3Client();
-  const bucket = process.env.S3_BUCKET ?? "supplychek-evidence";
-  const command = new PutObjectCommand({
-    Bucket: bucket,
-    Key: key,
-    ContentType: contentType,
-  });
-  const url = await getSignedUrl(client, command, { expiresIn: 900 });
-  return { url, bucket, key };
-}
+export class StorageNotConfigured extends Error {}
 
 export async function putObject(
   key: string,
@@ -75,6 +60,13 @@ export async function writeLocalEvidence(key: string, body: Buffer) {
   return file;
 }
 
-export function storageMode(): "s3" | "local" {
-  return s3Enabled() ? "s3" : "local";
+export async function storeEvidence(key: string, body: Buffer, contentType: string) {
+  if (s3Enabled()) {
+    await putObject(key, body, contentType);
+    return;
+  }
+  if (process.env.VERCEL) {
+    throw new StorageNotConfigured("Evidence storage is not configured. Set the S3_* variables for R2.");
+  }
+  await writeLocalEvidence(key, body);
 }

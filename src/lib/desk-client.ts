@@ -367,13 +367,31 @@ export async function fetchDocuments(caseId: string): Promise<CaseDocument[]> {
   return body?.documents ?? [];
 }
 
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
-async function sha256HexFile(bytes: ArrayBuffer): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(digest)]
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+/** Re-encode large photos so they fit the upload limit; other files pass through untouched. */
+async function fitForUpload(file: File): Promise<Blob> {
+  if (file.size <= MAX_UPLOAD_BYTES || !file.type.startsWith("image/")) return file;
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return file;
+  }
+  for (const edge of [2560, 1920, 1280]) {
+    const scale = Math.min(1, edge / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.85));
+    if (blob && blob.size <= MAX_UPLOAD_BYTES) {
+      bitmap.close();
+      return blob;
+    }
+  }
+  bitmap.close();
+  return file;
 }
 
 export async function uploadEvidence(input: {
@@ -382,76 +400,23 @@ export async function uploadEvidence(input: {
   caseId?: string;
   loadId?: string;
 }): Promise<{ id: string; contentHash: string }> {
-  if (input.file.size > MAX_UPLOAD_BYTES) {
-    throw new DeskApiError(413, "File is larger than 10 MB.");
+  const body = await fitForUpload(input.file);
+  if (body.size > MAX_UPLOAD_BYTES) {
+    throw new DeskApiError(413, "File is larger than 4 MB.");
   }
-  const presignRes = await fetch("/api/evidence/presign", {
+  const params = new URLSearchParams({ label: input.label });
+  if (input.caseId) params.set("caseId", input.caseId);
+  if (input.loadId) params.set("loadId", input.loadId);
+  const res = await fetch(`/api/evidence/upload?${params}`, {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ label: input.label, contentType: input.file.type || "application/octet-stream" }),
+    headers: { "Content-Type": body.type || "application/octet-stream" },
+    body,
   });
-  if (!presignRes.ok) {
-    throw new DeskApiError(
-      presignRes.status,
-      await failMessage(presignRes, "Could not start upload"),
-    );
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Upload failed"));
   }
-  const { mode, uploadUrl, key } = (await presignRes.json()) as {
-    mode: string;
-    uploadUrl: string;
-    key: string;
-  };
-
-  const bytes = await input.file.arrayBuffer();
-  let contentHash: string;
-  let byteSize = bytes.byteLength;
-  if (mode === "local") {
-    const putRes = await fetch(uploadUrl, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": input.file.type || "application/octet-stream" },
-      body: bytes,
-    });
-    if (!putRes.ok) {
-      throw new DeskApiError(putRes.status, await failMessage(putRes, "Upload failed"));
-    }
-    const putBody = (await parseJson(putRes)) as {
-      contentHash?: string;
-      byteSize?: number;
-    } | null;
-    contentHash = putBody?.contentHash ?? (await sha256HexFile(bytes));
-    byteSize = putBody?.byteSize ?? byteSize;
-  } else {
-    const putRes = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: { "Content-Type": input.file.type || "application/octet-stream" },
-      body: bytes,
-    });
-    if (!putRes.ok) {
-      throw new DeskApiError(putRes.status, "Upload failed");
-    }
-    contentHash = await sha256HexFile(bytes);
-  }
-
-  const doneRes = await fetch("/api/evidence/complete", {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      key,
-      contentHash,
-      label: input.label,
-      contentType: input.file.type || "application/octet-stream",
-      byteSize,
-      caseId: input.caseId,
-      loadId: input.loadId,
-    }),
-  });
-  if (!doneRes.ok) {
-    throw new DeskApiError(doneRes.status, await failMessage(doneRes, "Upload was not recorded"));
-  }
-  return (await parseJson(doneRes)) as { id: string; contentHash: string };
+  return (await parseJson(res)) as { id: string; contentHash: string };
 }
 
 export type ApiCase = {
