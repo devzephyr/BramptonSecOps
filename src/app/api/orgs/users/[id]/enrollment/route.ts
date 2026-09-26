@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { enrollmentExpiry, hasRole, newEnrollmentCode, requireUser } from "@/lib/auth";
-import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
+import { forbidden, json, notFound, unauthorized } from "@/lib/http";
 
 type Params = { params: Promise<{ id: string }> };
 
