@@ -31,7 +31,6 @@ export type Messages = {
   rolling: string;
   arrived: string;
   delayed: string;
-  warning: string;
   matches: string;
   notGov: string;
   jevNote: string;
@@ -192,7 +191,6 @@ export type Messages = {
   toastTripStopped: string;
   directoryHint: string;
   emptyManager: string;
-  emptyCase: string;
   confirmBytes: string;
   signedSoFar: string;
   nobody: string;
@@ -204,7 +202,6 @@ export type Messages = {
   no: string;
   noPartnerPage: string;
   noPartnerPageBody: string;
-  oobHint: string;
   backToBoard: string;
   noRequestOpen: string;
   pickFromBoard: string;
@@ -298,7 +295,6 @@ export type Messages = {
   eventUpdated: string;
   fleet: string;
   fleetHint: string;
-  noDriversFleet: string;
   dutyStatus: string;
   dutyOff: string;
   dutySleeper: string;
@@ -343,7 +339,6 @@ export type Messages = {
   toFacility: string;
   atFacility: string;
   atFacilities: string;
-  heldBy: string;
   journey: string;
   changePhoto: string;
   addPhoto: string;
@@ -353,7 +348,6 @@ export type Messages = {
   sealOk: string;
   sealBad: string;
   trailHint: string;
-  allDrivers: string;
 };
 
 const en: Messages = {
@@ -372,7 +366,6 @@ const en: Messages = {
   rolling: "In transit",
   arrived: "Arrived",
   delayed: "Delayed",
-  warning: "Driver is 15 minutes away",
   matches: "Matches uploaded content",
   notGov: "SupplyChek attestation — not a government certification",
   jevNote: "Automated labels are advisory. They do not approve anything.",
@@ -544,7 +537,6 @@ const en: Messages = {
   toastTripStopped: "Stopped sharing position.",
   directoryHint: "Numbers already on file. Do not use a number that arrives inside a request.",
   emptyManager: "Write a sealed note on the supplier desk.",
-  emptyCase: "Pick one from the logistics desk.",
   confirmBytes: "Confirm this request",
   signedSoFar: "Signed so far",
   nobody: "No one yet",
@@ -557,7 +549,6 @@ const en: Messages = {
   no: "No",
   noPartnerPage: "No partner page yet",
   noPartnerPageBody: "A page appears after the required passkeys sign the same hash.",
-  oobHint: "Approve stays off until every step is checked and you name who you called.",
   backToBoard: "Back to board",
   noRequestOpen: "No request open",
   pickFromBoard: "Pick one from the logistics desk.",
@@ -651,7 +642,6 @@ const en: Messages = {
   eventUpdated: "Edited",
   fleet: "Fleet",
   fleetHint: "Every driver, their duty clock, and where their loads are. Refreshes every 15 seconds.",
-  noDriversFleet: "No drivers on the team yet. Add one in the Team tab.",
   dutyStatus: "Duty status",
   dutyOff: "Off duty",
   dutySleeper: "Sleeper berth",
@@ -696,7 +686,6 @@ const en: Messages = {
   toFacility: "To a warehouse or yard",
   atFacility: "At",
   atFacilities: "Loads at warehouses and yards",
-  heldBy: "Held by",
   journey: "Journey",
   changePhoto: "Change photo",
   addPhoto: "Add photo",
@@ -706,7 +695,6 @@ const en: Messages = {
   sealOk: "Seal checked",
   sealBad: "Seal exception",
   trailHint: "Solid line: where the truck actually went. Dashed: the planned route.",
-  allDrivers: "All drivers",
 };
 
 const fr: Messages = {
@@ -725,7 +713,6 @@ const fr: Messages = {
   rolling: "En transit",
   arrived: "Arrivé",
   delayed: "En retard",
-  warning: "Le chauffeur est à 15 minutes",
   matches: "Correspond au contenu déposé",
   notGov: "Attestation SupplyChek — ce n’est pas un sceau du gouvernement",
   jevNote: "Les étiquettes automatiques sont indicatives. Elles n’approuvent rien.",
@@ -901,7 +888,6 @@ const fr: Messages = {
   emptyManager: "Rédigez une note scellée au bureau fournisseur.",
   directoryHint:
     "Numéros déjà au dossier. N’utilisez pas un numéro qui arrive dans une demande.",
-  emptyCase: "Choisissez-en une au bureau de la logistique.",
   confirmBytes: "Confirmer cette demande",
   signedSoFar: "Signé jusqu’ici",
   nobody: "Personne pour l’instant",
@@ -915,8 +901,6 @@ const fr: Messages = {
   noPartnerPage: "Pas encore de page partenaire",
   noPartnerPageBody:
     "Une page apparaît après que les clés d’accès requises ont signé la même empreinte.",
-  oobHint:
-    "L’approbation reste désactivée tant que chaque étape n’est pas cochée et que vous n’avez pas nommé la personne appelée.",
   backToBoard: "Retour au tableau",
   noRequestOpen: "Aucune demande ouverte",
   pickFromBoard: "Choisissez-en une au bureau de la logistique.",
@@ -1010,7 +994,6 @@ const fr: Messages = {
   eventUpdated: "Modifié",
   fleet: "Flotte",
   fleetHint: "Chaque chauffeur, son temps de conduite et la position de ses chargements. Actualisé toutes les 15 secondes.",
-  noDriversFleet: "Aucun chauffeur dans l'équipe. Ajoutez-en un dans l'onglet Équipe.",
   dutyStatus: "Statut de service",
   dutyOff: "Hors service",
   dutySleeper: "Couchette",
@@ -1055,7 +1038,6 @@ const fr: Messages = {
   toFacility: "À un entrepôt ou une cour",
   atFacility: "À",
   atFacilities: "Chargements aux entrepôts et cours",
-  heldBy: "Détenu par",
   journey: "Trajet",
   changePhoto: "Changer la photo",
   addPhoto: "Ajouter une photo",
@@ -1065,7 +1047,6 @@ const fr: Messages = {
   sealOk: "Scellé vérifié",
   sealBad: "Anomalie de scellé",
   trailHint: "Ligne pleine : le trajet réel du camion. Pointillés : l'itinéraire prévu.",
-  allDrivers: "Tous les chauffeurs",
 };
 
 const MAP = { en, fr } as const;

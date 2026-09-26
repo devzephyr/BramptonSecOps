@@ -249,7 +249,7 @@ export function FleetDesk() {
         <Empty>
           <EmptyHeader>
             <EmptyTitle>{t.empty}</EmptyTitle>
-            <EmptyDescription>{t.noDriversFleet}</EmptyDescription>
+            <EmptyDescription>{t.noDrivers}</EmptyDescription>
           </EmptyHeader>
         </Empty>
       ) : (
