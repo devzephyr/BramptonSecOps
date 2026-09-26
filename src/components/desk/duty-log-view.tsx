@@ -48,7 +48,7 @@ export function DutyLogView({ log, onChanged }: { log: DutyLog; onChanged: () =>
   }
 
   const source = (value: string) =>
-    value === "gps" ? t.sourceGps : value === "status" ? t.sourceStatus : value === "manager" ? t.sourceManager : "";
+    value === "gps" ? t.sourceGps : value === "status" ? t.sourceStatus : value === "manager" ? t.sourceManager : value === "sim" ? t.sourceSim : "";
 
   return (
     <div className="flex flex-col gap-3">

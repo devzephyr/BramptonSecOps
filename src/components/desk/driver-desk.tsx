@@ -63,13 +63,13 @@ export function DriverDesk() {
     [],
   );
 
-  async function send(loadId: string, status: string, quiet = false) {
+  async function send(loadId: string, status: string, simulated = false) {
     setPosting(`${loadId}:${status}`);
     setError(null);
-    const failure = await desk.pushStatus(loadId, status);
+    const failure = await desk.pushStatus(loadId, status, simulated);
     setPosting(null);
     if (failure) setError(failure);
-    else if (!quiet) toastManager.add({ type: "success", title: t.statusSent, description: labels[status] });
+    else if (!simulated) toastManager.add({ type: "success", title: t.statusSent, description: labels[status] });
     return failure === null;
   }
 
@@ -105,7 +105,7 @@ export function DriverDesk() {
           stopSim(true);
           return;
         }
-        await postPosition(load.id, point.lat, point.lng);
+        await postPosition(load.id, point.lat, point.lng, true);
         if (step === FIFTEEN_MIN_STEP) await send(load.id, "fifteen_min", true);
         if (step === SIM_STEPS) await send(load.id, "arrived", true);
         await desk.refreshRemote();

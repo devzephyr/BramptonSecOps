@@ -38,7 +38,7 @@ export type DutyInput = {
   actorId: string;
   kind: "status" | "note";
   status?: DutyStatusName | null;
-  source: "driver" | "gps" | "status" | "manager";
+  source: "driver" | "gps" | "status" | "manager" | "sim";
   lat?: number | null;
   lng?: number | null;
   loadId?: string | null;
@@ -128,7 +128,7 @@ export class BreakRequired extends Error {
 export async function setDutyStatus(input: DutyInput & { status: DutyStatusName }) {
   const summary = await driverHos(input.driverId);
   if (summary.status === input.status && summary.since) return { entry: null, summary };
-  if (input.status === "driving" && input.source !== "gps" && summary.breakOwed) {
+  if (input.status === "driving" && input.source !== "gps" && input.source !== "sim" && summary.breakOwed) {
     throw new BreakRequired(summary);
   }
   const entry = await appendDuty({ ...input, kind: "status" });

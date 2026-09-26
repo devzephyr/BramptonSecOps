@@ -325,7 +325,7 @@ export type DutyEntryRow = {
   lng: number | null;
   loadId: string | null;
   note: string | null;
-  source: "driver" | "gps" | "status" | "manager";
+  source: "driver" | "gps" | "status" | "manager" | "sim";
   refId: string | null;
   actor: string;
   hash: string;
@@ -493,12 +493,12 @@ export async function fetchInventory(): Promise<InventoryLot[]> {
   return body?.lots ?? [];
 }
 
-export async function postLoadStatus(loadId: string, status: string) {
+export async function postLoadStatus(loadId: string, status: string, simulated = false) {
   const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/status`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ eventType: status }),
+    body: JSON.stringify({ eventType: status, simulated }),
   });
   if (!res.ok) {
     throw new DeskApiError(res.status, await failMessage(res, "Could not update load status"));
@@ -542,12 +542,12 @@ export async function approveWithPasskey(caseId: string) {
   return parseJson(verifyRes);
 }
 
-export async function postPosition(loadId: string, lat: number, lng: number) {
+export async function postPosition(loadId: string, lat: number, lng: number, simulated = false) {
   const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/position`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lat, lng }),
+    body: JSON.stringify({ lat, lng, simulated }),
   });
   if (!res.ok) {
     throw new DeskApiError(res.status, await failMessage(res, "Could not update position"));

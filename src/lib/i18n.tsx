@@ -324,6 +324,7 @@ export type Messages = {
   sourceGps: string;
   sourceStatus: string;
   sourceManager: string;
+  sourceSim: string;
   dutyChanged: string;
   today: string;
   lastWeek: string;
@@ -676,6 +677,7 @@ const en: Messages = {
   sourceGps: "detected by GPS",
   sourceStatus: "from a trip step",
   sourceManager: "manager note",
+  sourceSim: "simulated trip",
   dutyChanged: "Duty status updated",
   today: "Today",
   lastWeek: "Last 7 days",
@@ -1035,6 +1037,7 @@ const fr: Messages = {
   sourceGps: "détecté par GPS",
   sourceStatus: "depuis une étape du trajet",
   sourceManager: "note du gestionnaire",
+  sourceSim: "trajet simulé",
   dutyChanged: "Statut de service mis à jour",
   today: "Aujourd'hui",
   lastWeek: "7 derniers jours",

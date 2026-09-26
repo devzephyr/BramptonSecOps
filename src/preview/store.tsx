@@ -43,7 +43,7 @@ type Store = {
   approve: (caseId: string) => Promise<string | null>;
   revoke: (caseId: string) => Promise<string | null>;
   passkeyError: string | null;
-  pushStatus: (loadId: string, status: string) => Promise<string | null>;
+  pushStatus: (loadId: string, status: string, simulated?: boolean) => Promise<string | null>;
   dismissNote: (id: string) => Promise<void>;
   refreshRemote: () => Promise<void>;
   refreshDirectory: () => Promise<void>;
@@ -225,10 +225,10 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
         return null;
       },
       passkeyError,
-      pushStatus: async (loadId, status) => {
+      pushStatus: async (loadId, status, simulated = false) => {
         if (role !== "driver") return "Only a driver can post status.";
         try {
-          await postLoadStatus(loadId, status);
+          await postLoadStatus(loadId, status, simulated);
         } catch (err) {
           return messageOf(err, "Could not update load status.");
         }
