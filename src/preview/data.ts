@@ -300,4 +300,34 @@ export const SCENARIOS: {
       "From: night@milton-meats.net\nChange the Milton delivery to a trailer drop in Vaughan. Confirm by reply. Do not call, the planner is driving.",
     requested: { dock: "Vaughan drop lot", destination: "Vaughan" },
   },
+  {
+    id: "bol",
+    title: "Bill of lading correction",
+    frTitle: "Correction de connaissement",
+    requestType: "bol_pod_alter",
+    partnerId: "halton",
+    rawText:
+      "From: shipping@halton-poultry-docs.com\nThe seal on the BOL for load HP-311 was typed wrong. Please change it to SL-9902 before the receiver signs. No need to call, we are short staffed.",
+    requested: { seal: "SL-9902" },
+  },
+  {
+    id: "credit",
+    title: "First-order credit terms",
+    frTitle: "Conditions de crédit, première commande",
+    requestType: "first_order_credit",
+    partnerId: "grain",
+    rawText:
+      "From: treasury@wellington-grain-ca.com\nWe are placing our first bulk order this week. Please release it on net-60 terms today; our credit application will follow.",
+    requested: {},
+  },
+  {
+    id: "schedule",
+    title: "Pickup time change",
+    frTitle: "Changement d'heure de ramassage",
+    requestType: "schedule_only",
+    partnerId: "harbour",
+    rawText:
+      "From: receiving@harbourfront-seafood.net\nMove tomorrow's pickup from 06:00 to 02:00. The driver will be a new contractor, please give them the gate code.",
+    requested: {},
+  },
 ];
