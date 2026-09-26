@@ -91,6 +91,15 @@ export type Messages = {
   encryption: string;
   keysReady: string;
   noKeys: string;
+  passkeys: string;
+  noCredentials: string;
+  revoke: string;
+  revokeConfirm: string;
+  synced: string;
+  enrollmentCode: string;
+  enrollmentCodeHint: string;
+  codeIssued: string;
+  issueCode: string;
   createOrg: string;
   newOrgHint: string;
   orgName: string;
@@ -253,6 +262,15 @@ const en: Messages = {
   encryption: "Encryption",
   keysReady: "keys ready",
   noKeys: "no keys",
+  passkeys: "Passkeys",
+  noCredentials: "No passkeys on file. They enroll from the sign-in screen.",
+  revoke: "Revoke",
+  revokeConfirm: "Remove this passkey? They re-enroll from the sign-in screen.",
+  synced: "synced",
+  enrollmentCode: "Enrollment code",
+  enrollmentCodeHint: "From your admin, for first-time setup",
+  codeIssued: "Code issued once — read it to them, it never shows again:",
+  issueCode: "Issue code",
   createOrg: "Create organization",
   newOrgHint: "Start a new organization. You become its admin.",
   orgName: "Organization name",
@@ -418,6 +436,15 @@ const fr: Messages = {
   encryption: "Chiffrement",
   keysReady: "clés prêtes",
   noKeys: "sans clés",
+  passkeys: "Clés d’accès",
+  noCredentials: "Aucune clé au dossier. Inscription depuis l’écran de connexion.",
+  revoke: "Révoquer",
+  revokeConfirm: "Retirer cette clé ? Réinscription depuis l’écran de connexion.",
+  synced: "synchronisée",
+  enrollmentCode: "Code d’inscription",
+  enrollmentCodeHint: "Fourni par votre admin, pour la première configuration",
+  codeIssued: "Code émis une fois — dictez-le, il ne s’affichera plus :",
+  issueCode: "Émettre un code",
   createOrg: "Créer une organisation",
   newOrgHint: "Démarrez une nouvelle organisation. Vous en devenez l’admin.",
   orgName: "Nom de l’organisation",

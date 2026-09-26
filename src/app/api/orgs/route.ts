@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { enrollmentExpiry, newEnrollmentCode } from "@/lib/auth";
 import { badRequest, json } from "@/lib/http";
 
 function slugify(name: string): string {
@@ -44,6 +45,7 @@ export async function POST(request: Request) {
   for (let attempt = 0; attempt < 5; attempt++) {
     const slug = attempt === 0 ? base : `${base}-${Math.random().toString(36).slice(2, 8)}`;
     try {
+      const { code, hash } = newEnrollmentCode();
       const org = await prisma.org.create({
         data: {
           slug,
@@ -57,6 +59,8 @@ export async function POST(request: Request) {
               name: displayName,
               role: "admin",
               title: "Owner",
+              enrollmentTokenHash: hash,
+              enrollmentTokenExpires: enrollmentExpiry(),
             },
           },
         },
@@ -65,6 +69,7 @@ export async function POST(request: Request) {
         {
           org: { id: org.id, slug: org.slug, name: org.name },
           username,
+          enrollmentToken: code,
         },
         201,
       );

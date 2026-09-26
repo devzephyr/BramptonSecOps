@@ -19,6 +19,7 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
   const { lang, setLang, t } = useI18n();
   const [username, setUsername] = useState("");
   const [org, setOrg] = useState("");
+  const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"create" | "sign-in" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [serverDown, setServerDown] = useState(false);
@@ -36,7 +37,8 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
   }, [t]);
 
   function identity() {
-    return { username: username.trim(), org: org.trim() };
+    const base = { username: username.trim(), org: org.trim() };
+    return code.trim() ? { ...base, enrollmentToken: code.trim() } : base;
   }
 
   function ready() {
@@ -63,7 +65,7 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
       setUsername(created.username);
       setOrg(created.org.slug);
       setShowSignup(false);
-      setNotice(`${t.orgCreated} (${created.org.slug} · ${created.username})`);
+      setNotice(`${t.orgCreated} (${created.org.slug} · ${created.username}) ${t.enrollmentCode}: ${created.enrollmentToken}`);
     } catch (err) {
       if (err instanceof DeskApiError) setError(err.message);
       else setError(err instanceof Error ? err.message : t.passkeyStopped);
@@ -170,6 +172,18 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
                 placeholder={t.orgPlaceholder}
                 value={org}
                 onChange={(event) => setOrg(event.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium" htmlFor="si-code">
+                {t.enrollmentCode}
+              </label>
+              <Input
+                id="si-code"
+                autoComplete="off"
+                placeholder={t.enrollmentCodeHint}
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
               />
             </div>
             <div className="flex flex-wrap gap-2">

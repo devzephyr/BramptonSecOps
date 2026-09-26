@@ -8,7 +8,7 @@ import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/compo
 import { Input } from "@/components/ui/input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DeskApiError, addTeammate, fetchTeam, type TeamMember } from "@/lib/desk-client";
+import { DeskApiError, addTeammate, fetchCredentials, fetchTeam, issueEnrollmentCode, revokeCredential, type MemberCredential, type TeamMember } from "@/lib/desk-client";
 import { roleTitle, useI18n } from "@/lib/i18n";
 
 const ROLES = ["supplier", "manager", "driver", "receiver", "admin"];
@@ -22,6 +22,20 @@ export function TeamDesk() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(null);
+  const [creds, setCreds] = useState<Record<string, MemberCredential[]>>({});
+  const [issued, setIssued] = useState<{ username: string | null; code: string } | null>(null);
+
+  async function issue(member: TeamMember) {
+    setError(null);
+    setIssued(null);
+    try {
+      setIssued(await issueEnrollmentCode(member.id));
+    } catch (err) {
+      if (err instanceof DeskApiError) setError(err.message);
+      else setError(err instanceof Error ? err.message : "Could not issue code.");
+    }
+  }
 
   const refresh = useCallback(async () => {
     setTeam(await fetchTeam());
@@ -30,6 +44,34 @@ export function TeamDesk() {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  async function toggleKeys(member: TeamMember) {
+    if (openId === member.id) {
+      setOpenId(null);
+      return;
+    }
+    setOpenId(member.id);
+    if (!creds[member.id]) {
+      setCreds((current) => ({ ...current, [member.id]: [] }));
+      const rows = await fetchCredentials(member.id);
+      setCreds((current) => ({ ...current, [member.id]: rows }));
+    }
+  }
+
+  async function revoke(member: TeamMember, credentialId: string) {
+    if (!window.confirm(t.revokeConfirm)) return;
+    try {
+      await revokeCredential(member.id, credentialId);
+      setCreds((current) => ({
+        ...current,
+        [member.id]: (current[member.id] ?? []).filter((row) => row.id !== credentialId),
+      }));
+      await refresh();
+    } catch (err) {
+      if (err instanceof DeskApiError) setError(err.message);
+      else setError(err instanceof Error ? err.message : "Could not revoke credential.");
+    }
+  }
 
   async function add() {
     if (busy) return;
@@ -66,23 +108,68 @@ export function TeamDesk() {
                 <TableHead>{t.fullName}</TableHead>
                 <TableHead>{t.role}</TableHead>
                 <TableHead>{t.encryption}</TableHead>
+                <TableHead>{t.passkeys}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {team.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell className="font-mono text-xs">{member.username ?? "—"}</TableCell>
-                  <TableCell>{member.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{roleTitle(member.role, t)}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={member.hasKeys ? "success" : "warning"}>
-                      {member.hasKeys ? t.keysReady : t.noKeys}
-                      {member.devices > 1 ? ` · ${member.devices}` : ""}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
+                <>
+                  <TableRow key={member.id}>
+                    <TableCell className="font-mono text-xs">{member.username ?? "—"}</TableCell>
+                    <TableCell>{member.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{roleTitle(member.role, t)}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={member.hasKeys ? "success" : "warning"}>
+                        {member.hasKeys ? t.keysReady : t.noKeys}
+                        {member.devices > 1 ? ` · ${member.devices}` : ""}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="outline" onClick={() => void toggleKeys(member)}>
+                          {t.passkeys}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => void issue(member)}>
+                          {t.issueCode}
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                  {openId === member.id && (
+                    <TableRow key={`${member.id}-keys`}>
+                      <TableCell colSpan={5}>
+                        {(creds[member.id] ?? []).length === 0 ? (
+                          <p className="text-sm text-muted-foreground">{t.noCredentials}</p>
+                        ) : (
+                          <ul className="flex flex-col gap-2">
+                            {(creds[member.id] ?? []).map((cred) => (
+                              <li key={cred.id} className="flex flex-wrap items-center gap-2 text-sm">
+                                <span className="font-mono text-xs">
+                                  {new Date(cred.createdAt).toLocaleDateString("en-CA")}
+                                </span>
+                                {cred.deviceType && (
+                                  <span className="text-xs text-muted-foreground">{cred.deviceType}</span>
+                                )}
+                                {cred.backedUp && (
+                                  <Badge variant="outline">{t.synced}</Badge>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => void revoke(member, cred.id)}
+                                >
+                                  {t.revoke}
+                                </Button>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </>
               ))}
             </TableBody>
           </Table>
@@ -103,6 +190,14 @@ export function TeamDesk() {
           {notice && (
             <Alert variant="success">
               <AlertDescription>{notice}</AlertDescription>
+            </Alert>
+          )}
+          {issued && (
+            <Alert variant="success">
+              <AlertDescription>
+                {t.codeIssued} <span className="font-mono">{issued.code}</span>
+                {issued.username ? ` (${issued.username})` : ""}
+              </AlertDescription>
             </Alert>
           )}
           <div className="grid gap-3 sm:grid-cols-3">
