@@ -602,6 +602,7 @@ export type CaseDocument = {
   contentHash: string;
   docType: DocTypeName;
   docNumber: string | null;
+  otherType: string | null;
   amountCents: number | null;
   currency: string | null;
   caseId: string | null;
@@ -667,6 +668,7 @@ export async function uploadEvidence(input: {
   loadId?: string;
   docType?: DocTypeName;
   docNumber?: string;
+  otherType?: string;
   amount?: string;
   currency?: string;
 }): Promise<{ id: string; contentHash: string }> {
@@ -679,6 +681,7 @@ export async function uploadEvidence(input: {
   if (input.loadId) params.set("loadId", input.loadId);
   if (input.docType) params.set("docType", input.docType);
   if (input.docNumber) params.set("docNumber", input.docNumber);
+  if (input.otherType) params.set("otherType", input.otherType);
   if (input.amount) params.set("amount", input.amount);
   if (input.currency) params.set("currency", input.currency);
   const res = await fetch(`/api/evidence/upload?${params}`, {

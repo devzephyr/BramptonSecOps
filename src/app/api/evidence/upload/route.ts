@@ -28,6 +28,8 @@ export async function POST(request: Request) {
   if (rawType && !isDocType(rawType)) return badRequest("Unknown document type.");
   const docType = isDocType(rawType) ? rawType : "other";
   const docNumber = params.get("docNumber")?.trim().slice(0, 80) || null;
+  const otherType = docType === "other" ? params.get("otherType")?.trim().slice(0, 60) || null : null;
+  if (docType === "other" && !otherType) return badRequest("Say what kind of document this is.");
   const amountCents = parseAmountCents(params.get("amount"));
   if (amountCents === undefined) return badRequest("Amount must be a number like 1250.00.");
   const currency = params.get("currency") ?? "CAD";
@@ -79,6 +81,7 @@ export async function POST(request: Request) {
       byteSize: buffer.length,
       docType,
       docNumber,
+      otherType,
       amountCents,
       currency: amountCents === null ? null : currency,
       uploadedById: user.id,

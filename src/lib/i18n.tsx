@@ -177,6 +177,8 @@ export type Messages = {
   docType: string;
   docNumber: string;
   docNumberHint: string;
+  otherTypeLabel: string;
+  otherTypeHint: string;
   amount: string;
   currency: string;
   download: string;
@@ -528,6 +530,8 @@ const en: Messages = {
   docType: "Document type",
   docNumber: "Number",
   docNumberHint: "BOL, invoice or receipt number",
+  otherTypeLabel: "What is this document?",
+  otherTypeHint: "e.g. Fuel receipt, scale ticket, inspection report",
   amount: "Amount",
   currency: "Currency",
   download: "Download",
@@ -883,6 +887,8 @@ const fr: Messages = {
   docType: "Type de document",
   docNumber: "Numéro",
   docNumberHint: "Numéro de connaissement, de facture ou de reçu",
+  otherTypeLabel: "Quel est ce document?",
+  otherTypeHint: "ex. reçu de carburant, billet de pesée, rapport d’inspection",
   amount: "Montant",
   currency: "Devise",
   download: "Télécharger",

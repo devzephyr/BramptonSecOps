@@ -296,6 +296,8 @@ model EvidenceAsset {
   byteSize     Int
   docType      DocType  @default(other)
   docNumber    String?
+  /// What the document is when docType is "other", e.g. "Fuel receipt".
+  otherType    String?
   amountCents  Int?
   currency     String?
   uploadedById String?
