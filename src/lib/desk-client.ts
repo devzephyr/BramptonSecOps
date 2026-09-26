@@ -1,5 +1,6 @@
 "use client";
 
+import type { DocTypeName } from "@/lib/policy";
 import {
   startAuthentication,
   startRegistration,
@@ -415,17 +416,37 @@ export type CaseDocument = {
   contentType: string;
   byteSize: number;
   contentHash: string;
+  docType: DocTypeName;
+  docNumber: string | null;
+  amountCents: number | null;
+  currency: string | null;
+  caseId: string | null;
+  loadId: string | null;
+  loadRef: string | null;
+  counterparty: string | null;
+  uploadedBy: string | null;
   createdAt: string;
 };
 
-export async function fetchDocuments(caseId: string): Promise<CaseDocument[]> {
-  const res = await fetch(
-    `/api/verify-cases/${encodeURIComponent(caseId)}/documents`,
-    { credentials: "include" },
-  );
-  if (!res.ok) return [];
+export async function fetchDocuments(filter: {
+  caseId?: string;
+  loadId?: string;
+  docType?: DocTypeName;
+}): Promise<CaseDocument[]> {
+  const params = new URLSearchParams();
+  if (filter.caseId) params.set("caseId", filter.caseId);
+  if (filter.loadId) params.set("loadId", filter.loadId);
+  if (filter.docType) params.set("docType", filter.docType);
+  const res = await fetch(`/api/documents?${params}`, { credentials: "include" });
+  if (!res.ok) {
+    throw new DeskApiError(res.status, await failMessage(res, "Could not load documents"));
+  }
   const body = (await parseJson(res)) as { documents?: CaseDocument[] } | null;
   return body?.documents ?? [];
+}
+
+export function documentDownloadUrl(id: string) {
+  return `/api/documents/${encodeURIComponent(id)}`;
 }
 
 const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
@@ -460,6 +481,10 @@ export async function uploadEvidence(input: {
   label: string;
   caseId?: string;
   loadId?: string;
+  docType?: DocTypeName;
+  docNumber?: string;
+  amount?: string;
+  currency?: string;
 }): Promise<{ id: string; contentHash: string }> {
   const body = await fitForUpload(input.file);
   if (body.size > MAX_UPLOAD_BYTES) {
@@ -468,6 +493,10 @@ export async function uploadEvidence(input: {
   const params = new URLSearchParams({ label: input.label });
   if (input.caseId) params.set("caseId", input.caseId);
   if (input.loadId) params.set("loadId", input.loadId);
+  if (input.docType) params.set("docType", input.docType);
+  if (input.docNumber) params.set("docNumber", input.docNumber);
+  if (input.amount) params.set("amount", input.amount);
+  if (input.currency) params.set("currency", input.currency);
   const res = await fetch(`/api/evidence/upload?${params}`, {
     method: "POST",
     credentials: "include",
