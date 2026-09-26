@@ -355,7 +355,7 @@ export type Messages = {
 
 const en: Messages = {
   brand: "SupplyChek",
-  place: "A platform for food-chain organizations",
+  place: "Verified operations for food and cold-chain logistics",
   demoOrg: "Demo organization: Lake Ontario Cold Storage",
   sealedNote: "Write a sealed note",
   flags: "Flags",
@@ -705,7 +705,7 @@ const en: Messages = {
 
 const fr: Messages = {
   brand: "SupplyChek",
-  place: "Une plateforme pour les organisations de la chaîne alimentaire",
+  place: "Opérations vérifiées pour la logistique alimentaire et la chaîne du froid",
   demoOrg: "Organisation de démonstration : Lake Ontario Cold Storage",
   sealedNote: "Rédigez une note scellée",
   flags: "Signaux",
