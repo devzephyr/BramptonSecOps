@@ -27,6 +27,7 @@ type Store = {
   draft: { requestType: string; partnerId: string; rawText: string; requested: Record<string, string> };
   setDraft: (patch: Partial<Store["draft"]>) => void;
   submitDraft: () => Promise<void>;
+  submitError: string | null;
   toggleOob: (caseId: string, index: number, note: string) => void;
   approve: (caseId: string) => Promise<string | null>;
   passkeyError: string | null;
@@ -34,6 +35,7 @@ type Store = {
   refreshRemote: () => Promise<void>;
   managerTab: "board" | "directory" | "receipt";
   setManagerTab: (tab: "board" | "directory" | "receipt") => void;
+  ready: boolean;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -45,7 +47,9 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
   const [caseId, setCaseId] = useState<string | null>(null);
   const [receiptToken, setReceiptToken] = useState<string | null>(null);
   const [passkeyError, setPasskeyError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [managerTab, setManagerTab] = useState<"board" | "directory" | "receipt">("board");
+  const [ready, setReady] = useState(false);
   const [draft, setDraftState] = useState<Store["draft"]>({
     requestType: SCENARIOS[0].requestType,
     partnerId: SCENARIOS[0].partnerId,
@@ -62,6 +66,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
     if (remoteLoads.length > 0) setLoads(remoteLoads);
     if (remoteNotes.length > 0) setNotes(remoteNotes);
     setCases(remoteCases);
+    setReady(true);
   }, []);
 
   useEffect(() => {
@@ -102,16 +107,21 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
       setDraft: (patch) => setDraftState((current) => ({ ...current, ...patch })),
       submitDraft: async () => {
         if (role !== "supplier") return;
+        setSubmitError(null);
         const partner = PARTNERS.find((item) => item.id === draft.partnerId) ?? PARTNERS[0];
         const requested = { ...partner.onFile, ...draft.requested };
-        const created = await submitCase({
-          requestType: draft.requestType,
-          counterparty: partner.company,
-          rawText: draft.rawText,
-          onFile: partner.onFile,
-          requested,
-        });
-        setCases((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+        try {
+          const created = await submitCase({
+            requestType: draft.requestType,
+            counterparty: partner.company,
+            rawText: draft.rawText,
+            onFile: partner.onFile,
+            requested,
+          });
+          setCases((current) => [created, ...current.filter((item) => item.id !== created.id)]);
+        } catch (err) {
+          setSubmitError(err instanceof Error ? err.message : "Could not submit.");
+        }
       },
       toggleOob: (id, index, note) => {
         const applyLocal = () =>
@@ -193,8 +203,10 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
       refreshRemote,
       managerTab,
       setManagerTab,
+      ready,
+      submitError,
     };
-  }, [caseId, cases, draft, loads, managerTab, notes, passkeyError, receiptToken, refreshRemote, user]);
+  }, [caseId, cases, draft, loads, managerTab, notes, passkeyError, receiptToken, refreshRemote, submitError, user]);
 
   return <Ctx.Provider value={api}>{children}</Ctx.Provider>;
 }

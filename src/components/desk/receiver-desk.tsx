@@ -116,6 +116,7 @@ export function ReceiverDesk() {  const desk = useDesk();
           <CardDescription>{t.incomingHint}</CardDescription>
         </CardHeader>
         <CardPanel>
+          <div className="overflow-x-auto">
           <Table variant="card">
             <TableHeader>
               <TableRow>
@@ -140,6 +141,7 @@ export function ReceiverDesk() {  const desk = useDesk();
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardPanel>
       </Card>
       <Card>

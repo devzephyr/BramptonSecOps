@@ -17,6 +17,7 @@ export function LoadsTable() {
         <CardDescription>{t.loadsHint}</CardDescription>
       </CardHeader>
       <CardPanel>
+        <div className="overflow-x-auto">
         <Table variant="card">
           <TableHeader>
             <TableRow>
@@ -41,6 +42,7 @@ export function LoadsTable() {
             ))}
           </TableBody>
         </Table>
+        </div>
       </CardPanel>
     </Card>
   );

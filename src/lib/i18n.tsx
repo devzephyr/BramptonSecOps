@@ -58,6 +58,9 @@ export type Messages = {
   partnerCheck: string;
   dualControl: string;
   print: string;
+  copy: string;
+  copied: string;
+  skipToContent: string;
   alerts: string;
   holdCall: string;
   notApproval: string;
@@ -65,6 +68,7 @@ export type Messages = {
   noSession: string;
   signInWithPasskey: string;
   username: string;
+  usernamePlaceholder: string;
   orgLabel: string;
   orgPlaceholder: string;
   accountHint: string;
@@ -183,6 +187,9 @@ const en: Messages = {
   partnerCheck: "Partner check",
   dualControl: "Dual control",
   print: "Print",
+  copy: "Copy",
+  copied: "Copied",
+  skipToContent: "Skip to content",
   alerts: "alerts",
   holdCall: "Approve stays off until every step is checked and you name who you called.",
   notApproval: "Uploading a photo does not approve a change.",
@@ -190,6 +197,7 @@ const en: Messages = {
   noSession: "No active session. Sign in with a passkey tied to one account.",
   signInWithPasskey: "Sign in with passkey",
   username: "Username",
+  usernamePlaceholder: "First name, lower case",
   orgLabel: "Organization",
   orgPlaceholder: "Organization name or slug",
   accountHint: "Enter your own username and organization. Accounts are not listed here.",
@@ -310,6 +318,9 @@ const fr: Messages = {
   partnerCheck: "Vérification partenaire",
   dualControl: "Double contrôle",
   print: "Imprimer",
+  copy: "Copier",
+  copied: "Copié",
+  skipToContent: "Aller au contenu",
   alerts: "alertes",
   holdCall:
     "L’approbation reste désactivée tant que chaque étape n’est pas cochée et que vous n’avez pas nommé la personne appelée.",
@@ -318,6 +329,7 @@ const fr: Messages = {
   noSession: "Aucune session active. Connectez-vous avec une clé d’accès liée à un seul compte.",
   signInWithPasskey: "Connexion avec clé d’accès",
   username: "Nom d’utilisateur",
+  usernamePlaceholder: "Prénom, en minuscules",
   orgLabel: "Organisation",
   orgPlaceholder: "Nom ou identifiant de l’organisation",
   accountHint: "Saisissez votre nom d’utilisateur et votre organisation. Aucun compte n’est listé ici.",

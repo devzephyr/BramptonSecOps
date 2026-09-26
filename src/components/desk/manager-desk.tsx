@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { CaseCeremony } from "@/components/desk/case-ceremony";
@@ -42,7 +43,13 @@ export function ManagerDesk() {
             <CardDescription>{t.dual}</CardDescription>
           </CardHeader>
           <CardPanel>
-            {desk.cases.length === 0 ? (
+            {!desk.ready ? (
+              <div className="flex flex-col gap-2" aria-label={t.requests} aria-busy="true">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-2/3" />
+              </div>
+            ) : desk.cases.length === 0 ? (
               <Empty>
                 <EmptyHeader>
                   <EmptyTitle>{t.empty}</EmptyTitle>
@@ -50,6 +57,7 @@ export function ManagerDesk() {
                 </EmptyHeader>
               </Empty>
             ) : (
+              <div className="overflow-x-auto">
               <Table variant="card">
                 <TableHeader>
                   <TableRow>
@@ -78,6 +86,7 @@ export function ManagerDesk() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardPanel>
         </Card>

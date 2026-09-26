@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { DriverDesk } from "@/components/desk/driver-desk";
 import { ManagerDesk } from "@/components/desk/manager-desk";
@@ -7,7 +8,7 @@ import { ReceiverDesk } from "@/components/desk/receiver-desk";
 import { DeskShell } from "@/components/desk/shell";
 import { SupplierDesk } from "@/components/desk/supplier-desk";
 import type { SessionUser } from "@/lib/desk-client";
-import { useI18n } from "@/lib/i18n";
+import { roleTitle, useI18n } from "@/lib/i18n";
 import type { Note, Role } from "@/preview/data";
 import { StoreProvider, useDesk } from "@/preview/store";
 
@@ -42,8 +43,13 @@ function DeskBody() {
 
 function RoleDeskInner({ user, onSignOut }: { user: SessionUser; onSignOut: () => void }) {
   const desk = useDesk();
+  const { t } = useI18n();
   const role = desk.user.role as Role;
   const alertCount = desk.notes.filter((note) => noteForRole(note, role) && !note.read).length;
+
+  useEffect(() => {
+    document.title = `${roleTitle(role, t)} · ${t.brand}`;
+  }, [role, t]);
 
   return (
     <DeskShell user={user} alertCount={alertCount} onSignOut={onSignOut}>
