@@ -125,7 +125,10 @@ export type Messages = {
   city: string;
   domain: string;
   numberOnFile: string;
-  scenariosHint: string;
+  savedScenarios: string;
+  scenarioName: string;
+  saveScenario: string;
+  deleteScenario: string;
   sealedNoteHint: string;
   loadsHint: string;
   incomingHint: string;
@@ -460,7 +463,10 @@ const en: Messages = {
   city: "City",
   domain: "Domain",
   numberOnFile: "Number on file",
-  scenariosHint: "Practice scenarios: five common fraud attempts and one change during a trip.",
+  savedScenarios: "Saved by your team",
+  scenarioName: "Scenario name",
+  saveScenario: "Save draft as scenario",
+  deleteScenario: "Delete scenario",
   sealedNoteHint: "Write the change here for the verified counterparty. Never paste email text. The note seals to a hash at send.",
   loadsHint: "Approved dock and seal stay on the board until a new ceremony changes them.",
   incomingHint:
@@ -808,7 +814,10 @@ const fr: Messages = {
   city: "Ville",
   domain: "Domaine",
   numberOnFile: "Numéro au dossier",
-  scenariosHint: "Scénarios d’exercice : cinq tentatives de fraude courantes et un changement en cours de trajet.",
+  savedScenarios: "Enregistrés par votre équipe",
+  scenarioName: "Nom du scénario",
+  saveScenario: "Enregistrer le brouillon comme scénario",
+  deleteScenario: "Supprimer le scénario",
   sealedNoteHint: "Décrivez le changement ici pour la contrepartie vérifiée. Ne collez jamais de courriel. La note est scellée en empreinte à l’envoi.",
   loadsHint:
     "Quai et sceau approuvés restent au tableau jusqu’à ce qu’une nouvelle cérémonie les change.",

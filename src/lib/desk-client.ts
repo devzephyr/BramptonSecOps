@@ -998,3 +998,36 @@ export async function revokeCredential(userId: string, credentialId: string): Pr
     throw new DeskApiError(res.status, await failMessage(res, "Could not revoke credential"));
   }
 }
+
+export type SavedScenario = {
+  id: string;
+  title: string;
+  requestType: string;
+  contactId: string | null;
+  rawText: string;
+  requested: Record<string, string>;
+  createdById: string;
+};
+
+export async function fetchScenarios(): Promise<SavedScenario[]> {
+  const res = await fetch("/api/scenarios", { credentials: "include" });
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not load scenarios"));
+  const body = (await parseJson(res)) as { scenarios?: SavedScenario[] } | null;
+  return body?.scenarios ?? [];
+}
+
+export async function saveScenario(input: Omit<SavedScenario, "id" | "createdById">): Promise<SavedScenario> {
+  const res = await fetch("/api/scenarios", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not save scenario"));
+  return (await parseJson(res)) as SavedScenario;
+}
+
+export async function deleteScenario(id: string): Promise<void> {
+  const res = await fetch(`/api/scenarios/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" });
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not delete scenario"));
+}

@@ -18,9 +18,11 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CallLink } from "@/components/desk/call-link";
-import type { Contact } from "@/lib/desk-client";
+import { deleteScenario, fetchScenarios, saveScenario, type Contact, type SavedScenario } from "@/lib/desk-client";
 import { useI18n } from "@/lib/i18n";
 import { NEW_REQUEST_TYPES, REQUEST_FIELDS, REQUESTS, SCENARIOS, deskFlags } from "@/preview/data";
+import { MANAGERS } from "@/lib/policy";
+import type { Role } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { sha256Hex } from "@/preview/hash";
 import { useDesk } from "@/preview/store";
@@ -33,6 +35,43 @@ export function SupplierDesk() {
   const [noteHash, setNoteHash] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
+  const [saved, setSaved] = useState<SavedScenario[]>([]);
+  const [scenarioName, setScenarioName] = useState("");
+  const [scenarioError, setScenarioError] = useState<string | null>(null);
+  const canDeleteAny = MANAGERS.includes(desk.user.role as Role);
+
+  useEffect(() => {
+    void fetchScenarios()
+      .then(setSaved)
+      .catch((err: unknown) => setScenarioError(err instanceof Error ? err.message : "Could not load scenarios."));
+  }, []);
+
+  async function onSaveScenario() {
+    setScenarioError(null);
+    try {
+      const created = await saveScenario({
+        title: scenarioName,
+        requestType: desk.draft.requestType,
+        contactId: desk.draft.contactId || null,
+        rawText: desk.draft.rawText,
+        requested: desk.draft.requested,
+      });
+      setSaved((current) => [created, ...current]);
+      setScenarioName("");
+    } catch (err) {
+      setScenarioError(err instanceof Error ? err.message : "Could not save scenario.");
+    }
+  }
+
+  async function onDeleteScenario(id: string) {
+    setScenarioError(null);
+    try {
+      await deleteScenario(id);
+      setSaved((current) => current.filter((item) => item.id !== id));
+    } catch (err) {
+      setScenarioError(err instanceof Error ? err.message : "Could not delete scenario.");
+    }
+  }
 
   useEffect(() => {
     const text = desk.draft.rawText.trim();
@@ -105,7 +144,6 @@ export function SupplierDesk() {
       <Card>
         <CardHeader>
           <CardTitle>{t.scenarios}</CardTitle>
-          <CardDescription>{t.scenariosHint}</CardDescription>
         </CardHeader>
         <CardPanel className="flex flex-col gap-2">
           {SCENARIOS.map((scenario) => (
@@ -121,6 +159,48 @@ export function SupplierDesk() {
               {lang === "fr" && scenario.frTitle ? scenario.frTitle : scenario.title}
             </Button>
           ))}
+          {saved.length > 0 && <p className="pt-2 text-xs font-medium text-muted-foreground">{t.savedScenarios}</p>}
+          {saved.map((scenario) => (
+            <div key={scenario.id} className="flex gap-1">
+              <Button
+                variant="outline"
+                className="min-w-0 flex-1 justify-start truncate"
+                onClick={() => {
+                  setSentTo(null);
+                  desk.setDraft({
+                    requestType: scenario.requestType,
+                    contactId: scenario.contactId ?? desk.draft.contactId,
+                    rawText: scenario.rawText,
+                    requested: scenario.requested,
+                  });
+                }}
+              >
+                {scenario.title}
+              </Button>
+              {(canDeleteAny || scenario.createdById === desk.user.id) && (
+                <Button variant="ghost" size="sm" aria-label={`${t.deleteScenario}: ${scenario.title}`} onClick={() => void onDeleteScenario(scenario.id)}>
+                  ×
+                </Button>
+              )}
+            </div>
+          ))}
+          <div className="flex flex-col gap-2 border-t pt-3">
+            <Input
+              aria-label={t.scenarioName}
+              placeholder={t.scenarioName}
+              value={scenarioName}
+              maxLength={80}
+              onChange={(event) => setScenarioName(event.target.value)}
+            />
+            <Button
+              variant="secondary"
+              disabled={!scenarioName.trim() || desk.draft.rawText.trim().length < 8}
+              onClick={() => void onSaveScenario()}
+            >
+              {t.saveScenario}
+            </Button>
+            {scenarioError && <p className="text-xs text-destructive-foreground">{scenarioError}</p>}
+          </div>
         </CardPanel>
       </Card>
       <Card>
