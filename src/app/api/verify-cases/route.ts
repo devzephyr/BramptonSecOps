@@ -1,6 +1,7 @@
 import { RequestType } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { hasRole, requireUser } from "@/lib/auth";
+import { CASE_STAFF } from "@/lib/policy";
 import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
 import {
   buildCasePayload,
@@ -15,6 +16,7 @@ import { contactOnFile } from "@/lib/directory";
 export async function GET() {
   const user = await requireUser();
   if (!user) return unauthorized();
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can view cases.");
 
   const rows = await prisma.verifyCase.findMany({
     where: { orgId: user.orgId, revokedAt: null },
@@ -30,13 +32,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (
-    user.role !== "supplier" &&
-    user.role !== "manager" &&
-    user.role !== "admin"
-  ) {
-    return forbidden("Only supplier or manager staff can open a verify case.");
-  }
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can open a verify case.");
 
   let body: Record<string, unknown>;
   try {

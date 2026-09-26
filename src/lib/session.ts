@@ -7,6 +7,8 @@ export type SessionClaims = {
   sub: string;
   orgId: string;
   role: string;
+  /** WebAuthnCredential row id used to sign in; revoking it ends the session. */
+  cid: string;
 };
 
 function secret() {
@@ -34,11 +36,12 @@ export async function readSession(): Promise<SessionClaims | null> {
     if (
       typeof payload.sub !== "string" ||
       typeof payload.orgId !== "string" ||
-      typeof payload.role !== "string"
+      typeof payload.role !== "string" ||
+      typeof payload.cid !== "string"
     ) {
       return null;
     }
-    return { sub: payload.sub, orgId: payload.orgId, role: payload.role };
+    return { sub: payload.sub, orgId: payload.orgId, role: payload.role, cid: payload.cid };
   } catch {
     return null;
   }

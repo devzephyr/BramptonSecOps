@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
+import { CASE_STAFF } from "@/lib/policy";
 import { serializeContact } from "@/lib/directory";
 import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
 
@@ -10,6 +11,7 @@ function text(value: unknown, max: number): string {
 export async function GET() {
   const user = await requireUser();
   if (!user) return unauthorized();
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can view cases.");
 
   const rows = await prisma.directoryContact.findMany({
     where: { orgId: user.orgId },

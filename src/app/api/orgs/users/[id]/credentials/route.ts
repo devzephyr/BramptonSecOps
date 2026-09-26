@@ -43,8 +43,12 @@ export async function DELETE(request: Request, { params }: Params) {
   const { id } = await params;
   const target = await orgMember(user.orgId, id);
   if (!target) return notFound();
-  if (target.role === "admin" && user.role !== "admin") {
-    return forbidden("Only an admin can revoke another admin's credential.");
+  if (
+    (target.role === "admin" || target.role === "manager") &&
+    target.id !== user.id &&
+    user.role !== "admin"
+  ) {
+    return forbidden("Only an admin can revoke an approver's passkey.");
   }
 
   let body: Record<string, unknown> = {};

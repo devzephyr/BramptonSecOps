@@ -26,13 +26,16 @@ export async function GET(request: Request) {
       (row) => row.deviceId === identity.deviceId,
     );
     if (!signed) continue;
-    const oneTime = await prisma.signalOneTimePreKey.findFirst({
-      where: { userId: target.id, deviceId: identity.deviceId },
-      orderBy: { createdAt: "asc" },
-    });
-    if (oneTime) {
-      await prisma.signalOneTimePreKey.delete({ where: { id: oneTime.id } });
-    }
+    const [oneTime] = await prisma.$queryRaw<{ keyId: number; publicKey: string }[]>`
+      DELETE FROM "SignalOneTimePreKey"
+      WHERE id = (
+        SELECT id FROM "SignalOneTimePreKey"
+        WHERE "userId" = ${target.id} AND "deviceId" = ${identity.deviceId}
+        ORDER BY "createdAt" ASC
+        LIMIT 1
+        FOR UPDATE SKIP LOCKED
+      )
+      RETURNING "keyId", "publicKey"`;
     devices.push({
       userId: target.id,
       deviceId: identity.deviceId,

@@ -4,6 +4,7 @@ export type DeskCase = {
   requestType: string;
   counterparty: string;
   contactId: string;
+  createdById: string;
   numberOnFile: string;
   rawText: string;
   onFile: Record<string, string>;

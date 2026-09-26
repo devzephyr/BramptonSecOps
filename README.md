@@ -150,6 +150,8 @@ It fails if forbidden substrings (chat-app names, legacy auth wording, overclaim
 ## Architecture notes for contributors
 
 - **Tenancy.** Every table carries `orgId`. Sessions carry `orgId` and `requireUser()` enforces it. Never add a query without an org filter. Directory/autocomplete must come from the API, never the hardcoded preview list, or orgs leak into each other.
+- **Access model.** Cases, their threads, documents, and the directory are readable by supplier, manager, and admin roles only. Only an admin can create, re-code, or reset the passkeys of managers and admins, so no manager can mint a second approver identity. The person who opened a case cannot approve it. A session is bound to the passkey that signed in; revoking that passkey ends the session on the next request.
+- **Concurrency.** Approve, edit, and revoke on a case take a `SELECT … FOR UPDATE` row lock and re-check state inside the transaction, so an approval can never land on a payload that changed mid-ceremony. Enrollment codes, approval ceremonies, WebAuthn challenges, one-time prekeys, and driver load claims are consumed with single conditional writes, never read-then-write.
 - **Identity.** Sign-in resolves `username + organization` server-side. No endpoint lists users. The old `userId`-in-body shape is gone.
 - **Messaging crypto.** `libsignal-protocol-typescript` (GPL-3.0, hackathon-only license posture). Server stores public keys and ciphertext envelopes; private keys stay in browser localStorage. Pairwise Double Ratchet fan-out per case thread, no Sender Keys.
 - **Cases.** The preview store is a view over `/api/verify-cases`, not a local mock. Submit/checklist/approve all round-trip the server.

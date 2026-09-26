@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
-import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
+import { badRequest, forbidden, isUniqueViolation, json, unauthorized } from "@/lib/http";
 
 function serializeLoad(row: Awaited<ReturnType<typeof prisma.load.findFirst>>) {
   if (!row) return null;
@@ -82,33 +82,33 @@ export async function POST(request: Request) {
     if (!driver) return badRequest("driverUserId must be a driver in your org.");
   }
 
-  const taken = await prisma.load.findFirst({
-    where: { orgId: user.orgId, loadRef: (body.loadRef as string).trim() },
-    select: { id: true },
-  });
-  if (taken) return badRequest("That load reference already exists.");
-
-  const load = await prisma.load.create({
-    data: {
-      orgId: user.orgId,
-      loadRef: (body.loadRef as string).trim(),
-      carrierName: body.carrierName as string,
-      plate: body.plate as string,
-      trailer: body.trailer as string,
-      origin: body.origin as string,
-      destination: body.destination as string,
-      commodity: body.commodity as string,
-      currentStatus: "scheduled",
-      lastKnown: typeof body.lastKnown === "string" ? body.lastKnown : "yard",
-      reeferSetpoint:
-        typeof body.reeferSetpoint === "string" ? body.reeferSetpoint : null,
-      sealNumber: typeof body.sealNumber === "string" ? body.sealNumber : null,
-      scheduledDock:
-        typeof body.scheduledDock === "string" ? body.scheduledDock : null,
-      driverUserId,
-      eta,
-    },
-  });
+  const load = await prisma.load
+    .create({
+      data: {
+        orgId: user.orgId,
+        loadRef: (body.loadRef as string).trim(),
+        carrierName: body.carrierName as string,
+        plate: body.plate as string,
+        trailer: body.trailer as string,
+        origin: body.origin as string,
+        destination: body.destination as string,
+        commodity: body.commodity as string,
+        currentStatus: "scheduled",
+        lastKnown: typeof body.lastKnown === "string" ? body.lastKnown : "yard",
+        reeferSetpoint:
+          typeof body.reeferSetpoint === "string" ? body.reeferSetpoint : null,
+        sealNumber: typeof body.sealNumber === "string" ? body.sealNumber : null,
+        scheduledDock:
+          typeof body.scheduledDock === "string" ? body.scheduledDock : null,
+        driverUserId,
+        eta,
+      },
+    })
+    .catch((error: unknown) => {
+      if (isUniqueViolation(error)) return null;
+      throw error;
+    });
+  if (!load) return badRequest("That load reference already exists.");
 
   return json(serializeLoad(load), 201);
 }

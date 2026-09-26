@@ -457,6 +457,7 @@ export type ApiCase = {
   requestType: string;
   counterparty: string;
   contactId: string | null;
+  createdById: string;
   numberOnFile: string | null;
   rawText?: string;
   onFile: unknown;
@@ -515,6 +516,7 @@ export function mapApiCase(row: ApiCase): DeskCase {
     requestType: row.requestType,
     counterparty: row.counterparty,
     contactId: row.contactId ?? "",
+    createdById: row.createdById,
     numberOnFile: row.numberOnFile ?? "",
     rawText: row.rawText ?? "",
     onFile: stringRecord(row.onFile),

@@ -18,6 +18,8 @@ import {
 } from "@/lib/desk-client";
 import { SCENARIOS, type DeskCase, type Load, type Note, type Role } from "@/preview/data";
 
+const CASE_STAFF: Role[] = ["supplier", "manager", "admin"];
+
 type ManagerTab = "board" | "directory" | "receipt" | "team";
 type Draft = { requestType: string; contactId: string; rawText: string; requested: Record<string, string> };
 
@@ -74,21 +76,23 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
     requested: {},
   });
 
+  const caseStaff = CASE_STAFF.includes(user.role as Role);
+
   const refreshRemote = useCallback(async () => {
     const [remoteLoads, remoteNotes, remoteCases] = await Promise.all([
       fetchLoads(),
       fetchNotifications(),
-      fetchCases(),
+      caseStaff ? fetchCases() : Promise.resolve([]),
     ]);
     setLoads(remoteLoads);
     setNotes(remoteNotes);
     setCases(remoteCases);
     setReady(true);
-  }, []);
+  }, [caseStaff]);
 
   const refreshDirectory = useCallback(async () => {
-    setContacts(await fetchDirectory());
-  }, []);
+    if (caseStaff) setContacts(await fetchDirectory());
+  }, [caseStaff]);
 
   useEffect(() => {
     void refreshRemote();
@@ -183,6 +187,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
         const item = cases.find((entry) => entry.id === id);
         if (!item) return fail("Case not found.");
         if (role !== "manager" && role !== "admin") return fail("Only a manager can approve.");
+        if (item.createdById === user.id) return fail("The person who opened a case cannot approve it.");
         if (item.approvals.some((approval) => approval.userId === user.id)) {
           return fail("You already signed this exact payload. A different person must sign.");
         }

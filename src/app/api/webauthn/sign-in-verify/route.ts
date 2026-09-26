@@ -17,6 +17,7 @@ export async function POST(request: Request) {
       response: body.response,
     })) as Awaited<ReturnType<typeof verifyAssertion>> & {
       credentialRow: {
+        id: string;
         user: {
           id: string;
           orgId: string;
@@ -32,6 +33,7 @@ export async function POST(request: Request) {
       sub: signedIn.id,
       orgId: signedIn.orgId,
       role: signedIn.role,
+      cid: verification.credentialRow.id,
     });
     await writeSessionCookie(token);
 

@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
-import { badRequest, json, notFound, unauthorized } from "@/lib/http";
+import { hasRole, requireUser } from "@/lib/auth";
+import { CASE_STAFF } from "@/lib/policy";
+import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
 
 export async function GET(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can view cases.");
 
   const caseId = new URL(request.url).searchParams.get("caseId");
   if (!caseId) return badRequest("caseId is required.");

@@ -1,13 +1,14 @@
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
-import { badRequest, json, notFound, unauthorized } from "@/lib/http";
+import { hasRole, requireUser } from "@/lib/auth";
+import { CASE_STAFF } from "@/lib/policy";
+import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
 
 type Params = { params: Promise<{ id: string }> };
 
 async function orgCase(id: string, orgId: string) {
   return prisma.verifyCase.findFirst({
     where: { id, orgId },
-    select: { id: true },
+    select: { id: true, revokedAt: true },
   });
 }
 
@@ -30,6 +31,7 @@ function validEnvelopes(value: unknown): value is Record<string, { type: number;
 export async function GET(_request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can view cases.");
   const { id } = await params;
   if (!(await orgCase(id, user.orgId))) return notFound();
 
@@ -53,8 +55,11 @@ export async function GET(_request: Request, { params }: Params) {
 export async function POST(request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can view cases.");
   const { id } = await params;
-  if (!(await orgCase(id, user.orgId))) return notFound();
+  const kase = await orgCase(id, user.orgId);
+  if (!kase) return notFound();
+  if (kase.revokedAt) return forbidden("This case was revoked; its thread is read-only.");
 
   let body: Record<string, unknown>;
   try {

@@ -36,6 +36,9 @@ export async function POST(request: Request) {
   if (row.status === "fully_approved") {
     return forbidden("This case is already approved.");
   }
+  if (row.createdById === user.id) {
+    return forbidden("The person who opened a case cannot approve it.");
+  }
 
   const steps = Array.isArray(row.oobStepsJson)
     ? (row.oobStepsJson as string[])

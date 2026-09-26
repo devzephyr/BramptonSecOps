@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
-import { badRequest, json, unauthorized } from "@/lib/http";
+import { hasRole, requireUser } from "@/lib/auth";
+import { CASE_STAFF } from "@/lib/policy";
+import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
 import { isOrgEvidenceKey, MAX_EVIDENCE_BYTES } from "@/lib/evidence-storage";
 
 export async function POST(request: Request) {
@@ -36,11 +37,12 @@ export async function POST(request: Request) {
   }
 
   if (caseId) {
+    if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can attach case documents.");
     const kase = await prisma.verifyCase.findFirst({
-      where: { id: caseId, orgId: user.orgId },
+      where: { id: caseId, orgId: user.orgId, revokedAt: null },
       select: { id: true },
     });
-    if (!kase) return badRequest("caseId is not in your org.");
+    if (!kase) return badRequest("caseId is not an open case in your org.");
   }
   if (loadId) {
     const load = await prisma.load.findFirst({
