@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, loadStatusTitle } from "@/lib/i18n";
 import { useDesk } from "@/preview/store";
 
 export function LoadsTable() {
@@ -35,7 +35,7 @@ export function LoadsTable() {
                 <TableCell>{load.commodity}</TableCell>
                 <TableCell>{load.dock}</TableCell>
                 <TableCell>
-                  <Badge variant={load.status === "fifteen_min" ? "warning" : "outline"}>{load.status}</Badge>
+                  <Badge variant={load.status === "fifteen_min" ? "warning" : "outline"}>{loadStatusTitle(load.status, t)}</Badge>
                 </TableCell>
                 <TableCell className="font-mono text-xs">{load.seal}</TableCell>
               </TableRow>

@@ -203,7 +203,7 @@ export function SupplierDesk() {
               {t.sendToManager}
             </Button>
             <Badge variant="outline">draft</Badge>
-            {request && <Badge variant={request.dual ? "warning" : "secondary"}>{request.id}</Badge>}
+            {request && <Badge variant={request.dual ? "warning" : "secondary"}>{lang === "fr" ? request.fr : request.en}</Badge>}
           </div>
           {desk.submitError && (
             <Alert variant="error">

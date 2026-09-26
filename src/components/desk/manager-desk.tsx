@@ -11,7 +11,8 @@ import { CaseCeremony } from "@/components/desk/case-ceremony";
 import { DirectoryDesk } from "@/components/desk/directory-desk";
 import { LoadsTable } from "@/components/desk/loads-table";
 import { ReceiptView } from "@/components/desk/receipt-view";
-import { useI18n } from "@/lib/i18n";
+import { useI18n, caseStatusTitle } from "@/lib/i18n";
+import { requestTitle } from "@/preview/data";
 import { useDesk } from "@/preview/store";
 
 function shortHash(hash: string) {
@@ -20,7 +21,7 @@ function shortHash(hash: string) {
 
 export function ManagerDesk() {
   const desk = useDesk();
-  const { t } = useI18n();
+  const { lang, t } = useI18n();
 
   if (desk.caseId) {
     return <CaseCeremony />;
@@ -72,9 +73,9 @@ export function ManagerDesk() {
                   {desk.cases.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>{item.counterparty}</TableCell>
-                      <TableCell>{item.requestType}</TableCell>
+                      <TableCell>{requestTitle(item.requestType, lang)}</TableCell>
                       <TableCell>
-                        <Badge variant={item.status === "fully_approved" ? "success" : "warning"}>{item.status}</Badge>
+                        <Badge variant={item.status === "fully_approved" ? "success" : "warning"}>{caseStatusTitle(item.status, t)}</Badge>
                       </TableCell>
                       <TableCell className="font-mono text-xs">{shortHash(item.payloadHash)}</TableCell>
                       <TableCell>
