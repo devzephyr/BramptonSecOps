@@ -62,6 +62,7 @@ export function ReceiverDesk() {
         </CardHeader>
         <CardPanel className="flex flex-col gap-3">
           <TripMap
+            fitTrucks
             depotLabel={t.mapDepot}
             yardLabel={t.mapYard}
             trucks={[...live, ...stale].map((load) => ({

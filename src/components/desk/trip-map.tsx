@@ -45,6 +45,7 @@ export function TripMap({
   trucks,
   trail,
   follow,
+  fitTrucks = false,
   className = "h-72",
   depotLabel,
   yardLabel,
@@ -53,6 +54,8 @@ export function TripMap({
   /** Where the truck actually went, oldest first. Drawn solid over the dashed planned route. */
   trail?: { lat: number; lng: number }[];
   follow?: string | null;
+  /** Keep every truck in view: refit when trucks appear, disappear, or drive out of the frame. */
+  fitTrucks?: boolean;
   className?: string;
   depotLabel: string;
   yardLabel: string;
@@ -62,6 +65,7 @@ export function TripMap({
   const lib = useRef<MapLib | null>(null);
   const markers = useRef(new Map<string, { marker: MarkerInstance; look: string }>());
   const [ready, setReady] = useState(false);
+  const fittedIds = useRef("");
   const [failed, setFailed] = useState(!TOKEN);
 
   useEffect(() => {
@@ -161,7 +165,24 @@ export function TripMap({
     }
     const target = trucks.find((truck) => truck.id === follow);
     if (target) instance.easeTo({ center: [target.lng, target.lat], duration: 800 });
-  }, [follow, ready, trucks]);
+    else if (fitTrucks && trucks.length > 0) {
+      const ids = trucks.map((truck) => truck.id).sort().join(",");
+      const view = instance.getBounds();
+      const outside = trucks.some((truck) => view && !view.contains([truck.lng, truck.lat]));
+      if (outside || ids !== fittedIds.current) {
+        fittedIds.current = ids;
+        const lngs = [...trucks.map((truck) => truck.lng), ROUTE[0].lng, ROUTE[ROUTE.length - 1].lng];
+        const lats = [...trucks.map((truck) => truck.lat), ROUTE[0].lat, ROUTE[ROUTE.length - 1].lat];
+        instance.fitBounds(
+          [
+            [Math.min(...lngs), Math.min(...lats)],
+            [Math.max(...lngs), Math.max(...lats)],
+          ],
+          { padding: 60, maxZoom: 12, duration: 800 },
+        );
+      }
+    }
+  }, [fitTrucks, follow, ready, trucks]);
 
   useEffect(() => {
     const source = map.current?.getSource("trail");
