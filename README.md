@@ -78,6 +78,7 @@ Use Chrome or Edge on desktop (Windows Hello) or Chrome on Android (Credential M
 | `JEV_ENABLED` | Set `true` to classify sealed-note text; never auto-approves |
 | `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` | Cloudflare R2 or MinIO for evidence uploads |
 | `DEMO_ENROLL` | Set `true` only in demo to allow passkey registration routes |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Mapbox public token (`pk.…`) for the live trip map. Inlined at build time, so set it before `npm run build` (Vercel env or Docker build context). Without it the map hides and the rest of the tracking UI still works |
 
 Generate a receipt key once and keep it on the server (compose mounts it under `/data` in self-hosted stacks).
 
@@ -144,7 +145,7 @@ It fails if forbidden substrings (chat-app names, legacy auth wording, overclaim
 | `npx prisma db push` | Sync schema to the database (dev pattern; migration history has drift) |
 | `npx prisma db seed` | Seed two orgs, users, contacts, cases, loads |
 | `npx tsx scripts/signal-roundtrip.ts` | Signal crypto proof: Alice↔Bob encrypt, reply, matching safety numbers |
-| `npx tsx scripts/logic-check.ts` | Asserts evidence-key validation, enrollment-code normalization, payload patch sanitizing |
+| `npx tsx scripts/logic-check.ts` | Asserts evidence-key validation, enrollment-code normalization, payload patch sanitizing, simulated route |
 | `node scripts/ban-list.mjs` | Copy gate: fails on chat-app names, legacy auth wording, overclaims |
 
 ## Architecture notes for contributors
@@ -155,5 +156,5 @@ It fails if forbidden substrings (chat-app names, legacy auth wording, overclaim
 - **Identity.** Sign-in resolves `username + organization` server-side. No endpoint lists users. The old `userId`-in-body shape is gone.
 - **Messaging crypto.** `libsignal-protocol-typescript` (GPL-3.0, hackathon-only license posture). Server stores public keys and ciphertext envelopes; private keys stay in browser localStorage. Pairwise Double Ratchet fan-out per case thread, no Sender Keys.
 - **Cases.** The preview store is a view over `/api/verify-cases`, not a local mock. Submit/checklist/approve all round-trip the server.
-- **Tracking.** Positions on `Load` (`lat`/`lng`/`positionAt`). The driver sim walks a fixed depot→yard segment and is labeled simulated everywhere.
+- **Tracking.** Positions on `Load` (`lat`/`lng`/`positionAt`). The driver sim follows a fixed depot→yard road route (Hwy 403/410, from Mapbox Directions, stored in `src/lib/tracking.ts`), posts Rolling, 15 minutes away, and Arrived on the way, and is labeled simulated everywhere. Maps render with Mapbox GL (`src/components/desk/trip-map.tsx`).
 - **Copy gate.** `scripts/ban-list.mjs` runs on the repo (minus `.agents/`). Keep UI copy free of chat-app names, legacy auth wording, and overclaims.

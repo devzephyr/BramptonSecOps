@@ -5,49 +5,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Progress, ProgressIndicator, ProgressTrack } from "@/components/ui/progress";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toastManager } from "@/components/ui/toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DeskApiError, uploadEvidence } from "@/lib/desk-client";
 import { useI18n, loadStatusTitle } from "@/lib/i18n";
-import { isLive, tripProgress, updatedAgo } from "@/lib/tracking";
+import { isLive, updatedAgo } from "@/lib/tracking";
 import { useDesk } from "@/preview/store";
-import type { Load } from "@/preview/data";
-
-function stopIndex(status: string): number {
-  if (status === "arrived") return 3;
-  if (status === "fifteen_min") return 2;
-  if (status === "rolling" || status === "delayed") return 1;
-  return 0;
-}
-
-function EtaRail({ load, labels }: { load: Load; labels: string[] }) {
-  const current = stopIndex(load.status);
-  return (
-    <ol className="flex flex-col gap-0">
-      {labels.map((label, index) => {
-        const done = index < current;
-        const now = index === current;
-        return (
-          <li key={label} className="flex gap-3">
-            <span className="flex flex-col items-center">
-              <span
-                className={`h-2.5 w-2.5 rounded-full ${
-                  done ? "bg-emerald-500" : now ? "animate-pulse bg-amber-500" : "bg-muted-foreground/30"
-                }`}
-              />
-              {index < labels.length - 1 && <span className="w-px flex-1 bg-border" />}
-            </span>
-            <span className={`pb-3 text-xs ${now ? "font-medium" : "text-muted-foreground"}`}>
-              {label}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
+import { TripMap } from "@/components/desk/trip-map";
+import { TripSteps } from "@/components/desk/trip-steps";
 
 export function ReceiverDesk() {
   const desk = useDesk();
@@ -59,6 +25,7 @@ export function ReceiverDesk() {
   const live = desk.loads.filter(
     (load) => load.lat != null && load.lng != null && isLive(load.positionAt),
   );
+  const stepLabels = { loaded: t.loaded, rolling: t.rolling, fifteen_min: t.away, arrived: t.arrived, delayed: t.delayed };
   const stale = desk.loads.filter(
     (load) => load.lat != null && load.lng != null && !isLive(load.positionAt),
   );
@@ -91,6 +58,17 @@ export function ReceiverDesk() {
           <CardDescription>{t.liveLocationHint}</CardDescription>
         </CardHeader>
         <CardPanel className="flex flex-col gap-3">
+          <TripMap
+            depotLabel={t.mapDepot}
+            yardLabel={t.mapYard}
+            trucks={[...live, ...stale].map((load) => ({
+              id: load.id,
+              label: load.loadRef,
+              lat: load.lat!,
+              lng: load.lng!,
+              live: isLive(load.positionAt),
+            }))}
+          />
           {live.length === 0 && stale.length === 0 && (
             <p className="text-sm text-muted-foreground">{t.noLive}</p>
           )}
@@ -107,12 +85,7 @@ export function ReceiverDesk() {
                   {load.lat?.toFixed(4)}, {load.lng?.toFixed(4)} · {updatedAgo(load.positionAt)}
                 </span>
               </div>
-              <Progress value={tripProgress(load.lat ?? 0, load.lng ?? 0)} max={1}>
-                <ProgressTrack>
-                  <ProgressIndicator />
-                </ProgressTrack>
-              </Progress>
-              <EtaRail load={load} labels={[t.loaded, t.rolling, t.away, t.arrived]} />
+              <TripSteps status={load.status} labels={stepLabels} />
             </div>
           ))}
           {stale.map((load) => (
@@ -125,12 +98,7 @@ export function ReceiverDesk() {
                   {load.lat?.toFixed(4)}, {load.lng?.toFixed(4)} · {updatedAgo(load.positionAt)}
                 </span>
               </div>
-              <Progress value={tripProgress(load.lat ?? 0, load.lng ?? 0)} max={1}>
-                <ProgressTrack>
-                  <ProgressIndicator />
-                </ProgressTrack>
-              </Progress>
-              <EtaRail load={load} labels={[t.loaded, t.rolling, t.away, t.arrived]} />
+              <TripSteps status={load.status} labels={stepLabels} />
             </div>
           ))}
         </CardPanel>

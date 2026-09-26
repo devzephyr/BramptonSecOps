@@ -6,6 +6,7 @@ import { Dialog, DialogDescription, DialogHeader, DialogPanel, DialogPopup, Dial
 import { useI18n, loadStatusTitle } from "@/lib/i18n";
 import { isLive, updatedAgo } from "@/lib/tracking";
 import type { Load } from "@/preview/data";
+import { TripMap } from "@/components/desk/trip-map";
 
 function Row({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   if (!value) return null;
@@ -46,14 +47,22 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
               <Row label={t.seal} value={load.seal} mono />
               <Row label={t.eta} value={load.eta} />
               <Row label={t.carrier} value={load.carrier} />
-              <Row label="Plate / trailer" value={[load.plate, load.trailer].filter(Boolean).join(" · ")} mono />
+              <Row label={t.trailerPlate} value={[load.trailer, load.plate].filter(Boolean).join(" · ")} mono />
               <Row label={t.setpoint} value={load.setpoint} mono />
-              {live && (
-                <Row
-                  label={t.liveLocation}
-                  value={`${load.lat?.toFixed(4)}, ${load.lng?.toFixed(4)} · ${updatedAgo(load.positionAt)}`}
-                  mono
-                />
+              {load.lat != null && load.lng != null && (
+                <>
+                  <Row
+                    label={live ? t.liveLocation : t.lastKnown}
+                    value={`${load.lat.toFixed(4)}, ${load.lng.toFixed(4)} · ${updatedAgo(load.positionAt)}`}
+                    mono
+                  />
+                  <TripMap
+                    className="h-48"
+                    depotLabel={t.mapDepot}
+                    yardLabel={t.mapYard}
+                    trucks={[{ id: load.id, label: load.loadRef, lat: load.lat, lng: load.lng, live }]}
+                  />
+                </>
               )}
               <div className="mt-2">
                 <Button size="sm" variant="outline" onClick={onClose}>
