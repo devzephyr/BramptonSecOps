@@ -9,8 +9,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { CaseCeremony } from "@/components/desk/case-ceremony";
 import { DirectoryDesk } from "@/components/desk/directory-desk";
+import { LoadForm } from "@/components/desk/load-form";
 import { LoadsTable } from "@/components/desk/loads-table";
 import { ReceiptView } from "@/components/desk/receipt-view";
+import { SupplierDesk } from "@/components/desk/supplier-desk";
 import { TeamDesk } from "@/components/desk/team-desk";
 import { useI18n, caseStatusTitle } from "@/lib/i18n";
 import { requestTitle } from "@/preview/data";
@@ -31,10 +33,12 @@ export function ManagerDesk() {
   return (
     <Tabs
       value={desk.managerTab}
-      onValueChange={(value) => desk.setManagerTab(value as "board" | "directory" | "receipt" | "team")}
+      onValueChange={(value) => desk.setManagerTab(value as typeof desk.managerTab)}
     >
       <TabsList>
         <TabsTab value="board">{t.requests}</TabsTab>
+        <TabsTab value="request">{t.newRequest}</TabsTab>
+        <TabsTab value="load">{t.newLoad}</TabsTab>
         <TabsTab value="directory">{t.directory}</TabsTab>
         <TabsTab value="team">{t.team}</TabsTab>
         {desk.receiptToken && <TabsTab value="receipt">{t.partnerCheck}</TabsTab>}
@@ -94,6 +98,13 @@ export function ManagerDesk() {
           </CardPanel>
         </Card>
         <LoadsTable />
+      </TabsPanel>
+      <TabsPanel value="request" className="flex flex-col gap-2 pt-4">
+        <p className="text-sm text-muted-foreground">{t.newRequestHint}</p>
+        <SupplierDesk />
+      </TabsPanel>
+      <TabsPanel value="load" className="pt-4">
+        <LoadForm onCreated={() => desk.setManagerTab("board")} />
       </TabsPanel>
       <TabsPanel value="directory" className="pt-4">
         <DirectoryDesk />
