@@ -321,6 +321,8 @@ export type Messages = {
   eventHandoff: string;
   eventUpdated: string;
   fleet: string;
+  startFleetSim: string;
+  stopFleetSim: string;
   fleetHint: string;
   dutyStatus: string;
   dutyOff: string;
@@ -695,7 +697,9 @@ const en: Messages = {
   eventHandoff: "Handoff",
   eventUpdated: "Edited",
   fleet: "Fleet",
-  fleetHint: "Every driver, their duty clock, and where their loads are. Refreshes every 15 seconds.",
+  startFleetSim: "Simulate fleet",
+  stopFleetSim: "Stop simulation",
+  fleetHint: "Every driver, their duty clock, and where their loads are. Refreshes every 5 seconds.",
   dutyStatus: "Duty status",
   dutyOff: "Off duty",
   dutySleeper: "Sleeper berth",
@@ -1074,7 +1078,9 @@ const fr: Messages = {
   eventHandoff: "Transfert",
   eventUpdated: "Modifié",
   fleet: "Flotte",
-  fleetHint: "Chaque chauffeur, son temps de conduite et la position de ses chargements. Actualisé toutes les 15 secondes.",
+  startFleetSim: "Simuler la flotte",
+  stopFleetSim: "Arrêter la simulation",
+  fleetHint: "Chaque chauffeur, son temps de conduite et la position de ses chargements. Actualisé toutes les 5 secondes.",
   dutyStatus: "Statut de service",
   dutyOff: "Hors service",
   dutySleeper: "Couchette",

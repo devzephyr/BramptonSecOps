@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPinIcon, WarehouseIcon } from "lucide-react";
+import { MapPinIcon, PauseIcon, PlayIcon, WarehouseIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,10 @@ import {
   type Fleet,
   type FleetDriver,
   type FleetLoad,
+  postPosition,
 } from "@/lib/desk-client";
 import { loadStatusTitle, useI18n } from "@/lib/i18n";
-import { isLive, updatedAgo } from "@/lib/tracking";
+import { isLive, positionOn, ROUTES, SIM_STEPS, SIM_TICK_MS, updatedAgo } from "@/lib/tracking";
 import { cn } from "@/lib/utils";
 import { useDesk } from "@/preview/store";
 
@@ -194,15 +195,54 @@ export function FleetDesk() {
 
   useEffect(() => {
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 15000);
+    const timer = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(timer);
   }, [refresh]);
+
+  // Demo: move every active load along its own GTA route at once, posting as logistics
+  // (not as the driver), so no driver's duty log is touched.
+  const [simulating, setSimulating] = useState(false);
+  const simStep = useRef(0);
+  const fleetRef = useRef<Fleet | null>(null);
+  fleetRef.current = fleet;
+
+  useEffect(() => {
+    if (!simulating) return;
+    let inFlight = false;
+    const tick = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const seen = new Set<string>();
+        const active = (fleetRef.current?.drivers ?? [])
+          .flatMap((driver) => driver.loads)
+          .filter((load) => ACTIVE(load) && !seen.has(load.id) && seen.add(load.id))
+          .sort((a, b) => a.id.localeCompare(b.id));
+        simStep.current += 1;
+        await Promise.all(
+          active.map((load, index) => {
+            // Each load gets its own corridor and starting point, and drives back and forth along it.
+            const lap = (simStep.current / SIM_STEPS + index * 0.17) % 2;
+            const point = positionOn(ROUTES[index % ROUTES.length], lap > 1 ? 2 - lap : lap);
+            return postPosition(load.id, point.lat, point.lng, true).catch(() => undefined);
+          }),
+        );
+        await refresh();
+      } finally {
+        inFlight = false;
+      }
+    };
+    void tick();
+    const timer = window.setInterval(() => void tick(), SIM_TICK_MS);
+    return () => window.clearInterval(timer);
+  }, [refresh, simulating]);
 
   const trucks = useMemo(
     () =>
       (fleet?.drivers ?? []).flatMap((driver) =>
         driver.loads
-          .filter((load) => ACTIVE(load) && load.lat != null && load.lng != null)
+          // A team load is listed under both drivers; draw it once, for the driver at the wheel.
+          .filter((load) => load.driverUserId === driver.id && ACTIVE(load) && load.lat != null && load.lng != null)
           .map((load) => ({
             id: load.id,
             label: `${load.loadRef} · ${driver.name.split(" ")[0]}`,
@@ -233,11 +273,23 @@ export function FleetDesk() {
     <div className="flex flex-col gap-4">
       <Card>
         <CardHeader>
-          <CardTitle>{t.fleet}</CardTitle>
+          <div className="flex flex-wrap items-center gap-2">
+            <CardTitle>{t.fleet}</CardTitle>
+            <Button
+              size="sm"
+              variant={simulating ? "default" : "outline"}
+              className="ml-auto"
+              aria-pressed={simulating}
+              onClick={() => setSimulating((on) => !on)}
+            >
+              {simulating ? <PauseIcon aria-hidden /> : <PlayIcon aria-hidden />}
+              {simulating ? t.stopFleetSim : t.startFleetSim}
+            </Button>
+          </div>
           <CardDescription>{t.fleetHint}</CardDescription>
         </CardHeader>
         <CardPanel>
-          <TripMap className="h-80" depotLabel={t.mapDepot} yardLabel={t.mapYard} trucks={trucks} follow={follow} />
+          <TripMap className="h-96" depotLabel={t.mapDepot} yardLabel={t.mapYard} trucks={trucks} follow={follow} fitTrucks />
         </CardPanel>
       </Card>
 
