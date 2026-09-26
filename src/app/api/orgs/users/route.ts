@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
+import { MANAGERS } from "@/lib/policy";
 import { badRequest, forbidden, isUniqueViolation, json, unauthorized } from "@/lib/http";
 
 const ROLES = ["supplier", "logistics", "warehouse", "driver", "receiver", "admin"] as const;
@@ -13,7 +14,7 @@ function validUsername(value: unknown): value is string {
 export async function GET() {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["logistics", "admin"])) {
+  if (!hasRole(user, MANAGERS)) {
     return forbidden("Only logistics staff can see the team.");
   }
 
@@ -47,7 +48,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["logistics", "admin"])) {
+  if (!hasRole(user, MANAGERS)) {
     return forbidden("Only logistics staff can add teammates.");
   }
 

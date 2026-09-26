@@ -31,6 +31,33 @@ async function main() {
   assert.equal(parseAmountCents("$ 0.07"), 7);
   assert.equal(parseAmountCents("12"), 1200);
   for (const bad of ["-5", "1.234", "abc", "1e5", "9999999999"]) assert.equal(parseAmountCents(bad), undefined, bad);
+
+  const { DutyStatus } = await import("@prisma/client");
+  const { DUTY_STATUSES, summarizeHos } = await import("../src/lib/hos");
+  const { dutyHash, GENESIS_HASH } = await import("../src/lib/duty");
+  assert.deepEqual([...DUTY_STATUSES].sort(), Object.values(DutyStatus).sort());
+  const H = 3600_000, M = 60_000, t0 = Date.UTC(2026, 8, 26, 6);
+  const at = (status: (typeof DUTY_STATUSES)[number], offset: number) => ({ status, at: new Date(t0 + offset) });
+  assert.equal(summarizeHos([], t0).breakOwed, false);
+  assert.equal(summarizeHos([at("driving", 0)], t0 + 8 * H - M).breakOwed, false);
+  assert.equal(summarizeHos([at("driving", 0)], t0 + 8 * H + 10 * M).overLimitMs, 10 * M);
+  // A 20-minute stop is not a break: driving keeps accumulating.
+  const short = [at("driving", 0), at("on_duty", 5 * H), at("driving", 5 * H + 20 * M)];
+  assert.equal(summarizeHos(short, t0 + 8 * H + 20 * M).drivingMs, 8 * H);
+  // Ten minutes into the owed break, twenty remain; at thirty the clock resets.
+  const owed = [...short, at("off_duty", 8 * H + 20 * M)];
+  assert.equal(summarizeHos(owed, t0 + 8 * H + 30 * M).breakLeftMs, 20 * M);
+  assert.equal(summarizeHos(owed, t0 + 8 * H + 50 * M).drivingMs, 0);
+  // On duty then off duty back to back is one continuous break.
+  const split = [at("driving", 0), at("on_duty", 4 * H), at("off_duty", 4 * H + 15 * M), at("driving", 4 * H + 30 * M)];
+  assert.equal(summarizeHos(split, t0 + 6 * H).drivingMs, 90 * M);
+  assert.equal(summarizeHos([at("driving", 0), at("on_duty", 4 * H), at("driving", 4 * H + 29 * M)], t0 + 6 * H).drivingMs, 4 * H + 91 * M);
+  const entry = {
+    driverId: "d", seq: 1, kind: "status", status: "driving" as const, at: new Date(t0), lat: null, lng: null,
+    loadId: null, note: null, source: "driver", refId: null, actorId: "d", prevHash: GENESIS_HASH,
+  };
+  assert.notEqual(dutyHash(entry), dutyHash({ ...entry, at: new Date(t0 - H) }), "back-dating changes the hash");
+  assert.notEqual(dutyHash(entry), dutyHash({ ...entry, status: "off_duty" as const }));
   console.log("checks ok");
 }
 

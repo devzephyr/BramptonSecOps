@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
 import { oobComplete, parseOobAck } from "@/lib/cases";
-import { approvalProgress, sameUserAlreadyApproved } from "@/lib/policy";
+import { approvalProgress, MANAGERS, sameUserAlreadyApproved } from "@/lib/policy";
 import {
   badRequest,
   forbidden,
@@ -15,8 +15,8 @@ import { authenticationOptions, approvalChallenge } from "@/lib/webauthn";
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["logistics", "admin"])) {
-    return forbidden("Only logistics or admin or admin can approve.");
+  if (!hasRole(user, MANAGERS)) {
+    return forbidden("Only a manager or admin can approve.");
   }
 
   let body: Record<string, unknown>;

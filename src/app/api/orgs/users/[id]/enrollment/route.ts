@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { enrollmentExpiry, hasRole, newEnrollmentCode, requireUser } from "@/lib/auth";
+import { MANAGERS } from "@/lib/policy";
 import { forbidden, json, notFound, unauthorized } from "@/lib/http";
 
 type Params = { params: Promise<{ id: string }> };
@@ -7,8 +8,8 @@ type Params = { params: Promise<{ id: string }> };
 export async function POST(_request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["logistics", "admin"])) {
-    return forbidden("Only logistics staff can issue enrollment codes.");
+  if (!hasRole(user, MANAGERS)) {
+    return forbidden("Only managers can issue enrollment codes.");
   }
   const { id } = await params;
 
@@ -18,7 +19,7 @@ export async function POST(_request: Request, { params }: Params) {
   });
   if (!target) return notFound();
   if ((target.role === "admin" || target.role === "logistics") && user.role !== "admin") {
-    return forbidden("Only an admin can issue codes for approvers (logistics or admins).");
+    return forbidden("Only an admin can issue codes for approvers.");
   }
 
   const { code, hash } = newEnrollmentCode();

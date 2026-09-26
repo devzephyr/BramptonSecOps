@@ -5,14 +5,16 @@ import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { DriverDesk } from "@/components/desk/driver-desk";
 import { LogisticsDesk } from "@/components/desk/logistics-desk";
+import { WarehouseDesk } from "@/components/desk/warehouse-desk";
 import { ReceiverDesk } from "@/components/desk/receiver-desk";
 import { DeskShell } from "@/components/desk/shell";
 import { SupplierDesk } from "@/components/desk/supplier-desk";
-import { WarehouseDesk } from "@/components/desk/warehouse-desk";
 import type { SessionUser } from "@/lib/desk-client";
 import { roleTitle, useI18n } from "@/lib/i18n";
 import type { Note, Role } from "@/preview/data";
 import { StoreProvider, useDesk } from "@/preview/store";
+
+const URGENT = new Set(["hos_violation", "seal_exception"]);
 
 function noteForRole(note: Note, role: Role) {
   const audience = Array.isArray(note.audience) ? note.audience : [];
@@ -28,7 +30,7 @@ function DeskBody() {
   return (
     <>
       {unread.map((note) => (
-        <Alert key={note.id} variant={note.kind === "load_fifteen_min" ? "warning" : "info"}>
+        <Alert key={note.id} variant={URGENT.has(note.kind) ? "error" : note.kind === "load_fifteen_min" ? "warning" : "info"}>
           <AlertTitle>{note.title}</AlertTitle>
           <AlertDescription>{note.body}</AlertDescription>
           <AlertAction>
@@ -39,7 +41,7 @@ function DeskBody() {
         </Alert>
       ))}
       {role === "supplier" && <SupplierDesk />}
-      {(role === "logistics" || role === "admin") && <LogisticsDesk />}
+      {(role === "admin" || role === "logistics") && <LogisticsDesk />}
       {role === "driver" && <DriverDesk />}
       {role === "receiver" && <ReceiverDesk />}
       {role === "warehouse" && <WarehouseDesk />}

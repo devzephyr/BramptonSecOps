@@ -3,6 +3,7 @@ import { hasRole, requireUser } from "@/lib/auth";
 import { lockCase, notifyApprovers, oobComplete, parseOobAck } from "@/lib/cases";
 import {
   approvalProgress,
+  MANAGERS,
   redactValue,
   sameUserAlreadyApproved,
 } from "@/lib/policy";
@@ -31,8 +32,8 @@ function redactMap(value: unknown): Record<string, string> | undefined {
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["logistics", "admin"])) {
-    return forbidden("Only logistics or admin or admin can approve.");
+  if (!hasRole(user, MANAGERS)) {
+    return forbidden("Only a manager or admin can approve.");
   }
 
   let body: Record<string, unknown>;
@@ -158,7 +159,7 @@ export async function POST(request: Request) {
             kind: "case_second_approval",
             requestType: row.requestType,
             counterparty: row.counterparty,
-            body: `${user.name} approved it. A second, different logistics approver must approve the same payload.`,
+            body: `${user.name} approved it. A second, different manager must approve the same payload.`,
           });
         }
         return { status, approverCount: distinctIds.length, receiptToken: null };

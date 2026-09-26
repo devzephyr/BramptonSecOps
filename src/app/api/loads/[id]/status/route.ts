@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
-import { DRIVER_STATUS } from "@/lib/policy";
+import { BreakRequired, driverHos, setDutyStatus } from "@/lib/duty";
+import { DRIVER_STATUS, MANAGERS } from "@/lib/policy";
 import {
   badRequest,
   forbidden,
@@ -56,16 +57,74 @@ export async function POST(request: Request, { params }: Params) {
   const lastKnown =
     typeof body.lastKnown === "string" ? body.lastKnown.slice(0, 200) : load.lastKnown;
 
-  const claimed = await prisma.load.updateMany({
-    where: {
-      id: load.id,
-      orgId: user.orgId,
-      OR: [{ driverUserId: null }, { driverUserId: user.id }],
-    },
-    data: { currentStatus: eventType, lastKnown, driverUserId: user.id },
-  });
+  // "Rolling" means the driver is driving: refuse it while a break is owed, before anything changes.
+  if (eventType === "rolling") {
+    const hos = await driverHos(user.id);
+    if (hos.breakOwed && hos.status !== "driving") {
+      const blocked = new BreakRequired(hos);
+      return json({ error: blocked.message, hos }, 409);
+    }
+  }
+
+  // An unassigned load can be claimed by the first driver to post, unless a facility is holding it:
+  // then only a custody transfer can hand it to a driver.
+  const owned = {
+    id: load.id,
+    orgId: user.orgId,
+    OR: [{ driverUserId: null, facility: null }, { driverUserId: user.id }],
+  };
+  const data = { currentStatus: eventType, lastKnown, driverUserId: user.id };
+
+  // Only the request that actually moves the load into fifteen_min alerts staff.
+  // The status predicate makes this atomic, so retries and overlapping posts
+  // for a load already fifteen minutes out don't fan out duplicate alerts.
+  const reachedFifteen =
+    eventType === "fifteen_min" &&
+    (
+      await prisma.load.updateMany({
+        where: { ...owned, currentStatus: { not: "fifteen_min" } },
+        data,
+      })
+    ).count === 1;
+
+  const minutesEarly =
+    eventType === "arrived" && load.eta
+      ? Math.floor((load.eta.getTime() - Date.now()) / 60000)
+      : 0;
+  const arrivedEarly =
+    minutesEarly >= 15 &&
+    (
+      await prisma.load.updateMany({
+        where: { ...owned, currentStatus: { not: "arrived" } },
+        data,
+      })
+    ).count === 1;
+
+  const claimed = await prisma.load.updateMany({ where: owned, data });
   if (claimed.count !== 1) {
     return forbidden("This load is assigned to another driver.");
+  }
+
+  if (eventType === "rolling" || eventType === "arrived") {
+    try {
+      const hos = await driverHos(user.id);
+      const next = eventType === "rolling" ? "driving" : "on_duty";
+      if (eventType === "rolling" || hos.status === "driving") {
+        await setDutyStatus({
+          orgId: user.orgId,
+          driverId: user.id,
+          actorId: user.id,
+          kind: "status",
+          status: next,
+          source: "status",
+          loadId: load.id,
+          lat: load.lat,
+          lng: load.lng,
+        });
+      }
+    } catch (error) {
+      if (!(error instanceof BreakRequired)) throw error;
+    }
   }
 
   const event = await prisma.trackingEvent.create({
@@ -78,11 +137,11 @@ export async function POST(request: Request, { params }: Params) {
     },
   });
 
-  if (eventType === "fifteen_min") {
+  if (reachedFifteen) {
     const staff = await prisma.user.findMany({
       where: {
         orgId: user.orgId,
-        role: { in: ["logistics", "admin", "receiver", "warehouse"] },
+        role: { in: [...MANAGERS, "receiver", "warehouse"] },
       },
       select: { id: true, email: true, role: true },
     });
@@ -101,6 +160,35 @@ export async function POST(request: Request, { params }: Params) {
               : person.role === "warehouse"
                 ? "/warehouse"
                 : "/logistics",
+          emailTo: person.email,
+          emailStatus: "in-app",
+        })),
+      });
+    }
+  }
+
+  if (arrivedEarly) {
+    const earlyBy =
+      minutesEarly >= 60
+        ? `${Math.floor(minutesEarly / 60)}h ${minutesEarly % 60}m early`
+        : `${minutesEarly}m early`;
+    const staff = await prisma.user.findMany({
+      where: {
+        orgId: user.orgId,
+        role: { in: [...MANAGERS, "receiver"] },
+      },
+      select: { id: true, email: true, role: true },
+    });
+    if (staff.length) {
+      await prisma.notification.createMany({
+        data: staff.map((person) => ({
+          orgId: user.orgId,
+          userId: person.id,
+          role: person.role,
+          kind: "load_arrived_early",
+          title: `Load ${load.loadRef} — arrived early`,
+          body: `${user.name} arrived at ${load.destination} ${earlyBy}${load.scheduledDock ? ` · ${load.scheduledDock}` : ""}.`,
+          href: person.role === "receiver" ? "/receiver" : "/manager",
           emailTo: person.email,
           emailStatus: "in-app",
         })),

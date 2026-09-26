@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
-import { CASE_STAFF } from "@/lib/policy";
+import { CASE_STAFF, MANAGERS } from "@/lib/policy";
 import { serializeContact } from "@/lib/directory";
 import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
 
@@ -11,7 +11,7 @@ function text(value: unknown, max: number): string {
 export async function GET() {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or logistics staff can view cases.");
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can view cases.");
 
   const rows = await prisma.directoryContact.findMany({
     where: { orgId: user.orgId },
@@ -23,8 +23,8 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, ["logistics", "admin"])) {
-    return forbidden("Only logistics or admin or admin can add to the directory.");
+  if (!hasRole(user, MANAGERS)) {
+    return forbidden("Only a manager or admin can add to the directory.");
   }
 
   let body: Record<string, unknown>;

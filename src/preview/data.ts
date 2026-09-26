@@ -1,4 +1,4 @@
-export type Role = "supplier" | "logistics" | "warehouse" | "driver" | "receiver" | "admin";
+export type Role = "supplier" | "driver" | "receiver" | "admin" | "logistics" | "warehouse";
 export type DeskCase = {
   id: string;
   requestType: string;
@@ -42,6 +42,8 @@ export type Load = {
   lat?: number | null;
   lng?: number | null;
   positionAt?: string | null;
+  /** Warehouse or yard holding the load when no driver has it. */
+  facility?: string;
 };
 
 export type Note = {
@@ -58,11 +60,11 @@ export type Note = {
 /** Suggested job titles per role; the field also accepts free text. */
 export const JOB_TITLES: Record<Role, string[]> = {
   supplier: ["Accounts payable", "Accounts receivable", "Dispatch coordinator", "Vendor relations", "Sales representative"],
-  logistics: ["Plant logistics", "Cold store logistics", "Operations logistics", "Finance logistics", "Yard logistics"],
-  warehouse: ["Warehouse lead", "Inventory control", "Cold room attendant", "Stock clerk", "Yard inventory"],
   driver: ["Driver", "Long-haul driver", "Local delivery driver", "Owner-operator", "Relay driver"],
-  receiver: ["Receiver", "Dock supervisor", "Shipping and receiving clerk"],
+  receiver: ["Receiver", "Dock supervisor", "Shipping and receiving clerk", "Warehouse lead", "Inventory control"],
   admin: ["Owner", "General manager", "IT administrator", "Controller"],
+  logistics: ["Logistics coordinator", "Freight broker", "Customs compliance", "Route planner", "3PL manager"],
+  warehouse: ["Warehouse associate", "Forklift operator", "Yard jockey", "Cold storage lead", "Inventory control"],
 };
 
 export const REQUESTS: { id: string; dual: boolean; en: string; fr: string }[] =

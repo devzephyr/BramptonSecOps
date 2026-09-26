@@ -25,6 +25,7 @@ export function serializeLoad(row: Load) {
     lat: row.lat,
     lng: row.lng,
     positionAt: row.positionAt,
+    facility: row.facility,
     createdAt: row.createdAt,
   };
 }

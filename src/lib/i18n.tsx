@@ -296,6 +296,63 @@ export type Messages = {
   teammateUpdated: string;
   eventHandoff: string;
   eventUpdated: string;
+  fleet: string;
+  fleetHint: string;
+  noDriversFleet: string;
+  dutyStatus: string;
+  dutyOff: string;
+  dutySleeper: string;
+  dutyOn: string;
+  dutyDriving: string;
+  drivingClock: string;
+  leftBeforeBreak: string;
+  breakDue: string;
+  breakOwed: string;
+  breakOwedBody: string;
+  breakLeft: string;
+  overLimit: string;
+  hosRule: string;
+  dutyLog: string;
+  dutyLogHint: string;
+  chainIntact: string;
+  chainBroken: string;
+  addNote: string;
+  notePlaceholder: string;
+  noteAdded: string;
+  correcting: string;
+  noDutyEntries: string;
+  sourceGps: string;
+  sourceStatus: string;
+  sourceManager: string;
+  dutyChanged: string;
+  today: string;
+  lastWeek: string;
+  dropAtFacility: string;
+  facilityName: string;
+  facilityHint: string;
+  sealOnTrailer: string;
+  sealBroken: string;
+  recordDrop: string;
+  handoffRecorded: string;
+  sealException: string;
+  custodyChain: string;
+  noCustody: string;
+  handOff: string;
+  toDriver: string;
+  toFacility: string;
+  atFacility: string;
+  atFacilities: string;
+  heldBy: string;
+  journey: string;
+  changePhoto: string;
+  addPhoto: string;
+  photoUpdated: string;
+  noActiveLoads: string;
+  eventCustody: string;
+  sealOk: string;
+  sealBad: string;
+  trailHint: string;
+  allDrivers: string;
 };
 
 const en: Messages = {
@@ -591,6 +648,63 @@ const en: Messages = {
   teammateUpdated: "Teammate updated",
   eventHandoff: "Handoff",
   eventUpdated: "Edited",
+  fleet: "Fleet",
+  fleetHint: "Every driver, their duty clock, and where their loads are. Refreshes every 15 seconds.",
+  noDriversFleet: "No drivers on the team yet. Add one in the Team tab.",
+  dutyStatus: "Duty status",
+  dutyOff: "Off duty",
+  dutySleeper: "Sleeper berth",
+  dutyOn: "On duty, not driving",
+  dutyDriving: "Driving",
+  drivingClock: "Driving since last break",
+  leftBeforeBreak: "Left before a break",
+  breakDue: "Break due soon",
+  breakOwed: "Break required",
+  breakOwedBody: "8 hours of driving reached. Stop for 30 minutes in a row before driving again.",
+  breakLeft: "Break time left",
+  overLimit: "Over the limit by",
+  hosRule: "Rule: a 30-minute break after 8 hours of driving.",
+  dutyLog: "Duty log",
+  dutyLogHint: "The server clock stamps every entry; nobody can change the time. To fix a mistake, add a note. The original entry stays.",
+  chainIntact: "Log verified, no entry altered",
+  chainBroken: "Log altered at entry",
+  addNote: "Add note",
+  notePlaceholder: "What happened, e.g. forgot to switch to on duty at 14:10",
+  noteAdded: "Note added",
+  correcting: "Note on entry",
+  noDutyEntries: "No entries in this period.",
+  sourceGps: "detected by GPS",
+  sourceStatus: "from a trip step",
+  sourceManager: "manager note",
+  dutyChanged: "Duty status updated",
+  today: "Today",
+  lastWeek: "Last 7 days",
+  dropAtFacility: "Drop at a warehouse or yard",
+  facilityName: "Warehouse or yard",
+  facilityHint: "e.g. Hamilton Flour Exchange, Door 9",
+  sealOnTrailer: "Seal number on the trailer",
+  sealBroken: "Seal is broken or missing",
+  recordDrop: "Record drop",
+  handoffRecorded: "Handoff recorded",
+  sealException: "Seal exception recorded. Managers were alerted.",
+  custodyChain: "Chain of custody",
+  noCustody: "No handoffs yet.",
+  handOff: "Hand off",
+  toDriver: "To a driver",
+  toFacility: "To a warehouse or yard",
+  atFacility: "At",
+  atFacilities: "Loads at warehouses and yards",
+  heldBy: "Held by",
+  journey: "Journey",
+  changePhoto: "Change photo",
+  addPhoto: "Add photo",
+  photoUpdated: "Photo updated",
+  noActiveLoads: "No active loads",
+  eventCustody: "Custody",
+  sealOk: "Seal checked",
+  sealBad: "Seal exception",
+  trailHint: "Solid line: where the truck actually went. Dashed: the planned route.",
+  allDrivers: "All drivers",
 };
 
 const fr: Messages = {
@@ -893,6 +1007,63 @@ const fr: Messages = {
   teammateUpdated: "Coéquipier mis à jour",
   eventHandoff: "Transfert",
   eventUpdated: "Modifié",
+  fleet: "Flotte",
+  fleetHint: "Chaque chauffeur, son temps de conduite et la position de ses chargements. Actualisé toutes les 15 secondes.",
+  noDriversFleet: "Aucun chauffeur dans l'équipe. Ajoutez-en un dans l'onglet Équipe.",
+  dutyStatus: "Statut de service",
+  dutyOff: "Hors service",
+  dutySleeper: "Couchette",
+  dutyOn: "En service, sans conduire",
+  dutyDriving: "Conduite",
+  drivingClock: "Conduite depuis la dernière pause",
+  leftBeforeBreak: "Avant la pause obligatoire",
+  breakDue: "Pause bientôt obligatoire",
+  breakOwed: "Pause obligatoire",
+  breakOwedBody: "8 heures de conduite atteintes. Arrêtez-vous 30 minutes consécutives avant de reprendre la route.",
+  breakLeft: "Pause restante",
+  overLimit: "Dépassement de",
+  hosRule: "Règle : une pause de 30 minutes après 8 heures de conduite.",
+  dutyLog: "Registre de service",
+  dutyLogHint: "L'horloge du serveur horodate chaque entrée; personne ne peut changer l'heure. Pour corriger une erreur, ajoutez une note. L'entrée d'origine reste.",
+  chainIntact: "Registre vérifié, aucune entrée modifiée",
+  chainBroken: "Registre modifié à l'entrée",
+  addNote: "Ajouter une note",
+  notePlaceholder: "Ce qui s'est passé, p. ex. oublié de passer en service à 14 h 10",
+  noteAdded: "Note ajoutée",
+  correcting: "Note sur l'entrée",
+  noDutyEntries: "Aucune entrée pour cette période.",
+  sourceGps: "détecté par GPS",
+  sourceStatus: "depuis une étape du trajet",
+  sourceManager: "note du gestionnaire",
+  dutyChanged: "Statut de service mis à jour",
+  today: "Aujourd'hui",
+  lastWeek: "7 derniers jours",
+  dropAtFacility: "Déposer à un entrepôt ou une cour",
+  facilityName: "Entrepôt ou cour",
+  facilityHint: "p. ex. Hamilton Flour Exchange, porte 9",
+  sealOnTrailer: "Numéro de scellé sur la remorque",
+  sealBroken: "Scellé brisé ou absent",
+  recordDrop: "Enregistrer le dépôt",
+  handoffRecorded: "Transfert enregistré",
+  sealException: "Anomalie de scellé enregistrée. Les gestionnaires ont été avertis.",
+  custodyChain: "Chaîne de possession",
+  noCustody: "Aucun transfert pour l'instant.",
+  handOff: "Transférer",
+  toDriver: "À un chauffeur",
+  toFacility: "À un entrepôt ou une cour",
+  atFacility: "À",
+  atFacilities: "Chargements aux entrepôts et cours",
+  heldBy: "Détenu par",
+  journey: "Trajet",
+  changePhoto: "Changer la photo",
+  addPhoto: "Ajouter une photo",
+  photoUpdated: "Photo mise à jour",
+  noActiveLoads: "Aucun chargement actif",
+  eventCustody: "Possession",
+  sealOk: "Scellé vérifié",
+  sealBad: "Anomalie de scellé",
+  trailHint: "Ligne pleine : le trajet réel du camion. Pointillés : l'itinéraire prévu.",
+  allDrivers: "Tous les chauffeurs",
 };
 
 const MAP = { en, fr } as const;
@@ -984,6 +1155,21 @@ export function caseStatusTitle(status: string, t: Messages): string {
       return t.statusRevoked;
     default:
       return status;
+  }
+}
+
+export function dutyStatusTitle(status: string | null, t: Messages): string {
+  switch (status) {
+    case "off_duty":
+      return t.dutyOff;
+    case "sleeper_berth":
+      return t.dutySleeper;
+    case "on_duty":
+      return t.dutyOn;
+    case "driving":
+      return t.dutyDriving;
+    default:
+      return status ?? "";
   }
 }
 
