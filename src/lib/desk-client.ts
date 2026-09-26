@@ -206,6 +206,7 @@ type ApiLoad = {
   approvedDock?: string | null;
   eta?: string | null;
   driverUserId?: string | null;
+  coDriverUserId?: string | null;
   lat?: number | null;
   lng?: number | null;
   positionAt?: string | null;
@@ -225,6 +226,7 @@ export type NewLoad = {
   reeferSetpoint?: string;
   eta?: string;
   driverUserId?: string;
+  coDriverUserId?: string;
 };
 
 export async function createLoad(input: NewLoad): Promise<void> {
@@ -239,8 +241,9 @@ export async function createLoad(input: NewLoad): Promise<void> {
   }
 }
 
-export type LoadPatch = Partial<Omit<NewLoad, "loadRef" | "driverUserId">> & {
+export type LoadPatch = Partial<Omit<NewLoad, "loadRef" | "driverUserId" | "coDriverUserId">> & {
   driverUserId?: string | null;
+  coDriverUserId?: string | null;
   handoffNote?: string;
 };
 
@@ -407,6 +410,7 @@ export type FleetLoad = {
   destination: string;
   currentStatus: string;
   driverUserId: string | null;
+  coDriverUserId: string | null;
   facility: string | null;
   lat: number | null;
   lng: number | null;
@@ -467,6 +471,7 @@ export async function fetchLoads(): Promise<Load[]> {
         })
       : "",
     driverId: row.driverUserId ?? "",
+    coDriverId: row.coDriverUserId ?? "",
     lat: row.lat ?? null,
     lng: row.lng ?? null,
     positionAt: row.positionAt ?? null,
@@ -1033,4 +1038,9 @@ export async function saveScenario(input: Omit<SavedScenario, "id" | "createdByI
 export async function deleteScenario(id: string): Promise<void> {
   const res = await fetch(`/api/scenarios/${encodeURIComponent(id)}`, { method: "DELETE", credentials: "include" });
   if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not delete scenario"));
+}
+
+export async function swapDrivers(loadId: string): Promise<void> {
+  const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/swap`, { method: "POST", credentials: "include" });
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not swap drivers"));
 }

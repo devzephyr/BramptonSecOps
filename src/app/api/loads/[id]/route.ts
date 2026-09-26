@@ -150,6 +150,19 @@ export async function PATCH(request: Request, { params }: Params) {
         return badRequest("driverUserId must be a driver in your org.");
     }
   }
+  let newCoDriver: { id: string; name: string } | null | undefined;
+  if ("coDriverUserId" in body) {
+    const coDriverId = body.coDriverUserId;
+    if (coDriverId === null || coDriverId === "") newCoDriver = null;
+    else if (typeof coDriverId !== "string") return badRequest("coDriverUserId must be text.");
+    else {
+      newCoDriver = await prisma.user.findFirst({
+        where: { id: coDriverId, orgId: user.orgId, role: "driver" },
+        select: { id: true, name: true },
+      });
+      if (!newCoDriver) return badRequest("coDriverUserId must be a driver in your org.");
+    }
+  }
   const handoffNote =
     typeof body.handoffNote === "string"
       ? body.handoffNote.trim().slice(0, 200)
@@ -186,7 +199,15 @@ export async function PATCH(request: Request, { params }: Params) {
     const previousDriver = load.driverUserId;
     const driverChanged =
       newDriver !== undefined && (newDriver?.id ?? null) !== previousDriver;
-    if (changed.length === 0 && !driverChanged) return load;
+    const coDriverChanged =
+      newCoDriver !== undefined && (newCoDriver?.id ?? null) !== load.coDriverUserId;
+    const finalDriver = driverChanged ? (newDriver?.id ?? null) : load.driverUserId;
+    const finalCoDriver = coDriverChanged ? (newCoDriver?.id ?? null) : load.coDriverUserId;
+    if (finalCoDriver && finalCoDriver === finalDriver) {
+      return badRequest("The co-driver must be a different person from the driver.");
+    }
+    if (finalCoDriver && !finalDriver) return badRequest("A load with a co-driver needs a main driver.");
+    if (changed.length === 0 && !driverChanged && !coDriverChanged) return load;
 
     const data: Record<string, string | Date | null> = {};
     for (const key of changed) data[key] = changes[key];
@@ -194,18 +215,20 @@ export async function PATCH(request: Request, { params }: Params) {
       data.driverUserId = newDriver?.id ?? null;
       if (newDriver) data.facility = null;
     }
+    if (coDriverChanged) data.coDriverUserId = newCoDriver?.id ?? null;
     const updated = await tx.load.update({ where: { id }, data: data as Prisma.LoadUncheckedUpdateInput });
 
     const parts: string[] = [];
     if (driverChanged)
       parts.push(`Driver → ${newDriver?.name ?? "unassigned"}`);
+    if (coDriverChanged) parts.push(`Co-driver → ${newCoDriver?.name ?? "none"}`);
     if (changed.length > 0) parts.push(`Updated ${changed.join(", ")}`);
     if (handoffNote) parts.push(`at ${handoffNote}`);
     await tx.trackingEvent.create({
       data: {
         orgId: user.orgId,
         loadId: id,
-        eventType: driverChanged ? "handoff" : "updated",
+        eventType: driverChanged || coDriverChanged ? "handoff" : "updated",
         rawNote: parts.join(" · "),
         actorId: user.id,
       },
@@ -253,6 +276,20 @@ export async function PATCH(request: Request, { params }: Params) {
         });
       }
       if (notes.length) await tx.notification.createMany({ data: notes });
+    }
+    if (coDriverChanged && newCoDriver) {
+      await tx.notification.create({
+        data: {
+          orgId: user.orgId,
+          userId: newCoDriver.id,
+          role: "driver",
+          kind: "load_assigned",
+          title: `Load ${updated.loadRef}: you are the co-driver`,
+          body: `${updated.commodity} · ${updated.origin} → ${updated.destination}. Assigned by ${user.name}.`,
+          href: "/driver",
+          emailStatus: "in-app",
+        },
+      });
     }
     return updated;
   });

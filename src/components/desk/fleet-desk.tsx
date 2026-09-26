@@ -147,6 +147,7 @@ function DriverCard({
                       {loadStatusTitle(load.currentStatus, t)}
                     </Badge>
                     {live && <Badge variant="success">{t.liveLocation}</Badge>}
+                    {load.coDriverUserId === driver.id && <Badge variant="secondary">{t.coDriver}</Badge>}
                     <Button size="sm" variant="outline" className="ml-auto" onClick={() => onOpenLoad(load.id)}>
                       {t.journey}
                     </Button>

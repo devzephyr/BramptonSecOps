@@ -39,6 +39,8 @@ export type Load = {
   status: string;
   eta: string;
   driverId: string;
+  /** Second driver on a team load; empty when the load has one driver. */
+  coDriverId: string;
   lat?: number | null;
   lng?: number | null;
   positionAt?: string | null;

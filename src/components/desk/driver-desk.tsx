@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, MapPinIcon, NavigationIcon, TruckIcon } from "lucide-react";
+import { CheckIcon, MapPinIcon, NavigationIcon, TruckIcon, ArrowLeftRightIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +13,7 @@ import { DocumentUpload } from "@/components/desk/document-upload";
 import { DutyPanel } from "@/components/desk/duty-panel";
 import { TripMap } from "@/components/desk/trip-map";
 import { FLOW, TripSteps } from "@/components/desk/trip-steps";
-import { postPosition } from "@/lib/desk-client";
+import { postPosition, swapDrivers } from "@/lib/desk-client";
 import { loadStatusTitle, useI18n } from "@/lib/i18n";
 import { isLive, SIM_STEPS, SIM_TICK_MS, simPosition, updatedAgo } from "@/lib/tracking";
 import type { Load } from "@/preview/data";
@@ -43,7 +43,7 @@ export function DriverDesk() {
   const desk = useDesk();
   const { t } = useI18n();
   const mine = desk.loads
-    .filter((load) => load.driverId === desk.user.id)
+    .filter((load) => load.driverId === desk.user.id || load.coDriverId === desk.user.id)
     .sort((a, b) => Number(a.status === "arrived") - Number(b.status === "arrived"));
   const [sim, setSim] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +74,20 @@ export function DriverDesk() {
     if (failure) setError(failure);
     else if (!simulated) toastManager.add({ type: "success", title: t.statusSent, description: labels[status] });
     return failure === null;
+  }
+
+  async function swap(loadId: string) {
+    setPosting(`${loadId}:swap`);
+    setError(null);
+    try {
+      await swapDrivers(loadId);
+      toastManager.add({ type: "success", title: t.driversSwapped });
+      await desk.refreshRemote();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not swap drivers.");
+    } finally {
+      setPosting(null);
+    }
   }
 
   function stopSim(silent = false) {
@@ -221,6 +235,24 @@ export function DriverDesk() {
                 </dl>
 
                 <TripSteps status={load.status} labels={labels} />
+
+                {load.coDriverId && load.status !== "arrived" && (
+                  <div className="flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2">
+                    <span className="text-sm font-medium">
+                      {load.driverId === desk.user.id ? t.youAreDriving : t.coDriverDriving}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="ml-auto"
+                      disabled={busy}
+                      onClick={() => void swap(load.id)}
+                    >
+                      <ArrowLeftRightIcon aria-hidden />
+                      {t.swapDrivers}
+                    </Button>
+                  </div>
+                )}
 
                 {next ? (
                   <Button

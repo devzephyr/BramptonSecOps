@@ -343,6 +343,8 @@ model Load {
   eta                             DateTime?
   payloadHashOfLastApprovedChange String?
   driverUserId                    String?
+  /// Second driver on a team load; "Swap drivers" exchanges this with driverUserId (the one at the wheel).
+  coDriverUserId                  String?
   lat                             Float?
   lng                             Float?
   positionAt                      DateTime?

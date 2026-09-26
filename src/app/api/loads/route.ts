@@ -59,6 +59,16 @@ export async function POST(request: Request) {
     });
     if (!driver) return badRequest("driverUserId must be a driver in your org.");
   }
+  const coDriverUserId = typeof body.coDriverUserId === "string" && body.coDriverUserId ? body.coDriverUserId : null;
+  if (coDriverUserId) {
+    if (!driverUserId) return badRequest("Pick the main driver before a co-driver.");
+    if (coDriverUserId === driverUserId) return badRequest("The co-driver must be a different person.");
+    const coDriver = await prisma.user.findFirst({
+      where: { id: coDriverUserId, orgId: user.orgId, role: "driver" },
+      select: { id: true },
+    });
+    if (!coDriver) return badRequest("coDriverUserId must be a driver in your org.");
+  }
 
   const text = (key: string, max = 120) =>
     typeof body[key] === "string" ? (body[key] as string).trim().slice(0, max) : "";
@@ -81,6 +91,7 @@ export async function POST(request: Request) {
         sealNumber: optional("sealNumber", 40),
         scheduledDock: optional("scheduledDock", 40),
         driverUserId,
+        coDriverUserId,
         eta,
       },
     })
@@ -90,18 +101,19 @@ export async function POST(request: Request) {
     });
   if (!load) return badRequest("That load reference already exists.");
 
-  if (driverUserId) {
-    await prisma.notification.create({
-      data: {
+  const assigned = [driverUserId, coDriverUserId].filter((id): id is string => Boolean(id));
+  if (assigned.length) {
+    await prisma.notification.createMany({
+      data: assigned.map((driverId) => ({
         orgId: user.orgId,
-        userId: driverUserId,
-        role: "driver",
+        userId: driverId,
+        role: "driver" as const,
         kind: "load_assigned",
-        title: `New load ${load.loadRef}`,
+        title: `New load ${load.loadRef}${driverId === coDriverUserId ? " (co-driver)" : ""}`,
         body: `${load.commodity} · ${load.origin} → ${load.destination}${load.scheduledDock ? ` · ${load.scheduledDock}` : ""}. Assigned by ${user.name}.`,
         href: "/driver",
         emailStatus: "in-app",
-      },
+      })),
     });
   }
 

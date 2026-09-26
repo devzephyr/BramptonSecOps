@@ -43,6 +43,13 @@ export type Messages = {
   logistics: string;
   warehouse: string;
   driver: string;
+  coDriver: string;
+  noCoDriver: string;
+  swapDrivers: string;
+  youAreDriving: string;
+  coDriverDriving: string;
+  driversSwapped: string;
+  eventSwap: string;
   receiver: string;
   admin: string;
   directory: string;
@@ -385,6 +392,13 @@ const en: Messages = {
   logistics: "Logistics",
   warehouse: "Warehouse",
   driver: "Driver",
+  coDriver: "Co-driver",
+  noCoDriver: "No co-driver",
+  swapDrivers: "Swap drivers",
+  youAreDriving: "You are at the wheel",
+  coDriverDriving: "Your co-driver is at the wheel",
+  driversSwapped: "Drivers swapped. Resting driver moved to sleeper berth.",
+  eventSwap: "Driver swap",
   receiver: "Receiver",
   admin: "Admin",
   directory: "Directory",
@@ -739,6 +753,13 @@ const fr: Messages = {
   logistics: "Logistique",
   warehouse: "Entrepôt",
   driver: "Chauffeur",
+  coDriver: "Co-conducteur",
+  noCoDriver: "Aucun co-conducteur",
+  swapDrivers: "Échanger les conducteurs",
+  youAreDriving: "Vous êtes au volant",
+  coDriverDriving: "Votre co-conducteur est au volant",
+  driversSwapped: "Conducteurs échangés. Le conducteur au repos passe en couchette.",
+  eventSwap: "Échange de conducteurs",
   receiver: "Réception",
   admin: "Administration",
   directory: "Répertoire",

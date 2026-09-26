@@ -4,14 +4,12 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toastManager } from "@/components/ui/toast";
+import { DriverPicker, NO_DRIVER } from "@/components/desk/driver-picker";
 import { fetchTeam, updateLoad, type LoadPatch, type TeamMember } from "@/lib/desk-client";
 import { useI18n } from "@/lib/i18n";
 import type { Load } from "@/preview/data";
 import { useDesk } from "@/preview/store";
-
-const NO_DRIVER = "none";
 
 function toLocalInput(iso: string) {
   if (!iso) return "";
@@ -44,6 +42,7 @@ export function LoadEdit({ load, onDone }: { load: Load; onDone: () => void }) {
   const [initial] = useState(() => initialFields(load));
   const [form, setForm] = useState<Fields>(initial);
   const [driver, setDriver] = useState(load.driverId || NO_DRIVER);
+  const [coDriver, setCoDriver] = useState(load.coDriverId || NO_DRIVER);
   const [handoffNote, setHandoffNote] = useState("");
   const [drivers, setDrivers] = useState<TeamMember[]>([]);
   const [busy, setBusy] = useState(false);
@@ -86,6 +85,8 @@ export function LoadEdit({ load, onDone }: { load: Load; onDone: () => void }) {
     }
     const nextDriver = driver === NO_DRIVER ? null : driver;
     if (nextDriver !== (load.driverId || null)) patch.driverUserId = nextDriver;
+    const nextCoDriver = nextDriver && coDriver !== NO_DRIVER ? coDriver : null;
+    if (nextCoDriver !== (load.coDriverId || null)) patch.coDriverUserId = nextCoDriver;
     if (Object.keys(patch).length === 0) {
       onDone();
       return;
@@ -113,24 +114,26 @@ export function LoadEdit({ load, onDone }: { load: Load; onDone: () => void }) {
         </Alert>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-sm font-medium">{t.driver}</span>
-          <Select value={driver} onValueChange={(value) => setDriver(String(value))}>
-            <SelectTrigger aria-label={t.driver}>
-              <SelectValue>
-                {(value) => drivers.find((member) => member.id === value)?.name ?? t.unassigned}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectPopup>
-              <SelectItem value={NO_DRIVER}>{t.unassigned}</SelectItem>
-              {drivers.map((member) => (
-                <SelectItem key={member.id} value={member.id}>
-                  {member.name}
-                </SelectItem>
-              ))}
-            </SelectPopup>
-          </Select>
-        </div>
+        <DriverPicker
+          label={t.driver}
+          emptyLabel={t.unassigned}
+          value={driver}
+          drivers={drivers}
+          exclude={coDriver}
+          onChange={(value) => {
+            setDriver(value);
+            if (value === NO_DRIVER) setCoDriver(NO_DRIVER);
+          }}
+        />
+        <DriverPicker
+          label={t.coDriver}
+          emptyLabel={t.noCoDriver}
+          value={coDriver}
+          drivers={drivers}
+          exclude={driver}
+          disabled={driver === NO_DRIVER}
+          onChange={setCoDriver}
+        />
         <div className="flex flex-col gap-1.5">
           <label className="text-sm font-medium" htmlFor="edit-handoff">
             {t.handoffNote}

@@ -96,6 +96,9 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
                 )}
               </div>
               <Row label={t.driver} value={driverName} />
+              {load.coDriverId && (
+                <Row label={t.coDriver} value={drivers.find((member) => member.id === load.coDriverId)?.name ?? ""} />
+              )}
               <Row label={t.atFacility} value={load.facility ?? ""} />
               <Row label={t.goods} value={load.commodity} />
               <Row label={t.dock} value={load.dock} />
@@ -158,6 +161,8 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
                             ? t.eventHandoff
                             : event.eventType === "custody"
                               ? t.eventCustody
+                              : event.eventType === "swap"
+                              ? t.eventSwap
                               : event.eventType === "updated"
                               ? t.eventUpdated
                               : loadStatusTitle(event.eventType, t)}
