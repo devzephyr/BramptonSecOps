@@ -34,9 +34,9 @@ Org **Lake Ontario Cold Storage** (slug `lake-ontario-cold-storage`):
 
 Org **Brampton Cross-Dock Freight** (slug `brampton-cross-dock`): `noah` (manager), `maya` (supplier), `omar` (driver). Sees none of org 1's data.
 
-Each account needs one passkey enrollment first: enter username + organization, click **Create a passkey**, approve the browser prompt, then **Sign in with passkey**. (`DEMO_ENROLL=true` must be set.)
+Each account needs one passkey enrollment first. `npx prisma db seed` prints an enrollment code for every seeded account that has no passkey yet (24-hour expiry, one use each). Enter username + organization + that code, click **Create a passkey**, approve the browser prompt, then **Sign in with passkey**. (`DEMO_ENROLL=true` must be set.) Codes expired? Re-run the seed; it issues fresh ones and leaves enrolled accounts alone.
 
-Nobody can enroll on someone else's account. First-time setup needs an **enrollment code**: the org admin opens Team → Issue code next to the new member and reads it to them once (it never shows again). The member enters it in the Enrollment code field when creating their passkey. Codes expire after 24 hours and burn on use. Lost device? An admin revokes the old passkey from the same Team panel, issues a fresh code, and the member re-enrolls.
+Nobody can enroll on someone else's account. First-time setup needs an **enrollment code**: the org admin opens Team → Issue code next to the new member and reads it to them once (it never shows again). The member enters it in the Enrollment code field when creating their passkey. Codes expire after 24 hours and burn on use. Lost device? An admin revokes the old passkey from the same Team panel, issues a fresh code, and the member re-enrolls. If the org's only admin is the one locked out, anyone with database access can run `npx tsx --env-file=.env.local scripts/issue-code.ts <org-slug> <username> --revoke-passkeys`, which clears that account's passkeys and prints a fresh code.
 
 ### Five-minute tour
 

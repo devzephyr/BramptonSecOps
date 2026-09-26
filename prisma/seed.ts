@@ -1,4 +1,5 @@
 import { CaseStatus, Prisma, RequestType, Role } from "@prisma/client";
+import { enrollmentExpiry, newEnrollmentCode } from "../src/lib/auth";
 import { prisma } from "../src/lib/db";
 import { buildPayload, type PayloadFields } from "../src/lib/payload";
 import {
@@ -385,10 +386,11 @@ async function main() {
   });
 
   const orgs = { loc: org, bcdf: org2 };
+  const issuedCodes: { username: string; org: string; code: string }[] = [];
 
   for (const user of USERS) {
     const owner = orgs[user.org];
-    await prisma.user.upsert({
+    const seeded = await prisma.user.upsert({
       where: { orgId_email: { orgId: owner.id, email: user.email } },
       create: {
         id: user.id,
@@ -410,6 +412,23 @@ async function main() {
         clerkId: null,
       },
     });
+
+    // Enrollment demands a code while an account has no passkey, and only a
+    // signed-in manager can issue one, so seeded accounts need a first code here.
+    const passkeys = await prisma.webAuthnCredential.count({
+      where: { userId: seeded.id },
+    });
+    if (passkeys === 0) {
+      const { code, hash } = newEnrollmentCode();
+      await prisma.user.update({
+        where: { id: seeded.id },
+        data: {
+          enrollmentTokenHash: hash,
+          enrollmentTokenExpires: enrollmentExpiry(),
+        },
+      });
+      issuedCodes.push({ username: user.username, org: owner.slug, code });
+    }
   }
 
   const contactBySeed = new Map<string, string>();
@@ -703,6 +722,11 @@ async function main() {
       label: "Lake Ontario partner desk",
     },
   });
+
+  if (issuedCodes.length > 0) {
+    console.log("\nEnrollment codes (expire in 24h, one use each):");
+    console.table(issuedCodes);
+  }
 }
 
 main()
