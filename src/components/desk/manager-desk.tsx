@@ -11,6 +11,7 @@ import { CaseCeremony } from "@/components/desk/case-ceremony";
 import { DirectoryDesk } from "@/components/desk/directory-desk";
 import { LoadsTable } from "@/components/desk/loads-table";
 import { ReceiptView } from "@/components/desk/receipt-view";
+import { TeamDesk } from "@/components/desk/team-desk";
 import { useI18n, caseStatusTitle } from "@/lib/i18n";
 import { requestTitle } from "@/preview/data";
 import { useDesk } from "@/preview/store";
@@ -30,11 +31,12 @@ export function ManagerDesk() {
   return (
     <Tabs
       value={desk.managerTab}
-      onValueChange={(value) => desk.setManagerTab(value as "board" | "directory" | "receipt")}
+      onValueChange={(value) => desk.setManagerTab(value as "board" | "directory" | "receipt" | "team")}
     >
       <TabsList>
         <TabsTab value="board">{t.requests}</TabsTab>
         <TabsTab value="directory">{t.directory}</TabsTab>
+        <TabsTab value="team">{t.team}</TabsTab>
         {desk.receiptToken && <TabsTab value="receipt">{t.partnerCheck}</TabsTab>}
       </TabsList>
       <TabsPanel value="board" className="flex flex-col gap-4 pt-4">
@@ -95,6 +97,9 @@ export function ManagerDesk() {
       </TabsPanel>
       <TabsPanel value="directory" className="pt-4">
         <DirectoryDesk />
+      </TabsPanel>
+      <TabsPanel value="team" className="pt-4">
+        <TeamDesk />
       </TabsPanel>
       <TabsPanel value="receipt" className="pt-4">
         <ReceiptView />

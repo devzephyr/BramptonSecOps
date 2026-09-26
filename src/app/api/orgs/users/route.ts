@@ -1,0 +1,93 @@
+import { prisma } from "@/lib/db";
+import { hasRole, requireUser } from "@/lib/auth";
+import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
+
+const ROLES = ["supplier", "manager", "driver", "receiver", "admin"] as const;
+
+function validUsername(value: unknown): value is string {
+  return (
+    typeof value === "string" && /^[a-z0-9._-]{3,32}$/.test(value.trim().toLowerCase())
+  );
+}
+
+export async function GET() {
+  const user = await requireUser();
+  if (!user) return unauthorized();
+  if (!hasRole(user, ["manager", "admin"])) {
+    return forbidden("Only managers can see the team.");
+  }
+
+  const rows = await prisma.user.findMany({
+    where: { orgId: user.orgId },
+    orderBy: { createdAt: "asc" },
+    select: {
+      id: true,
+      username: true,
+      name: true,
+      role: true,
+      title: true,
+      createdAt: true,
+      signalIdentity: { select: { userId: true } },
+    },
+  });
+  return json({
+    users: rows.map((row) => ({
+      id: row.id,
+      username: row.username,
+      name: row.name,
+      role: row.role,
+      title: row.title,
+      hasKeys: Boolean(row.signalIdentity),
+      createdAt: row.createdAt,
+    })),
+  });
+}
+
+export async function POST(request: Request) {
+  const user = await requireUser();
+  if (!user) return unauthorized();
+  if (!hasRole(user, ["manager", "admin"])) {
+    return forbidden("Only managers can add teammates.");
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = (await request.json()) as Record<string, unknown>;
+  } catch {
+    return badRequest("Invalid JSON body.");
+  }
+
+  const name = typeof body.name === "string" ? body.name.trim() : "";
+  const role = typeof body.role === "string" ? body.role : "";
+  if (name.length < 2 || name.length > 80) {
+    return badRequest("Name must be 2 to 80 characters.");
+  }
+  if (!(ROLES as readonly string[]).includes(role)) {
+    return badRequest("Role must be supplier, manager, driver, receiver, or admin.");
+  }
+  if (role === "admin" && user.role !== "admin") {
+    return forbidden("Only an admin can add another admin.");
+  }
+  if (!validUsername(body.username)) {
+    return badRequest("Username must be 3 to 32 characters: letters, numbers, dot, dash, underscore.");
+  }
+  const username = (body.username as string).trim().toLowerCase();
+
+  const taken = await prisma.user.findFirst({
+    where: { orgId: user.orgId, username },
+    select: { id: true },
+  });
+  if (taken) return badRequest("That username is already taken in your organization.");
+
+  const created = await prisma.user.create({
+    data: {
+      orgId: user.orgId,
+      username,
+      email: `${username}@${user.org.slug}.invalid`,
+      name,
+      role: role as (typeof ROLES)[number],
+    },
+    select: { id: true, username: true, name: true, role: true },
+  });
+  return json(created, 201);
+}

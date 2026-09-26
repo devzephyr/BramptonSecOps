@@ -7,6 +7,7 @@ import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/compo
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/desk/theme-toggle";
 import {
+  createOrg,
   createPasskey,
   DeskApiError,
   isServerUnavailable,
@@ -22,6 +23,13 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [serverDown, setServerDown] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [showSignup, setShowSignup] = useState(false);
+  const [orgName, setOrgName] = useState("");
+  const [city, setCity] = useState("");
+  const [province, setProvince] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [signupBusy, setSignupBusy] = useState(false);
 
   useEffect(() => {
     document.title = `${t.signIn} · ${t.brand}`;
@@ -33,6 +41,35 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
 
   function ready() {
     return username.trim().length > 0 && org.trim().length > 0;
+  }
+
+  async function signup() {
+    if (signupBusy) return;
+    setError(null);
+    setNotice(null);
+    if (!orgName.trim() || !fullName.trim() || !newUsername.trim()) {
+      setError(t.identityRequired);
+      return;
+    }
+    setSignupBusy(true);
+    try {
+      const created = await createOrg({
+        name: orgName.trim(),
+        city: city.trim(),
+        province: province.trim(),
+        displayName: fullName.trim(),
+        username: newUsername.trim(),
+      });
+      setUsername(created.username);
+      setOrg(created.org.slug);
+      setShowSignup(false);
+      setNotice(`${t.orgCreated} (${created.org.slug} · ${created.username})`);
+    } catch (err) {
+      if (err instanceof DeskApiError) setError(err.message);
+      else setError(err instanceof Error ? err.message : t.passkeyStopped);
+    } finally {
+      setSignupBusy(false);
+    }
   }
 
   async function run(kind: "create" | "sign-in") {
@@ -146,9 +183,85 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
               >
                 {busy === "create" ? t.creatingPasskey : t.createPasskey}
               </Button>
+              <Button variant="ghost" onClick={() => setShowSignup((value) => !value)}>
+                {t.createOrg}
+              </Button>
             </div>
           </CardPanel>
         </Card>
+        {showSignup && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t.createOrg}</CardTitle>
+              <CardDescription>{t.newOrgHint}</CardDescription>
+            </CardHeader>
+            <CardPanel className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium" htmlFor="su-org">
+                  {t.orgName}
+                </label>
+                <Input
+                  id="su-org"
+                  autoComplete="organization"
+                  value={orgName}
+                  onChange={(event) => setOrgName(event.target.value)}
+                />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium" htmlFor="su-city">
+                    {t.city}
+                  </label>
+                  <Input
+                    id="su-city"
+                    autoComplete="address-level2"
+                    value={city}
+                    onChange={(event) => setCity(event.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label className="text-sm font-medium" htmlFor="su-province">
+                    {t.province}
+                  </label>
+                  <Input
+                    id="su-province"
+                    autoComplete="address-level1"
+                    value={province}
+                    onChange={(event) => setProvince(event.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium" htmlFor="su-name">
+                  {t.yourName}
+                </label>
+                <Input
+                  id="su-name"
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={(event) => setFullName(event.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium" htmlFor="su-username">
+                  {t.username}
+                </label>
+                <Input
+                  id="su-username"
+                  autoComplete="username"
+                  placeholder={t.usernamePlaceholder}
+                  value={newUsername}
+                  onChange={(event) => setNewUsername(event.target.value)}
+                />
+              </div>
+              <div>
+                <Button disabled={signupBusy} onClick={() => void signup()}>
+                  {t.createOrg}
+                </Button>
+              </div>
+            </CardPanel>
+          </Card>
+        )}
       </main>
     </div>
   );
