@@ -92,7 +92,10 @@ export function SignInScreen({ onSignedIn }: { onSignedIn: () => void }) {
         onSignedIn();
       }
     } catch (err) {
-      if (err instanceof DeskApiError && isServerUnavailable(err.status)) {
+      if (
+        (err instanceof DeskApiError && isServerUnavailable(err.status)) ||
+        (err instanceof TypeError && /fetch/i.test(err.message))
+      ) {
         setServerDown(true);
       } else {
         const message = err instanceof Error ? err.message : t.passkeyStopped;
