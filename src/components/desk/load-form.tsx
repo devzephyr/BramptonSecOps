@@ -5,10 +5,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput, InputGroupText } from "@/components/ui/input-group";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toastManager } from "@/components/ui/toast";
 import { createLoad, fetchDirectory, fetchTeam, type Contact, type NewLoad, type TeamMember } from "@/lib/desk-client";
 import { useI18n } from "@/lib/i18n";
+import { LOAD_REF_PREFIX } from "@/lib/policy";
 import { useDesk } from "@/preview/store";
 
 type Fields = Required<Omit<NewLoad, "driverUserId">>;
@@ -116,7 +118,7 @@ export function LoadForm({ onCreated }: { onCreated?: () => void }) {
         eta: form.eta ? new Date(form.eta).toISOString() : undefined,
         driverUserId: driver === NO_DRIVER ? undefined : driver,
       });
-      toastManager.add({ type: "success", title: t.loadCreated, description: form.loadRef });
+      toastManager.add({ type: "success", title: t.loadCreated, description: `${LOAD_REF_PREFIX}${form.loadRef}` });
       setForm(BLANK);
       setDriver(NO_DRIVER);
       await desk.refreshRemote();
@@ -142,7 +144,26 @@ export function LoadForm({ onCreated }: { onCreated?: () => void }) {
             </Alert>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
-            {field("loadRef", t.loadRef, { required: true })}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium" htmlFor="load-loadRef">
+                {t.loadRef}
+              </label>
+              <InputGroup>
+                <InputGroupAddon>
+                  <InputGroupText>{LOAD_REF_PREFIX}</InputGroupText>
+                </InputGroupAddon>
+                <InputGroupInput
+                  id="load-loadRef"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  required
+                  maxLength={10}
+                  placeholder="4419"
+                  value={form.loadRef}
+                  onChange={(event) => setForm((current) => ({ ...current, loadRef: event.target.value.replace(/\D/g, "") }))}
+                />
+              </InputGroup>
+            </div>
             {field("commodity", t.goods, { required: true })}
             {field("origin", t.origin, { required: true })}
             {field("destination", t.destination, { required: true })}

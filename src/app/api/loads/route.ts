@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
-import { MANAGERS } from "@/lib/policy";
+import { MANAGERS, normalizeLoadRef } from "@/lib/policy";
 import { badRequest, forbidden, isUniqueViolation, json, unauthorized } from "@/lib/http";
 import { serializeLoad } from "@/lib/loads";
 
@@ -45,6 +45,9 @@ export async function POST(request: Request) {
     }
   }
 
+  const loadRef = normalizeLoadRef(String(body.loadRef));
+  if (!loadRef) return badRequest("Load number must be digits only, e.g. 4419.");
+
   const eta = body.eta ? new Date(String(body.eta)) : null;
   if (eta && Number.isNaN(eta.getTime())) return badRequest("eta must be a valid date.");
 
@@ -65,7 +68,7 @@ export async function POST(request: Request) {
     .create({
       data: {
         orgId: user.orgId,
-        loadRef: text("loadRef", 40),
+        loadRef,
         carrierName: text("carrierName"),
         plate: text("plate", 20),
         trailer: text("trailer", 20),

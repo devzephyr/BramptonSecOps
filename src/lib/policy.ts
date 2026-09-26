@@ -27,6 +27,14 @@ export function isDocType(value: string | null): value is DocTypeName {
   return value !== null && (DOC_TYPES as readonly string[]).includes(value);
 }
 
+export const LOAD_REF_PREFIX = "LO-";
+
+/** "4419", "lo-4419" or "LO 4419" -> "LO-4419"; anything that is not a load number -> null. */
+export function normalizeLoadRef(raw: string): string | null {
+  const digits = raw.trim().toUpperCase().replace(/^LO[-\s]*/, "");
+  return /^\d{1,10}$/.test(digits) ? `${LOAD_REF_PREFIX}${digits}` : null;
+}
+
 export const CURRENCIES = ["CAD", "USD"] as const;
 
 /** "1,234.50" -> 123450. Returns null for blank, undefined for anything that is not a non-negative amount with up to 2 decimals. */

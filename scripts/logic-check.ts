@@ -58,6 +58,11 @@ async function main() {
   };
   assert.notEqual(dutyHash(entry), dutyHash({ ...entry, at: new Date(t0 - H) }), "back-dating changes the hash");
   assert.notEqual(dutyHash(entry), dutyHash({ ...entry, status: "off_duty" as const }));
+  const { normalizeLoadRef } = await import("../src/lib/policy");
+  assert.equal(normalizeLoadRef("4419"), "LO-4419");
+  assert.equal(normalizeLoadRef(" lo-4419 "), "LO-4419");
+  assert.equal(normalizeLoadRef("LO 12"), "LO-12");
+  for (const bad of ["", "LO-", "44a", "PP-204", "12345678901"]) assert.equal(normalizeLoadRef(bad), null, bad);
   console.log("checks ok");
 }
 
