@@ -135,7 +135,7 @@ export async function POST(request: Request, { params }: Params) {
     }
     if (sealIntact === false) {
       const managers = await tx.user.findMany({
-        where: { orgId: user.orgId, role: { in: ["manager", "admin"] } },
+        where: { orgId: user.orgId, role: { in: MANAGERS } },
         select: { id: true, role: true, email: true },
       });
       for (const person of managers) {

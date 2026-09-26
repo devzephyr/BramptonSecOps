@@ -15,7 +15,7 @@ import { roleTitle, useI18n } from "@/lib/i18n";
 import { JOB_TITLES, type Role } from "@/preview/data";
 import { useDesk } from "@/preview/store";
 
-const ROLES = ["supplier", "manager", "driver", "receiver", "admin", "logistics", "warehouse"];
+const ROLES = ["supplier", "logistics", "warehouse", "driver", "receiver", "admin"];
 
 function TitleInput({
   id,
@@ -148,7 +148,7 @@ export function TeamDesk() {
   const { t } = useI18n();
   const me = useDesk().user;
   const isAdmin = me.role === "admin";
-  const roles = isAdmin ? ROLES : ROLES.filter((item) => item !== "manager" && item !== "admin");
+  const roles = isAdmin ? ROLES : ROLES.filter((item) => item !== "logistics" && item !== "admin");
   const [team, setTeam] = useState<TeamMember[]>([]);
   const [username, setUsername] = useState("");
   const [name, setName] = useState("");
@@ -175,7 +175,14 @@ export function TeamDesk() {
   }
 
   const refresh = useCallback(async () => {
-    setTeam(await fetchTeam());
+    try {
+      setTeam(await fetchTeam());
+      setError(null);
+    } catch (err) {
+      setTeam([]);
+      if (err instanceof DeskApiError) setError(err.message);
+      else setError(err instanceof Error ? err.message : "Could not load team.");
+    }
   }, []);
 
   useEffect(() => {
@@ -283,7 +290,7 @@ export function TeamDesk() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-2">
-                        {(isAdmin || member.id === me.id || (member.role !== "manager" && member.role !== "admin")) && (
+                        {(isAdmin || member.id === me.id || (member.role !== "logistics" && member.role !== "admin")) && (
                           <Button size="sm" variant="outline" onClick={() => setEditing(member)}>
                             {t.edit}
                           </Button>
@@ -291,7 +298,7 @@ export function TeamDesk() {
                         <Button size="sm" variant="outline" onClick={() => void toggleKeys(member)}>
                           {t.passkeys}
                         </Button>
-                        {(isAdmin || (member.role !== "manager" && member.role !== "admin")) && (
+                        {(isAdmin || (member.role !== "logistics" && member.role !== "admin")) && (
                           <Button size="sm" variant="outline" onClick={() => void issue(member)}>
                             {t.issueCode}
                           </Button>

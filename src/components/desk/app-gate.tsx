@@ -10,10 +10,9 @@ export function roleHome(role: string) {
   switch (role) {
     case "supplier":
       return "/supplier";
-    case "manager":
     case "admin":
     case "logistics":
-      return "/manager";
+      return "/logistics";
     case "driver":
       return "/driver";
     case "receiver":

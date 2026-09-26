@@ -1,4 +1,4 @@
-export type Role = "supplier" | "manager" | "driver" | "receiver" | "admin" | "logistics" | "warehouse";
+export type Role = "supplier" | "driver" | "receiver" | "admin" | "logistics" | "warehouse";
 export type DeskCase = {
   id: string;
   requestType: string;
@@ -60,7 +60,6 @@ export type Note = {
 /** Suggested job titles per role; the field also accepts free text. */
 export const JOB_TITLES: Record<Role, string[]> = {
   supplier: ["Accounts payable", "Accounts receivable", "Dispatch coordinator", "Vendor relations", "Sales representative"],
-  manager: ["Plant manager", "Cold store manager", "Operations manager", "Finance manager", "Logistics manager"],
   driver: ["Driver", "Long-haul driver", "Local delivery driver", "Owner-operator", "Relay driver"],
   receiver: ["Receiver", "Dock supervisor", "Shipping and receiving clerk", "Warehouse lead", "Inventory control"],
   admin: ["Owner", "General manager", "IT administrator", "Controller"],

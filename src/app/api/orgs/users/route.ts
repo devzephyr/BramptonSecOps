@@ -3,7 +3,7 @@ import { hasRole, requireUser } from "@/lib/auth";
 import { MANAGERS } from "@/lib/policy";
 import { badRequest, forbidden, isUniqueViolation, json, unauthorized } from "@/lib/http";
 
-const ROLES = ["supplier", "manager", "driver", "receiver", "admin", "logistics", "warehouse"] as const;
+const ROLES = ["supplier", "logistics", "warehouse", "driver", "receiver", "admin"] as const;
 
 function validUsername(value: unknown): value is string {
   return (
@@ -15,7 +15,7 @@ export async function GET() {
   const user = await requireUser();
   if (!user) return unauthorized();
   if (!hasRole(user, MANAGERS)) {
-    return forbidden("Only managers can see the team.");
+    return forbidden("Only logistics staff can see the team.");
   }
 
   const rows = await prisma.user.findMany({
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
   if (!hasRole(user, MANAGERS)) {
-    return forbidden("Only managers can add teammates.");
+    return forbidden("Only logistics staff can add teammates.");
   }
 
   let body: Record<string, unknown>;
@@ -65,10 +65,10 @@ export async function POST(request: Request) {
     return badRequest("Name must be 2 to 80 characters.");
   }
   if (!(ROLES as readonly string[]).includes(role)) {
-    return badRequest("Role must be supplier, manager, driver, receiver, or admin.");
+    return badRequest("Role must be supplier, logistics, warehouse, driver, receiver, or admin.");
   }
-  if ((role === "admin" || role === "manager") && user.role !== "admin") {
-    return forbidden("Only an admin can add approvers (managers or admins).");
+  if ((role === "admin" || role === "logistics") && user.role !== "admin") {
+    return forbidden("Only an admin can add approvers (logistics or admins).");
   }
   if (!validUsername(body.username)) {
     return badRequest("Username must be 3 to 32 characters: letters, numbers, dot, dash, underscore.");

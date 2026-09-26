@@ -9,12 +9,11 @@ datasource db {
 
 enum Role {
   supplier
-  manager
+  logistics
+  warehouse
   driver
   receiver
   admin
-  logistics
-  warehouse
 }
 
 enum CaseStatus {
@@ -41,20 +40,21 @@ enum RequestType {
 }
 
 model Org {
-  id              String                 @id @default(cuid())
-  name            String
-  slug            String                 @unique
-  city            String
-  province        String
-  createdAt       DateTime               @default(now())
-  users           User[]
-  contacts        DirectoryContact[]
-  cases           VerifyCase[]
-  loads           Load[]
-  trucks          Truck[]
-  notifications   Notification[]
-  mailbox         MailboxConnection[]
-  partnerAccounts PartnerPortalAccount[]
+  id               String                 @id @default(cuid())
+  name             String
+  slug             String                 @unique
+  city             String
+  province         String
+  createdAt        DateTime               @default(now())
+  users            User[]
+  contacts         DirectoryContact[]
+  cases            VerifyCase[]
+  loads            Load[]
+  inventory        InventoryLot[]
+  trucks           Truck[]
+  notifications    Notification[]
+  mailbox          MailboxConnection[]
+  partnerAccounts  PartnerPortalAccount[]
   evidence        EvidenceAsset[]
   callLogs        CallLog[]
 }
@@ -335,6 +335,26 @@ model Load {
   pings                           PositionPing[]
 
   @@unique([orgId, loadRef])
+  @@index([orgId])
+}
+
+/** Stock sitting in the org's warehouse / cold rooms — warehouse desk inventory. */
+model InventoryLot {
+  id         String    @id @default(cuid())
+  orgId      String
+  org        Org       @relation(fields: [orgId], references: [id])
+  seedKey    String?   @unique
+  sku        String
+  commodity  String
+  quantity   Int
+  unit       String
+  location   String
+  status     String    @default("stored")
+  receivedAt DateTime?
+  notes      String?
+  createdAt  DateTime  @default(now())
+
+  @@unique([orgId, sku])
   @@index([orgId])
 }
 

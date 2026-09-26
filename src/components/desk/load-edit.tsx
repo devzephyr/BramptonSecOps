@@ -51,7 +51,9 @@ export function LoadEdit({ load, onDone }: { load: Load; onDone: () => void }) {
   const moving = load.status !== "scheduled";
 
   useEffect(() => {
-    void fetchTeam().then((team) => setDrivers(team.filter((member) => member.role === "driver")));
+    void fetchTeam()
+      .then((team) => setDrivers(team.filter((member) => member.role === "driver")))
+      .catch(() => setDrivers([]));
   }, []);
 
   function field(key: keyof Fields, label: string, opts?: { type?: string; locked?: boolean }) {

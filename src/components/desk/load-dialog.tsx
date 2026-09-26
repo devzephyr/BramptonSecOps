@@ -27,8 +27,8 @@ function Row({ label, value, mono = false }: { label: string; value: string; mon
 export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () => void }) {
   const { t } = useI18n();
   const desk = useDesk();
-  const canEdit = desk.user.role === "manager" || desk.user.role === "admin";
-  const canHandOff = canEdit || desk.user.role === "receiver";
+  const canEdit = desk.user.role === "logistics" || desk.user.role === "admin";
+  const canHandOff = canEdit || desk.user.role === "receiver" || desk.user.role === "warehouse";
   const [editing, setEditing] = useState(false);
   const [handingOff, setHandingOff] = useState(false);
   const [journey, setJourney] = useState<LoadJourney>({ events: [], custody: [], trail: [] });
@@ -44,7 +44,10 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
     if (!loadId) return;
     let alive = true;
     void fetchLoadJourney(loadId).then((rows) => alive && setJourney(rows));
-    if (canEdit) void fetchTeam().then((team) => alive && setDrivers(team.filter((member) => member.role === "driver")));
+    if (canEdit)
+      void fetchTeam()
+        .then((team) => alive && setDrivers(team.filter((member) => member.role === "driver")))
+        .catch(() => alive && setDrivers([]));
     return () => {
       alive = false;
     };

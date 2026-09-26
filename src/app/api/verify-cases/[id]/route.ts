@@ -20,7 +20,7 @@ type Params = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can view cases.");
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or logistics staff can view cases.");
   const { id } = await params;
   const row = await prisma.verifyCase.findFirst({
     where: { id, orgId: user.orgId },
@@ -33,7 +33,7 @@ export async function GET(_request: Request, { params }: Params) {
 export async function PATCH(request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or manager staff can edit a case.");
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or logistics staff can edit a case.");
   const { id } = await params;
 
   let body: Record<string, unknown>;

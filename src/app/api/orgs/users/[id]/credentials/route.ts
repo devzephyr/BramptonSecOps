@@ -45,7 +45,7 @@ export async function DELETE(request: Request, { params }: Params) {
   const target = await orgMember(user.orgId, id);
   if (!target) return notFound();
   if (
-    (target.role === "admin" || target.role === "manager") &&
+    (target.role === "admin" || target.role === "logistics") &&
     target.id !== user.id &&
     user.role !== "admin"
   ) {

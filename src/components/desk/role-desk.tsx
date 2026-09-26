@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DriverDesk } from "@/components/desk/driver-desk";
-import { ManagerDesk } from "@/components/desk/manager-desk";
+import { LogisticsDesk } from "@/components/desk/logistics-desk";
+import { WarehouseDesk } from "@/components/desk/warehouse-desk";
 import { ReceiverDesk } from "@/components/desk/receiver-desk";
 import { DeskShell } from "@/components/desk/shell";
 import { SupplierDesk } from "@/components/desk/supplier-desk";
@@ -40,9 +41,10 @@ function DeskBody() {
         </Alert>
       ))}
       {role === "supplier" && <SupplierDesk />}
-      {(role === "manager" || role === "admin" || role === "logistics") && <ManagerDesk />}
+      {(role === "admin" || role === "logistics") && <LogisticsDesk />}
       {role === "driver" && <DriverDesk />}
-      {(role === "receiver" || role === "warehouse") && <ReceiverDesk />}
+      {role === "receiver" && <ReceiverDesk />}
+      {role === "warehouse" && <WarehouseDesk />}
     </>
   );
 }

@@ -11,14 +11,14 @@ import {
 
 type Params = { params: Promise<{ id: string }> };
 
-const ROLES: Role[] = ["supplier", "manager", "driver", "receiver", "admin", "logistics", "warehouse"];
-const APPROVER: Role[] = ["manager", "admin", "logistics"];
+const ROLES: Role[] = ["supplier", "logistics", "warehouse", "driver", "receiver", "admin"];
+const APPROVER: Role[] = ["logistics", "admin"];
 
 export async function PATCH(request: Request, { params }: Params) {
   const user = await requireUser();
   if (!user) return unauthorized();
   if (!hasRole(user, APPROVER))
-    return forbidden("Only managers can edit teammates.");
+    return forbidden("Only logistics staff can edit teammates.");
   const { id } = await params;
 
   let body: Record<string, unknown>;
@@ -43,7 +43,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if ("role" in body) {
     if (typeof body.role !== "string" || !ROLES.includes(body.role as Role)) {
       return badRequest(
-        "Role must be supplier, manager, driver, receiver, or admin.",
+        "Role must be supplier, logistics, warehouse, driver, receiver, or admin.",
       );
     }
     data.role = body.role as Role;
@@ -61,14 +61,14 @@ export async function PATCH(request: Request, { params }: Params) {
       (data.role && APPROVER.includes(data.role));
     if (touchesApprover && user.role !== "admin" && target.id !== user.id) {
       return forbidden(
-        "Only an admin can edit approvers or grant manager or admin roles.",
+        "Only an admin can edit approvers or grant logistics or admin roles.",
       );
     }
     if (data.role && data.role !== target.role) {
       if (target.id === user.id)
         return forbidden("You cannot change your own role. Ask another admin.");
       if (APPROVER.includes(data.role) && user.role !== "admin") {
-        return forbidden("Only an admin can grant manager or admin roles.");
+        return forbidden("Only an admin can grant logistics or admin roles.");
       }
       if (target.role === "admin") {
         const admins = await tx.$queryRaw<{ id: string }[]>`
