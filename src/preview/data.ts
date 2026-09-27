@@ -1,3 +1,4 @@
+import { flagKey, type FlagView } from "@/lib/flags";
 export type Role = "supplier" | "driver" | "receiver" | "admin" | "logistics" | "warehouse";
 export type DeskCase = {
   id: string;
@@ -9,7 +10,9 @@ export type DeskCase = {
   rawText: string;
   onFile: Record<string, string>;
   requested: Record<string, string>;
-  flags: string[];
+  flags: FlagView[];
+  /** A supporting document was uploaded to the case. */
+  matchesUploaded?: boolean;
   oobSteps: string[];
   oobDone: boolean[];
   oobNote: string;
@@ -189,39 +192,35 @@ export function requestTitle(requestType: string, lang: string): string {
   return lang === "fr" ? found.fr : found.en;
 }
 
+/** Quick client-side preview of the warning signs; the server runs the full check on submit. */
 export function deskFlags(
   raw: string,
   onFileDomain: string,
   onFile: Record<string, string>,
   requested: Record<string, string>,
-): string[] {
-  const flags: string[] = [];
+): FlagView[] {
+  const flags: FlagView[] = [];
+  const add = (code: FlagView["code"], params: Record<string, string> = {}) => {
+    if (!flags.some((flag) => flagKey(flag) === flagKey({ code, params }))) flags.push({ code, params });
+  };
   const emails = raw.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi) ?? [];
   for (const email of emails) {
     const domain = email.split("@")[1]?.toLowerCase() ?? "";
-    if (
-      ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"].includes(domain)
-    ) {
-      flags.push(`Free mailbox: ${email}`);
+    if (["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"].includes(domain)) {
+      add("FREE_EMAIL_DOMAIN", { email });
     }
-    if (domain && domain !== onFileDomain)
-      flags.push(`Not the domain on file (${onFileDomain})`);
+    if (domain && domain !== onFileDomain) add("DOMAIN_NOT_ON_FILE", { domain, onFile: onFileDomain });
   }
-  if (/urgent|immediately|asap|do not call|today only/i.test(raw))
-    flags.push("The message rushes you or says not to call");
-  if (/eft|transit|account|bank|void cheque|interac/i.test(raw))
-    flags.push("Payment instructions are in the message");
-  if (/dock|divert|yard|destination/i.test(raw))
-    flags.push("A dock or destination may be changing");
-  if (/carrier|broker/i.test(raw)) flags.push("A carrier is being introduced");
-  if (/portal|sign-?in|remote/i.test(raw))
-    flags.push("The message asks for access");
+  if (/urgent|immediately|asap|do not call|today only/i.test(raw)) add("URGENCY_OR_SECRECY");
+  if (/eft|transit|account|bank|void cheque|interac/i.test(raw)) add("PAYMENT_DETAIL_CHANGE");
+  if (/dock|divert|yard|destination/i.test(raw)) add("DESTINATION_OR_DOCK_CHANGE");
+  if (/carrier|broker/i.test(raw)) add("NEW_CARRIER");
+  if (/portal|sign-?in|remote/i.test(raw)) add("CREDENTIAL_ASK");
   for (const key of Object.keys(requested)) {
-    if (onFile[key] && requested[key] && onFile[key] !== requested[key])
-      flags.push(`${key} does not match the file`);
+    if (onFile[key] && requested[key] && onFile[key] !== requested[key]) add("ON_FILE_MISMATCH", { field: key });
   }
-  flags.push("A mail check does not prove this request is real");
-  return [...new Set(flags)];
+  add("MAIL_AUTH_NOT_CHECKED");
+  return flags;
 }
 
 export function jevLabels(raw: string, requestType: string): string[] {

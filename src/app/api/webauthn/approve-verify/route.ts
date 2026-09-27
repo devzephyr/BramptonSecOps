@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     return badRequest(message);
   }
   if (!verification.authenticationInfo?.userVerified) {
-    return forbidden("User verification is required for approval.");
+    return forbidden("Approving needs your fingerprint, face, or device PIN. Try again and confirm on your device.");
   }
 
   const response = body.response as {
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
       const steps = Array.isArray(row.oobStepsJson) ? (row.oobStepsJson as string[]) : [];
       const ack = parseOobAck(row.oobAckJson, steps.length);
       if (!oobComplete(ack.steps, ack.note)) {
-        return forbidden("Out-of-band checklist is not complete.");
+        return forbidden("Finish the call steps and write who you spoke with first.");
       }
 
       const prior = await tx.approvalAttestation.findMany({
@@ -117,10 +117,10 @@ export async function POST(request: Request) {
       });
       const priorIds = prior.map((item) => item.userId);
       if (sameUserAlreadyApproved(priorIds, user.id)) {
-        return forbidden("You already attested this payload.");
+        return forbidden("You have already approved this request. A different person must approve it.");
       }
       if (approvalProgress({ dualControl: row.dualControl, approverIds: priorIds }) === "complete") {
-        return forbidden("This payload already has enough approvers.");
+        return forbidden("This request already has all the approvals it needs.");
       }
 
       await tx.approvalAttestation.create({
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
             kind: "case_second_approval",
             requestType: row.requestType,
             counterparty: row.counterparty,
-            body: `${user.name} approved it. A second, different manager must approve the same payload.`,
+            body: `${user.name} approved it. A second person needs to approve the same request.`,
           });
         }
         return { status, approverCount: distinctIds.length, receiptToken: null };
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
       const claims = {
         requestType: row.requestType,
         payloadHash: row.payloadHash,
-        matchesUploaded: true,
+        matchesUploaded: row.matchesUploaded,
         dualControl: row.dualControl,
         uv: true,
         approvers: all.map((item) => ({
@@ -196,7 +196,7 @@ export async function POST(request: Request) {
       });
       await tx.verifyCase.update({
         where: { id: row.id },
-        data: { status: "fully_approved", publicToken: receiptToken, matchesUploaded: true },
+        data: { status: "fully_approved", publicToken: receiptToken },
       });
       return { status: "fully_approved", approverCount: distinctIds.length, receiptToken };
     },

@@ -20,15 +20,16 @@ import {
   cachePlaintext,
   decryptFromPeer,
   encryptForPeers,
-  ensureSession,
   ensureSignalKeys,
   envelopeId,
   fingerprintFor,
   getDeviceId,
+  hasSession,
   localIdentityPublicKey,
   peerKeyChanged,
   resetSignalKeys,
 } from "@/lib/signal-client";
+import { updatedAgo } from "@/lib/tracking";
 import { sha256Hex } from "@/preview/hash";
 
 type Props = {
@@ -62,7 +63,7 @@ export function MessageThread({ caseId, userId }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fingerprints, setFingerprints] = useState<Record<string, string>>({});
-  const [ownFingerprint, setOwnFingerprint] = useState<string | null>(null);
+  const [people, setPeople] = useState<Participant[]>([]);
 
   const heal = useCallback(async (peers: Participant[]) => {
     const self = peers.find((peer) => peer.userId === userId);
@@ -91,21 +92,26 @@ export function MessageThread({ caseId, userId }: Props) {
           out.push({ ...row, text: cached });
           continue;
         }
-        const mine = (row.envelopes as Record<string, { type: number; body: string }>)?.[
+        const mine = (row.envelopes as Record<string, { type: number; body: string; from?: number }>)?.[
           envelopeId(userId, deviceId)
         ];
         if (!mine) {
           out.push({ ...row, text: null });
           continue;
         }
+        // Newer messages say which device sent them; older ones fall back to trying each device.
         const senderDevices =
-          peers.find((peer) => peer.userId === row.sender.id)?.devices.map((row) => row.deviceId) ??
-          [];
+          mine.from !== undefined
+            ? [mine.from]
+            : (peers.find((peer) => peer.userId === row.sender.id)?.devices.map((device) => device.deviceId) ?? []);
         let text: string | null = null;
         let unlockError: string | undefined;
         for (const senderDevice of senderDevices) {
           try {
-            await ensureSession(userId, row.sender.id, senderDevice);
+            // A first message (type 3) carries what's needed to start the session, so it must not
+            // fetch the sender's keys: that spends one of their one-time keys on every read. Later
+            // messages only decrypt on a device we already have a session with.
+            if (mine.type !== 3 && !(await hasSession(userId, row.sender.id, senderDevice))) continue;
             text = await decryptFromPeer(userId, row.sender.id, senderDevice, mine);
             cachePlaintext(userId, row.id, text);
             break;
@@ -126,15 +132,8 @@ export function MessageThread({ caseId, userId }: Props) {
       const [rows, peers] = await Promise.all([fetchMessages(caseId), fetchPeers(caseId)]);
       await heal(peers);
       await decryptAll(rows, peers);
+      setPeople(peers);
       const fps: Record<string, string> = {};
-      const local = localIdentityPublicKey(userId);
-      if (local) {
-        try {
-          setOwnFingerprint((await fingerprintFor(userId, userId, local)).slice(0, 24));
-        } catch {
-          setOwnFingerprint(null);
-        }
-      }
       for (const peer of peers) {
         if (peer.userId === userId) continue;
         for (const device of peer.devices) {
@@ -193,7 +192,7 @@ export function MessageThread({ caseId, userId }: Props) {
       const sent = await postMessage(caseId, envelopes, bodyHash);
       cachePlaintext(userId, sent.id, text);
       setDraft("");
-      toastManager.add({ type: "success", title: t.toastSent, description: `sha256 ${bodyHash.slice(0, 12)}…` });
+      toastManager.add({ type: "success", title: t.toastSent });
       await refresh();
     } catch (err) {
       if (err instanceof DeskApiError) setError(err.message);
@@ -203,6 +202,8 @@ export function MessageThread({ caseId, userId }: Props) {
     }
   }
 
+  const waiting = people.filter((peer) => peer.userId !== userId && peer.devices.length === 0);
+
   return (
     <Card>
       <CardHeader>
@@ -210,16 +211,7 @@ export function MessageThread({ caseId, userId }: Props) {
         <CardDescription>{t.messagesHint}</CardDescription>
       </CardHeader>
       <CardPanel className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {ownFingerprint && (
-            <span className="font-mono text-[10px] text-muted-foreground" title={ownFingerprint}>
-              {t.thisDevice}: {ownFingerprint}…
-            </span>
-          )}
-          <Button size="sm" variant="ghost" onClick={() => void resetDevice()}>
-            {t.resetKeys}
-          </Button>
-        </div>
+
         {error && (
           <Alert variant="error">
             <AlertDescription>{error}</AlertDescription>
@@ -236,33 +228,13 @@ export function MessageThread({ caseId, userId }: Props) {
                 <span className="text-xs font-medium">{row.sender.name}</span>
                 <Badge variant="outline">{roleTitle(row.sender.role, t)}</Badge>
                 {peerKeyChanged(userId, row.sender.id) && <Badge variant="warning">{t.keyChanged}</Badge>}
-                {Object.entries(fingerprints)
-                  .filter(([key]) => key.startsWith(`${row.sender.id}.`))
-                  .map(([key, value]) => (
-                    <span key={key} className="flex items-center gap-1">
-                      <span
-                        className="font-mono text-[10px] text-muted-foreground"
-                        title={`${t.safetyNumber}: ${value}`}
-                      >
-                        {t.safetyNumber}: {value.slice(0, 12)}…
-                      </span>
-                      <CopyButton text={value} label={t.safetyNumber} />
-                    </span>
-                  ))}
               </div>
               {row.text === null ? (
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm text-muted-foreground">{t.lockedMessage}</p>
-                  {row.unlockError && (
-                    <p className="font-mono text-[10px] text-muted-foreground">{row.unlockError}</p>
-                  )}
-                </div>
+                <p className="text-sm text-muted-foreground">{t.lockedMessage}</p>
               ) : (
                 <p className="text-sm whitespace-pre-wrap">{row.text}</p>
               )}
-              <span className="font-mono text-[10px] text-muted-foreground" title={row.bodyHash}>
-                sha256 {row.bodyHash.slice(0, 12)}…
-              </span>
+              <span className="text-[11px] text-muted-foreground">{updatedAgo(row.createdAt)}</span>
             </div>
           ))}
         </div>
@@ -272,11 +244,40 @@ export function MessageThread({ caseId, userId }: Props) {
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
         />
+        {waiting.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {t.notDelivered}: {waiting.map((peer) => peer.name).join(", ")}
+          </p>
+        )}
         <div>
           <Button size="sm" disabled={busy || !draft.trim()} onClick={() => void send()}>
             {busy ? t.sending : t.send}
           </Button>
         </div>
+        <details className="text-xs text-muted-foreground">
+          <summary className="cursor-pointer">{t.verifyPeople}</summary>
+          <p className="mt-2">{t.verifyPeopleHint}</p>
+          <ul className="mt-2 flex flex-col gap-2">
+            {people
+              .filter((peer) => peer.userId !== userId)
+              .flatMap((peer) =>
+                peer.devices.map((device) => {
+                  const number = fingerprints[`${peer.userId}.${device.deviceId}`];
+                  if (!number) return null;
+                  return (
+                    <li key={`${peer.userId}.${device.deviceId}`} className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-foreground">{peer.name}</span>
+                      <span className="font-mono tracking-wide">{number.match(/.{1,5}/g)?.join(" ")}</span>
+                      <CopyButton text={number} label={t.safetyNumber} />
+                    </li>
+                  );
+                }),
+              )}
+          </ul>
+          <Button size="sm" variant="ghost" className="mt-2" onClick={() => void resetDevice()}>
+            {t.resetKeys}
+          </Button>
+        </details>
       </CardPanel>
     </Card>
   );

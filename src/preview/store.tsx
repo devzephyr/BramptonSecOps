@@ -191,7 +191,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
         if (role !== "logistics" && role !== "admin") return fail("Only logistics or admin can approve.");
         if (item.createdById === user.id) return fail("The person who opened a case cannot approve it.");
         if (item.approvals.some((approval) => approval.userId === user.id)) {
-          return fail("You already signed this exact payload. A different person must sign.");
+          return fail("You have already approved this request. A different person must approve it.");
         }
         if (!item.oobDone.every(Boolean) || item.oobNote.trim().length < 4) {
           return fail("Finish the call checklist and write who you spoke with.");

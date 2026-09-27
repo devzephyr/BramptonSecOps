@@ -63,6 +63,19 @@ async function main() {
   assert.equal(normalizeLoadRef(" lo-4419 "), "LO-4419");
   assert.equal(normalizeLoadRef("LO 12"), "LO-12");
   for (const bad of ["", "LO-", "44a", "PP-204", "12345678901"]) assert.equal(normalizeLoadRef(bad), null, bad);
+  const { toFlagView } = await import("../src/lib/flags");
+  const { referenceCode } = await import("../src/lib/reference");
+  // Sentences stored by older versions still map to codes, so they translate.
+  assert.deepEqual(toFlagView("dock does not match the file"), { code: "ON_FILE_MISMATCH", params: { field: "dock" } });
+  assert.deepEqual(toFlagView("Not the domain on file (peelproduce.example)"), { code: "DOMAIN_NOT_ON_FILE", params: { onFile: "peelproduce.example" } });
+  assert.equal(toFlagView("A mail check does not prove this request is real").code, "MAIL_AUTH_NOT_CHECKED");
+  assert.equal(toFlagView("The message asks for access").code, "CREDENTIAL_ASK");
+  assert.deepEqual(
+    toFlagView({ code: "DOMAIN_NOT_ON_FILE", kind: "heuristic", detail: "x.co is not the domain on file (y.example)." }),
+    { code: "DOMAIN_NOT_ON_FILE", params: { domain: "x.co", onFile: "y.example" } },
+  );
+  assert.deepEqual(toFlagView("something new"), { code: "OTHER", params: {}, text: "something new" });
+  assert.equal(referenceCode("26e16a94fe7bbfcf9cf0e1aee8105490d0eb44c16e20b06fe3628667eb2101b0"), "26E1-6A94-FE7B");
   console.log("checks ok");
 }
 

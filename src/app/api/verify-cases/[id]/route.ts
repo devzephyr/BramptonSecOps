@@ -65,6 +65,21 @@ export async function PATCH(request: Request, { params }: Params) {
       : [];
     let ack = parseOobAck(row.oobAckJson, steps.length);
 
+    // The call record is what approvers sign off on, and the note goes into the partner receipt.
+    // Once anyone has approved this exact request, it cannot be edited.
+    const touchesCallRecord =
+      "oobNote" in body || "oobSteps" in body || "oobStepIndex" in body;
+    if (touchesCallRecord && !patchTouchesPayload(body)) {
+      const approvals = await tx.approvalAttestation.count({
+        where: { caseId: row.id, payloadHash: row.payloadHash },
+      });
+      if (approvals > 0) {
+        return forbidden(
+          "The call record is locked because someone has already approved this request.",
+        );
+      }
+    }
+
     if (typeof body.oobNote === "string") {
       ack = { ...ack, note: body.oobNote.slice(0, 500) };
     }

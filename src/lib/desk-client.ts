@@ -2,6 +2,7 @@
 
 import type { DutyStatusName, HosSummary } from "@/lib/hos";
 import type { DocTypeName } from "@/lib/policy";
+import { toFlagView } from "@/lib/flags";
 import {
   startAuthentication,
   startRegistration,
@@ -581,7 +582,7 @@ export async function fetchMessages(caseId: string): Promise<CaseMessage[]> {
 
 export async function postMessage(
   caseId: string,
-  envelopes: Record<string, { type: number; body: string }>,
+  envelopes: Record<string, { type: number; body: string; from?: number }>,
   bodyHash: string,
 ): Promise<CaseMessage> {
   const res = await fetch(
@@ -721,6 +722,7 @@ export type ApiCase = {
   publicToken: string | null;
   jev: unknown;
   approvals: { userId: string; name: string; role: string; at: string }[] | null;
+  matchesUploaded?: boolean;
 };
 
 export type DeskCaseShape = DeskCase;
@@ -770,7 +772,8 @@ export function mapApiCase(row: ApiCase): DeskCase {
     rawText: row.rawText ?? "",
     onFile: stringRecord(row.onFile),
     requested: stringRecord(row.requested),
-    flags: stringList(row.flags),
+    flags: Array.isArray(row.flags) ? row.flags.map(toFlagView) : [],
+    matchesUploaded: row.matchesUploaded === true,
     oobSteps: steps,
     oobDone: done.slice(0, steps.length),
     oobNote: typeof row.oobAck?.note === "string" ? row.oobAck.note : "",

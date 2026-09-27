@@ -19,7 +19,8 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/c
 import { Textarea } from "@/components/ui/textarea";
 import { CallLink } from "@/components/desk/call-link";
 import { deleteScenario, fetchScenarios, saveScenario, type Contact, type SavedScenario } from "@/lib/desk-client";
-import { useI18n } from "@/lib/i18n";
+import { flagTitle, useI18n } from "@/lib/i18n";
+import { flagKey } from "@/lib/flags";
 import { NEW_REQUEST_TYPES, REQUEST_FIELDS, REQUESTS, SCENARIOS, deskFlags } from "@/preview/data";
 import { MANAGERS } from "@/lib/policy";
 import type { Role } from "@prisma/client";
@@ -331,8 +332,8 @@ export function SupplierDesk() {
           {previewFlags.length > 0 && (
             <div className="flex flex-col gap-2" role="group" aria-label={t.flags}>
               {previewFlags.map((flag) => (
-                <Alert key={flag} variant="warning">
-                  <AlertDescription>{flag}</AlertDescription>
+                <Alert key={flagKey(flag)} variant="warning">
+                  <AlertDescription>{flagTitle(flag, t)}</AlertDescription>
                 </Alert>
               ))}
             </div>

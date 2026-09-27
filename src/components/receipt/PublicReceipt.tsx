@@ -14,6 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { redactValue } from "@/lib/policy";
+import { referenceCode } from "@/lib/reference";
+import { requestTitle } from "@/preview/data";
 
 export type ReceiptApprover = {
   role: string;
@@ -51,12 +53,35 @@ type VerifyState =
   | { status: "failed"; message: string };
 
 function humanRequestType(value: string) {
-  return value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return requestTitle(value, "en");
 }
 
-function shortHash(hash: string) {
-  if (hash.length <= 20) return hash;
-  return `${hash.slice(0, 16)}…`;
+const FIELD_NAMES: Record<string, string> = {
+  institution: "Institution number",
+  transit: "Transit number",
+  account: "Account number",
+  dock: "Dock",
+  destination: "Destination",
+  carrier: "Carrier",
+  seal: "Seal number",
+};
+
+function fieldName(key: string) {
+  return FIELD_NAMES[key] ?? key.charAt(0).toUpperCase() + key.slice(1);
+}
+
+const ROLE_NAMES: Record<string, string> = {
+  logistics: "Logistics",
+  manager: "Logistics",
+  admin: "Admin",
+  supplier: "Supplier desk",
+  warehouse: "Warehouse",
+  receiver: "Receiver",
+  driver: "Driver",
+};
+
+function roleName(role: string) {
+  return ROLE_NAMES[role] ?? role;
 }
 
 function formatToronto(iso: string) {
@@ -101,7 +126,7 @@ function SummaryBlock({
         <dd className="font-medium">{claims.org}</dd>
       </div>
       <div className="grid gap-0.5">
-        <dt className="text-muted-foreground">Counterparty</dt>
+        <dt className="text-muted-foreground">Partner</dt>
         <dd className="font-medium">{claims.counterparty}</dd>
       </div>
       {onFileRedacted ? (
@@ -110,7 +135,7 @@ function SummaryBlock({
           <dd className="font-mono text-xs">
             {Object.entries(onFileRedacted).map(([key, value]) => (
               <div key={key}>
-                {key}: {value}
+                {fieldName(key)}: {value}
               </div>
             ))}
           </dd>
@@ -122,7 +147,7 @@ function SummaryBlock({
           <dd className="font-mono text-xs">
             {Object.entries(requestedRedacted).map(([key, value]) => (
               <div key={key}>
-                {key}: {value}
+                {fieldName(key)}: {value}
               </div>
             ))}
           </dd>
@@ -130,7 +155,7 @@ function SummaryBlock({
       ) : null}
       {claims.oobNote?.trim() ? (
         <div className="grid gap-0.5">
-          <dt className="text-muted-foreground">Out-of-band note</dt>
+          <dt className="text-muted-foreground">Confirmed by phone</dt>
           <dd>{claims.oobNote.trim()}</dd>
         </div>
       ) : null}
@@ -204,7 +229,7 @@ export function PublicReceipt({
   const claims = data?.claims;
   const matchesLine = useMemo(() => {
     if (!claims) return null;
-    return `Matches uploaded content: ${claims.matchesUploaded ? "Yes" : "No"}`;
+    return `Supporting documents attached: ${claims.matchesUploaded ? "Yes" : "No"}`;
   }, [claims]);
 
   if (loadError) {
@@ -222,7 +247,7 @@ export function PublicReceipt({
   if (!data || !claims) {
     return (
       <main className="mx-auto flex min-h-screen max-w-2xl items-center justify-center p-6 text-muted-foreground text-sm">
-        Loading attestation…
+        Loading receipt…
       </main>
     );
   }
@@ -234,7 +259,7 @@ export function PublicReceipt({
         aria-hidden
       >
         <p className="max-w-md rotate-[-18deg] text-center font-heading text-lg">
-          SupplyChek attestation — not a government certification
+          Issued by SupplyChek. Not a government certification.
         </p>
       </div>
 
@@ -244,18 +269,18 @@ export function PublicReceipt({
             <div>
               <CardTitle className="text-xl">Verification receipt</CardTitle>
               <CardDescription>
-                Public attestation for an approved SupplyChek case
+                Proof that this change was checked and approved before anyone acted on it
               </CardDescription>
             </div>
             <div className="no-print flex flex-col items-end gap-2">
               {verify.status === "verified" ? (
                 <Badge variant="success">
                   <CheckCircle2 />
-                  Verified signature
+                  Authentic receipt
                 </Badge>
               ) : null}
               {verify.status === "checking" ? (
-                <Badge variant="outline">Checking signature…</Badge>
+                <Badge variant="outline">Checking authenticity…</Badge>
               ) : null}
               <Button
                 type="button"
@@ -271,7 +296,7 @@ export function PublicReceipt({
           {verify.status === "failed" ? (
             <Alert variant="error">
               <AlertCircle />
-              <AlertTitle>Signature not verified</AlertTitle>
+              <AlertTitle>This receipt could not be confirmed as authentic</AlertTitle>
               <AlertDescription>{verify.message}</AlertDescription>
             </Alert>
           ) : null}
@@ -279,14 +304,14 @@ export function PublicReceipt({
             <div className="print-only hidden">
               <Badge variant="success">
                 <CheckCircle2 />
-                Verified signature
+                Authentic receipt
               </Badge>
             </div>
           ) : null}
         </CardHeader>
         <CardContent className="grid gap-6">
           <p className="text-muted-foreground text-xs print:text-foreground">
-            SupplyChek attestation — not a government certification
+            Issued by SupplyChek. Not a government certification.
           </p>
 
           <section className="grid gap-2">
@@ -296,7 +321,7 @@ export function PublicReceipt({
 
           <section className="grid gap-2">
             <h2 className="font-heading font-semibold text-sm">
-              Redacted summary
+              Summary (sensitive numbers partly hidden)
             </h2>
             <SummaryBlock
               claims={claims}
@@ -306,13 +331,12 @@ export function PublicReceipt({
           </section>
 
           <section className="grid gap-2">
-            <h2 className="font-heading font-semibold text-sm">Payload</h2>
-            <p className="font-mono text-xs break-all">{claims.payloadHash}</p>
+            <h2 className="font-heading font-semibold text-sm">Reference code</h2>
+            <p className="font-mono text-base font-semibold tracking-wider">
+              {referenceCode(claims.payloadHash)}
+            </p>
             <p className="text-muted-foreground text-xs">
-              Short:{" "}
-              <span className="font-mono text-foreground">
-                {shortHash(claims.payloadHash)}
-              </span>
+              Ask your contact to read you their code. If it matches, you are both looking at the same approved request.
             </p>
             <p className="text-sm">{matchesLine}</p>
           </section>
@@ -325,7 +349,7 @@ export function PublicReceipt({
                   <span className="font-medium">{approver.name}</span>
                   <span className="text-muted-foreground">
                     {" "}
-                    ({approver.role}) — {formatToronto(approver.approvedAt)}
+                    ({roleName(approver.role)}) · {formatToronto(approver.approvedAt)}
                   </span>
                 </li>
               ))}
@@ -334,26 +358,25 @@ export function PublicReceipt({
 
           <section className="grid gap-1 text-sm">
             <p>
-              Dual control:{" "}
+              Two-person approval:{" "}
               <span className="font-medium">
                 {claims.dualControl ? "Yes" : "No"}
               </span>
             </p>
             <p>
-              UV satisfied:{" "}
+              Each approver confirmed with fingerprint, face, or PIN:{" "}
               <span className="font-medium">{claims.uv ? "Yes" : "No"}</span>
             </p>
           </section>
 
           <section className="border-t pt-4 text-muted-foreground text-xs">
-            <p>
-              Data residency: the hosted demo may run outside Canada. Docker
-              Compose keeps Postgres and files on the machine you start.
-            </p>
-            <p className="mt-2 font-mono">Receipt token: {data.token}</p>
-            <p className="font-mono">
-              Issued: {formatToronto(data.createdAt)}
-            </p>
+            <p>Issued {formatToronto(data.createdAt)}</p>
+            <details className="mt-2">
+              <summary className="cursor-pointer">Technical details</summary>
+              <p className="mt-1">Full fingerprint of the request (SHA-256):</p>
+              <p className="font-mono break-all">{claims.payloadHash}</p>
+              <p className="mt-1 font-mono">Receipt ID: {data.token}</p>
+            </details>
           </section>
         </CardContent>
       </Card>

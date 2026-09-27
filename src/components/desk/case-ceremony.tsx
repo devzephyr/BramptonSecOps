@@ -22,7 +22,9 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Progress, ProgressIndicator, ProgressLabel, ProgressTrack, ProgressValue } from "@/components/ui/progress";
 import { toastManager } from "@/components/ui/toast";
-import { caseStatusTitle, roleTitle, useI18n } from "@/lib/i18n";
+import { caseStatusTitle, fieldTitle, flagTitle, jevTitle, roleTitle, useI18n } from "@/lib/i18n";
+import { flagKey, REMINDER_CODES } from "@/lib/flags";
+import { referenceCode } from "@/lib/reference";
 import { requestTitle } from "@/preview/data";
 import { sha256Hex } from "@/preview/hash";
 import { useDesk } from "@/preview/store";
@@ -30,10 +32,6 @@ import { DocumentUpload } from "@/components/desk/document-upload";
 import { MessageThread } from "@/components/desk/message-thread";
 import { CallLink } from "@/components/desk/call-link";
 import { CopyButton } from "@/components/desk/copy-button";
-
-function shortHash(hash: string) {
-  return `${hash.slice(0, 12)}…${hash.slice(-8)}`;
-}
 
 export function CaseCeremony({ onBack }: { onBack?: () => void }) {
   const desk = useDesk();
@@ -87,6 +85,14 @@ export function CaseCeremony({ onBack }: { onBack?: () => void }) {
   const needed = item.dualControl ? 2 : 1;
   const done = Math.min(item.approvals.length, needed);
   const approved = item.status === "fully_approved";
+  const iApproved = item.approvals.some((approval) => approval.userId === desk.user.id);
+  // Once anyone has approved, the call record is part of what they approved; the server refuses edits.
+  const callLocked = item.approvals.length > 0;
+  const warnings = item.flags.filter((flag) => !REMINDER_CODES.includes(flag.code));
+  const reference = referenceCode(item.payloadHash);
+  const fields = [...new Set([...Object.keys(item.requested), ...Object.keys(item.onFile)])].filter(
+    (key) => key in item.requested,
+  );
   const back = onBack ?? desk.closeCase;
 
   async function save(patch: { index?: number; note?: string }) {
@@ -185,29 +191,33 @@ export function CaseCeremony({ onBack }: { onBack?: () => void }) {
           <ProgressIndicator />
         </ProgressTrack>
       </Progress>
-      {item.flags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+      {warnings.length > 0 && (
+        <div className="flex flex-col gap-2">
           <span className="text-sm font-medium">{t.flags}</span>
-          {item.flags.map((flag) => (
-            <Badge key={flag} variant="error">
-              {flag}
-            </Badge>
-          ))}
+          <ul className="flex flex-col gap-1.5">
+            {warnings.map((flag) => (
+              <li key={flagKey(flag)} className="flex items-start gap-2 text-sm">
+                <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-destructive" aria-hidden />
+                {flagTitle(flag, t)}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">{t.mailReminder}</p>
         </div>
       )}
       {item.jev.length > 0 && (
         <Alert>
           <AlertTitle>{t.jevTitle}</AlertTitle>
           <AlertDescription>
-            {item.jev.join(", ")}. {t.jevNote}
+            {item.jev.map((label) => jevTitle(label, t)).join(" · ")}. {t.jevNote}
           </AlertDescription>
         </Alert>
       )}
       <Card>
         <CardHeader>
           <CardTitle>{t.canonicalPayload}</CardTitle>
-          <CardDescription className="font-mono text-xs">
-            {shortHash(item.payloadHash)} · {item.counterparty}
+          <CardDescription>
+            {item.counterparty} · {t.referenceCode} <span className="font-mono">{reference}</span>
           </CardDescription>
         </CardHeader>
         <CardPanel>
@@ -225,7 +235,7 @@ export function CaseCeremony({ onBack }: { onBack?: () => void }) {
               <div className="flex flex-col gap-2 text-sm">
                 {Object.entries(item.onFile).map(([key, value]) => (
                   <div key={key} className="flex justify-between gap-3">
-                    <span className="text-muted-foreground">{key}</span>
+                    <span className="text-muted-foreground">{fieldTitle(key, t)}</span>
                     <span className="font-mono">{value}</span>
                   </div>
                 ))}
@@ -240,7 +250,7 @@ export function CaseCeremony({ onBack }: { onBack?: () => void }) {
                   const changed = item.onFile[key] && item.onFile[key] !== value;
                   return (
                     <div key={key} className="flex justify-between gap-3">
-                      <span className="text-muted-foreground">{key}</span>
+                      <span className="text-muted-foreground">{fieldTitle(key, t)}</span>
                       <span className={`font-mono ${changed ? "bg-destructive/15 text-destructive-foreground" : ""}`}>
                         {value}
                       </span>
@@ -252,17 +262,23 @@ export function CaseCeremony({ onBack }: { onBack?: () => void }) {
           </div>
         </CardPanel>
       </Card>
+      {!approved && iApproved && (
+        <Alert variant="success">
+          <AlertTitle>{t.youApproved}</AlertTitle>
+          <AlertDescription>{t.youApprovedBody}</AlertDescription>
+        </Alert>
+      )}
       {!approved && (
-        <Alert variant="warning">
-          <AlertTitle>{t.oob}</AlertTitle>
-          <AlertDescription>{t.holdCall}</AlertDescription>
+        <Alert variant={callLocked ? "default" : "warning"}>
+          <AlertTitle>{callLocked ? t.calledBy : t.oob}</AlertTitle>
+          <AlertDescription>{callLocked ? t.callRecordLocked : t.holdCall}</AlertDescription>
           <div className="mt-2">
             <CheckboxGroup>
               {item.oobSteps.map((step, index) => (
                 <label key={step} className="flex items-start gap-3 text-sm text-foreground">
                   <Checkbox
                     checked={item.oobDone[index]}
-                    disabled={saving}
+                    disabled={saving || callLocked}
                     onCheckedChange={() => void save({ index })}
                   />
                   <span>{step}</span>
@@ -273,14 +289,17 @@ export function CaseCeremony({ onBack }: { onBack?: () => void }) {
               className="mt-3"
               value={note}
               maxLength={500}
+              readOnly={callLocked}
               aria-label={t.whoSpoke}
               placeholder={t.whoSpoke}
               onChange={(event) => setNote(event.target.value)}
-              onBlur={() => void saveNote()}
+              onBlur={() => void (callLocked ? undefined : saveNote())}
             />
-            <Button className="mt-3" size="lg" disabled={!ready || saving} onClick={() => void openReview()}>
-              {t.reviewBytes}
-            </Button>
+            {!iApproved && (
+              <Button className="mt-3" size="lg" disabled={!ready || saving} onClick={() => void openReview()}>
+                {t.reviewBytes}
+              </Button>
+            )}
           </div>
         </Alert>
       )}
@@ -297,17 +316,53 @@ export function CaseCeremony({ onBack }: { onBack?: () => void }) {
           </DialogHeader>
           <DialogPanel className="flex flex-col gap-3">
             <p className="text-sm text-muted-foreground">{t.ceremonyHint}</p>
-            <p className="font-mono text-xs break-all">{item.payloadHash}</p>
-            <div>
-              <CopyButton text={item.payloadHash} label={t.hash} />
-            </div>
             {hashOk === false && (
               <Alert variant="error">
                 <AlertTitle>{t.hashMismatch}</AlertTitle>
                 <AlertDescription>{t.hashMismatchBody}</AlertDescription>
               </Alert>
             )}
-            <pre className="max-h-48 overflow-auto rounded-lg bg-muted p-3 text-xs">{item.canonical}</pre>
+            <div className="overflow-x-auto rounded-lg border">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/60 text-left text-xs text-muted-foreground">
+                  <tr>
+                    <th className="px-3 py-2 font-medium" />
+                    <th className="px-3 py-2 font-medium">{t.currentValue}</th>
+                    <th className="px-3 py-2 font-medium">{t.newValue}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fields.map((key) => {
+                    const before = item.onFile[key] ?? "";
+                    const after = item.requested[key] ?? "";
+                    const changed = before !== after;
+                    return (
+                      <tr key={key} className="border-t">
+                        <th scope="row" className="px-3 py-2 text-left font-medium">
+                          {fieldTitle(key, t)}
+                        </th>
+                        <td className="px-3 py-2 font-mono">{before || "—"}</td>
+                        <td className={`px-3 py-2 font-mono ${changed ? "font-semibold text-destructive-foreground" : ""}`}>
+                          {after || "—"}
+                          {!changed && <span className="ml-2 font-sans text-xs text-muted-foreground">{t.unchanged}</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 rounded-lg bg-muted p-3">
+              <span className="text-sm">{t.referenceCode}</span>
+              <span className="font-mono text-base font-semibold tracking-wider">{reference}</span>
+              <CopyButton text={reference} label={t.referenceCode} />
+              <p className="w-full text-xs text-muted-foreground">{t.referenceHint}</p>
+            </div>
+            <details className="text-xs text-muted-foreground">
+              <summary className="cursor-pointer">{t.technicalDetails}</summary>
+              <p className="mt-2">{t.fullFingerprint}</p>
+              <p className="mt-1 font-mono break-all">{item.payloadHash}</p>
+            </details>
             <p className="text-sm">
               {t.signedSoFar}:{" "}
               {item.approvals.length === 0
