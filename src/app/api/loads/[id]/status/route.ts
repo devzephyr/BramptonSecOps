@@ -114,7 +114,7 @@ export async function POST(request: Request, { params }: Params) {
           actorId: user.id,
           kind: "status",
           status: next,
-          source: body.simulated === true ? "sim" : "status",
+          source: "status",
           loadId: load.id,
           lat: load.lat,
           lng: load.lng,

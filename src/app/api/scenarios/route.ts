@@ -10,7 +10,7 @@ const PICKABLE = (Object.values(RequestType) as string[]).filter((type) => type 
 export async function GET() {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or logistics staff can use scenarios.");
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or logistics staff can use templates.");
 
   const rows = await prisma.scenario.findMany({
     where: { orgId: user.orgId },
@@ -24,7 +24,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const user = await requireUser();
   if (!user) return unauthorized();
-  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or logistics staff can save scenarios.");
+  if (!hasRole(user, CASE_STAFF)) return forbidden("Only supplier or logistics staff can save templates.");
 
   let body: Record<string, unknown>;
   try {
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     return badRequest("Invalid JSON body.");
   }
   const title = typeof body.title === "string" ? body.title.trim().slice(0, 80) : "";
-  if (!title) return badRequest("Give the scenario a name.");
+  if (!title) return badRequest("Give the template a name.");
   const requestType = typeof body.requestType === "string" ? body.requestType : "";
   if (!PICKABLE.includes(requestType)) return badRequest("Pick a request type.");
   const rawText = typeof body.rawText === "string" ? body.rawText.trim().slice(0, 4000) : "";
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       where: { id: body.contactId, orgId: user.orgId },
       select: { id: true },
     });
-    if (!contact) return badRequest("That counterparty is not in your directory.");
+    if (!contact) return badRequest("That partner is not in your directory.");
     contactId = contact.id;
   }
 

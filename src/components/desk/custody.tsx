@@ -10,8 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toastManager } from "@/components/ui/toast";
 import { fetchTeam, transferCustody, type CustodyHop, type Holder, type TeamMember } from "@/lib/desk-client";
-import { updatedAgo } from "@/lib/tracking";
-import { useI18n } from "@/lib/i18n";
+
+import { useI18n, timeAgo } from "@/lib/i18n";
 
 function HolderName({ holder }: { holder: Holder }) {
   const { t } = useI18n();
@@ -41,7 +41,7 @@ export function CustodyChain({ hops }: { hops: CustodyHop[] }) {
             {hop.sealIntact === false && <Badge variant="error">{t.sealBad}</Badge>}
           </span>
           <span className="text-xs text-muted-foreground">
-            {[hop.note, hop.sealNumber ? `${t.seal} ${hop.sealNumber}` : "", hop.actor, updatedAgo(hop.createdAt)]
+            {[hop.note, hop.sealNumber ? `${t.seal} ${hop.sealNumber}` : "", hop.actor, timeAgo(hop.createdAt, t)]
               .filter(Boolean)
               .join(" · ")}
           </span>

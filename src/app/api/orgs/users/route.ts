@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
-import { MANAGERS } from "@/lib/policy";
+import { CASE_STAFF, MANAGERS } from "@/lib/policy";
 import { badRequest, forbidden, isUniqueViolation, json, unauthorized } from "@/lib/http";
 
 const ROLES = ["supplier", "logistics", "warehouse", "driver", "receiver", "admin"] as const;
@@ -39,6 +39,8 @@ export async function GET() {
       role: row.role,
       title: row.title,
       hasKeys: row.signalIdentity.length > 0,
+      // Secure messaging exists on cases, which only supplier, logistics and admin staff open.
+      messaging: !CASE_STAFF.includes(row.role) ? "not_used" : row.signalIdentity.length > 0 ? "ready" : "not_set_up",
       devices: row.signalIdentity.length,
       createdAt: row.createdAt,
     })),

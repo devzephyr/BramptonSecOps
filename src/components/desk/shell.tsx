@@ -31,7 +31,7 @@ export function DeskShell({
             <p className="font-heading text-xl font-semibold">{t.brand}</p>
             <p className="text-xs text-muted-foreground">{t.place}</p>
             <p className="text-xs text-muted-foreground">
-              {user.orgName ?? t.demoOrg}
+              {user.orgName}
               {" · "}
               {t.signedInAs} {user.name} · {roleTitle(user.role, t)}
             </p>

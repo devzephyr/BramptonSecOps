@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadStatus } from "@/components/desk/load-status";
+import { PositionLine } from "@/components/desk/position-line";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogDescription, DialogHeader, DialogPanel, DialogPopup, DialogTitle } from "@/components/ui/dialog";
-import { useI18n, loadStatusTitle } from "@/lib/i18n";
-import { isLive, updatedAgo } from "@/lib/tracking";
+import { useI18n, loadStatusTitle, timeAgo } from "@/lib/i18n";
+import {isLive} from "@/lib/tracking";
 import type { Load } from "@/preview/data";
 import { TripMap } from "@/components/desk/trip-map";
 import { DocumentUpload } from "@/components/desk/document-upload";
@@ -85,9 +87,7 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
           {load && !editing && (
             <>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={load.status === "fifteen_min" ? "warning" : "outline"}>
-                  {loadStatusTitle(load.status, t)}
-                </Badge>
+                <LoadStatus status={load.status} facility={load.facility} late={load.late} />
                 {live && <Badge variant="success">{t.liveLocation}</Badge>}
                 {canEdit && (
                   <Button size="sm" variant="outline" className="ml-auto" onClick={() => setEditing(true)}>
@@ -109,15 +109,12 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
               <Row label={t.setpoint} value={load.setpoint} mono />
               {load.lat != null && load.lng != null && (
                 <>
-                  <Row
-                    label={live ? t.liveLocation : t.lastKnown}
-                    value={`${load.lat.toFixed(4)}, ${load.lng.toFixed(4)} · ${updatedAgo(load.positionAt)}`}
-                    mono
-                  />
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="text-muted-foreground">{live ? t.liveLocation : t.lastKnown}</span>
+                    <PositionLine lat={load.lat} lng={load.lng} at={load.positionAt} />
+                  </div>
                   <TripMap
                     className="h-56"
-                    depotLabel={t.mapDepot}
-                    yardLabel={t.mapYard}
                     trail={journey.trail}
                     trucks={[{ id: load.id, label: load.loadRef, lat: load.lat, lng: load.lng, live }]}
                   />
@@ -170,7 +167,7 @@ export function LoadDialog({ load, onClose }: { load: Load | null; onClose: () =
                         {event.note ? ` · ${event.note}` : ""}
                         <span className="text-muted-foreground">
                           {" "}
-                          · {event.actor} · {updatedAgo(event.createdAt)}
+                          · {event.actor} · {timeAgo(event.createdAt, t)}
                         </span>
                       </li>
                     ))}

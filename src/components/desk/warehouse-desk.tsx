@@ -1,14 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadStatus } from "@/components/desk/load-status";
+import { PositionLine } from "@/components/desk/position-line";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cleanCommodity } from "@/lib/normalize";
 import { TripMap } from "@/components/desk/trip-map";
 import { TripSteps } from "@/components/desk/trip-steps";
 import { fetchInventory, type InventoryLot } from "@/lib/desk-client";
-import { useI18n, loadStatusTitle } from "@/lib/i18n";
-import { isLive, updatedAgo } from "@/lib/tracking";
+import { lotStatusTitle, useI18n } from "@/lib/i18n";
+import {isLive} from "@/lib/tracking";
 import type { Load } from "@/preview/data";
 import { useDesk } from "@/preview/store";
 
@@ -74,9 +77,6 @@ export function WarehouseDesk() {
         </CardHeader>
         <CardPanel className="flex flex-col gap-3">
           <TripMap
-            fitTrucks
-            depotLabel={t.mapDepot}
-            yardLabel={t.mapYard}
             trucks={[...live, ...stale].map((load) => ({
               id: load.id,
               label: load.loadRef,
@@ -96,13 +96,10 @@ export function WarehouseDesk() {
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 </span>
                 <span className="text-sm font-medium">{load.loadRef}</span>
-                <Badge variant="outline">{t.simulated}</Badge>
                 <Badge variant="secondary">
                   {loadDirection(load, orgName) === "pickup" ? t.pickup : t.dropoff}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {load.lat?.toFixed(4)}, {load.lng?.toFixed(4)} · {updatedAgo(load.positionAt)}
-                </span>
+                <PositionLine lat={load.lat} lng={load.lng} at={load.positionAt} />
               </div>
               <TripSteps status={load.status} labels={stepLabels} />
             </div>
@@ -116,9 +113,7 @@ export function WarehouseDesk() {
                 <Badge variant="outline">
                   {loadDirection(load, orgName) === "pickup" ? t.pickup : t.dropoff}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {load.lat?.toFixed(4)}, {load.lng?.toFixed(4)} · {updatedAgo(load.positionAt)}
-                </span>
+                <PositionLine lat={load.lat} lng={load.lng} at={load.positionAt} />
               </div>
               <TripSteps status={load.status} labels={stepLabels} />
             </div>
@@ -171,9 +166,7 @@ export function WarehouseDesk() {
                       <TableCell>{load.dock}</TableCell>
                       <TableCell>{load.eta}</TableCell>
                       <TableCell>
-                        <Badge variant={load.status === "fifteen_min" ? "warning" : "secondary"}>
-                          {loadStatusTitle(load.status, t)}
-                        </Badge>
+                        <LoadStatus status={load.status} facility={load.facility} late={load.late} />
                       </TableCell>
                     </TableRow>
                   );
@@ -208,13 +201,13 @@ export function WarehouseDesk() {
                   {lots.map((lot) => (
                     <TableRow key={lot.id}>
                       <TableCell>{lot.sku}</TableCell>
-                      <TableCell>{lot.commodity}</TableCell>
+                      <TableCell>{cleanCommodity(lot.commodity)}</TableCell>
                       <TableCell>
                         {lot.quantity} {lot.unit}
                       </TableCell>
                       <TableCell>{lot.location}</TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{lot.status}</Badge>
+                        <Badge variant="secondary">{lotStatusTitle(lot.status, t)}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}

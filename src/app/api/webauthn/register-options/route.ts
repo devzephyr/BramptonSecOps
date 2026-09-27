@@ -4,10 +4,6 @@ import { badRequest, forbidden, json, notFound } from "@/lib/http";
 import { registrationOptions } from "@/lib/webauthn";
 
 export async function POST(request: Request) {
-  if (process.env.DEMO_ENROLL !== "true") {
-    return forbidden("Demo enrollment is disabled.");
-  }
-
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;

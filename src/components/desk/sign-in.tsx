@@ -55,8 +55,8 @@ function ReceiptPreview() {
         {row("", "Colin Berger")}
       </div>
       <div className="flex flex-col gap-2 pt-4">
-        {row("sha256", "3f9a2c…d41e07")}
-        {row(t.receiptSignature, "Ed25519")}
+        {row(t.referenceCode, "3F9A-2C1D-41E0")}
+        {row(t.receiptSignature, t.receiptAuthentic)}
       </div>
       <span
         aria-hidden

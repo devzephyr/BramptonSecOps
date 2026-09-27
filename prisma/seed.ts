@@ -1,6 +1,7 @@
 import { CaseStatus, Prisma, RequestType, Role } from "@prisma/client";
 import { enrollmentExpiry, newEnrollmentCode } from "../src/lib/auth";
 import { prisma } from "../src/lib/db";
+import { dutyHash, GENESIS_HASH } from "../src/lib/duty";
 import { buildPayload, type PayloadFields } from "../src/lib/payload";
 import {
   deskFlags,
@@ -361,6 +362,11 @@ function mergeRequested(
   return { ...onFile, ...patch };
 }
 
+/** Seeded times are relative to when the seed runs, so ETAs are never stale. */
+function fromNow(minutes: number) {
+  return new Date(Date.now() + minutes * 60 * 1000);
+}
+
 async function main() {
   const org = await prisma.org.upsert({
     where: { slug: ORG_SLUG },
@@ -579,7 +585,7 @@ async function main() {
       seedKey: "ld-malt",
       org: "loc",
       loadRef: "LO-4419",
-      commodity: "malt",
+      commodity: "Malt",
       origin: "Mississauga malt house",
       destination: "Lake Ontario Cold Storage",
       scheduledDock: "Door 4",
@@ -587,17 +593,17 @@ async function main() {
       plate: "BLNT 214",
       trailer: "TR-88",
       sealNumber: "SL-4419",
-      reeferSetpoint: "-18 C",
+      reeferSetpoint: "-18 °C",
       currentStatus: "rolling",
       lastKnown: "QEW eastbound near Oakville",
       driverUserId: "seed_user_devon",
-      eta: new Date("2026-09-25T20:40:00.000Z"),
+      eta: fromNow(95),
     },
     {
       seedKey: "ld-poultry",
       org: "loc",
       loadRef: "LO-4420",
-      commodity: "poultry",
+      commodity: "Frozen poultry",
       origin: "Burlington",
       destination: "Lake Ontario Cold Storage",
       scheduledDock: "Door 6",
@@ -605,17 +611,17 @@ async function main() {
       plate: "CHLK 902",
       trailer: "TR-12",
       sealNumber: "SL-2201",
-      reeferSetpoint: "-20 C",
+      reeferSetpoint: "-20 °C",
       currentStatus: "loaded",
       lastKnown: "Halton Poultry yard",
       driverUserId: "seed_user_samir",
-      eta: new Date("2026-09-25T22:10:00.000Z"),
+      eta: fromNow(150),
     },
     {
       seedKey: "ld-dairy",
       org: "loc",
       loadRef: "LO-4422",
-      commodity: "dairy",
+      commodity: "Dairy",
       origin: "Hamilton",
       destination: "Lake Ontario Cold Storage",
       scheduledDock: "Door 1",
@@ -623,17 +629,17 @@ async function main() {
       plate: "MILK 330",
       trailer: "TR-41",
       sealNumber: "SL-7730",
-      reeferSetpoint: "2 C",
+      reeferSetpoint: "2 °C",
       currentStatus: "loaded",
       lastKnown: "Golden Horseshoe Dairy",
       driverUserId: "seed_user_devon",
-      eta: new Date("2026-09-26T10:00:00.000Z"),
+      eta: fromNow(300),
     },
     {
       seedKey: "ld-flour",
       org: "loc",
       loadRef: "LO-4388",
-      commodity: "flour",
+      commodity: "Flour",
       origin: "Lake Ontario Cold Storage",
       destination: "Hamilton Flour Exchange",
       scheduledDock: "Door 9",
@@ -641,17 +647,17 @@ async function main() {
       plate: "FLUR 015",
       trailer: "TR-03",
       sealNumber: "SL-1008",
-      reeferSetpoint: "ambient",
+      reeferSetpoint: "Ambient",
       currentStatus: "delayed",
       lastKnown: "Held at gate — paperwork review",
       driverUserId: "seed_user_samir",
-      eta: new Date("2026-09-25T23:30:00.000Z"),
+      eta: fromNow(-50),
     },
     {
       seedKey: "ld-produce",
       org: "bcdf",
       loadRef: "LO-5001",
-      commodity: "produce",
+      commodity: "Produce",
       origin: "Brampton cross-dock",
       destination: "North York fresh market",
       scheduledDock: "Door 1",
@@ -659,11 +665,11 @@ async function main() {
       plate: "PRDC 517",
       trailer: "TR-60",
       sealNumber: "SL-5001",
-      reeferSetpoint: "4 C",
+      reeferSetpoint: "4 °C",
       currentStatus: "loaded",
       lastKnown: "Brampton cross-dock",
       driverUserId: "seed_user_omar",
-      eta: new Date("2026-09-26T12:00:00.000Z"),
+      eta: fromNow(240),
     },
   ];
 
@@ -697,6 +703,39 @@ async function main() {
     });
   }
 
+  // Duty history that matches each driver's loads: Devon is driving LO-4419, Samir is loading, Omar is on duty.
+  // Written only when a driver has no log yet, so re-running the seed never rewrites a real log.
+  const dutySeed: { driverId: string; orgId: string; loadId: string; steps: ["on_duty" | "driving", number][] }[] = [
+    { driverId: "seed_user_devon", orgId: orgs.loc.id, loadId: "seed_ld-malt", steps: [["on_duty", -190], ["driving", -170]] },
+    { driverId: "seed_user_samir", orgId: orgs.loc.id, loadId: "seed_ld-poultry", steps: [["on_duty", -40]] },
+    { driverId: "seed_user_omar", orgId: orgs.bcdf.id, loadId: "seed_ld-produce", steps: [["on_duty", -25]] },
+  ];
+  for (const plan of dutySeed) {
+    if (await prisma.dutyEntry.count({ where: { driverId: plan.driverId } })) continue;
+    let prevHash = GENESIS_HASH;
+    for (const [index, [status, minutes]] of plan.steps.entries()) {
+      const entry = {
+        orgId: plan.orgId,
+        driverId: plan.driverId,
+        seq: index + 1,
+        kind: "status",
+        status,
+        at: fromNow(minutes),
+        lat: null,
+        lng: null,
+        loadId: plan.loadId,
+        note: null,
+        source: "driver",
+        refId: null,
+        actorId: plan.driverId,
+        prevHash,
+      };
+      const hash = dutyHash(entry);
+      await prisma.dutyEntry.create({ data: { ...entry, hash } });
+      prevHash = hash;
+    }
+  }
+
   const inventory: {
     seedKey: string;
     org: "loc" | "bcdf";
@@ -713,22 +752,22 @@ async function main() {
       seedKey: "inv-malt-a12",
       org: "loc",
       sku: "MALT-4419",
-      commodity: "malt",
+      commodity: "Malt",
       quantity: 24,
       unit: "pallets",
       location: "Cold room A · Bay 12",
-      status: "Stored",
+      status: "stored",
       receivedAt: new Date("2026-09-20T14:00:00.000Z"),
     },
     {
       seedKey: "inv-poultry-b3",
       org: "loc",
       sku: "PLY-2201",
-      commodity: "poultry",
+      commodity: "Frozen poultry",
       quantity: 18,
       unit: "pallets",
       location: "Freezer B · Bay 3",
-      status: "Stored",
+      status: "stored",
       receivedAt: new Date("2026-09-22T09:30:00.000Z"),
       notes: "Hold for QC release",
     },
@@ -736,22 +775,22 @@ async function main() {
       seedKey: "inv-dairy-c1",
       org: "loc",
       sku: "DRY-7730",
-      commodity: "dairy",
+      commodity: "Dairy",
       quantity: 40,
       unit: "pallets",
       location: "Cooler C · Bay 1",
-      status: "Stored",
+      status: "stored",
       receivedAt: new Date("2026-09-18T16:15:00.000Z"),
     },
     {
       seedKey: "inv-flour-d9",
       org: "loc",
       sku: "FLR-1008",
-      commodity: "flour",
+      commodity: "Flour",
       quantity: 12,
       unit: "pallets",
       location: "Dry dock · Bay 9",
-      status: "Staged Out",
+      status: "staged",
       receivedAt: new Date("2026-09-15T11:00:00.000Z"),
       notes: "Staged for LO-4388 pickup",
     },
@@ -759,11 +798,11 @@ async function main() {
       seedKey: "inv-produce-x1",
       org: "bcdf",
       sku: "PRD-5001",
-      commodity: "produce",
+      commodity: "Produce",
       quantity: 30,
       unit: "pallets",
       location: "Cross-dock · Lane 1",
-      status: "Stored",
+      status: "stored",
       receivedAt: new Date("2026-09-24T08:00:00.000Z"),
     },
   ];

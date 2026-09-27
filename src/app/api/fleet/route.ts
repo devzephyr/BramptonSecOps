@@ -1,3 +1,4 @@
+import { isLate } from "@/lib/normalize";
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
 import { MANAGERS } from "@/lib/policy";
@@ -36,9 +37,11 @@ export async function GET() {
         lat: true,
         lng: true,
         positionAt: true,
+        eta: true,
       },
     }),
   ]);
+  const withLate = loads.map(({ eta, ...load }) => ({ ...load, late: isLate(eta, load.currentStatus) }));
   const clocks = await Promise.all(drivers.map((driver) => driverHos(driver.id, now)));
 
   return json({
@@ -49,10 +52,10 @@ export async function GET() {
       title: driver.title,
       photoVersion: driver.photoHash ? driver.photoHash.slice(0, 12) : null,
       hos: clocks[index],
-      loads: loads
+      loads: withLate
         .filter((load) => load.driverUserId === driver.id || load.coDriverUserId === driver.id)
         .sort((a, b) => Number(a.currentStatus === "arrived") - Number(b.currentStatus === "arrived")),
     })),
-    atFacilities: loads.filter((load) => !load.driverUserId && load.facility),
+    atFacilities: withLate.filter((load) => !load.driverUserId && load.facility),
   });
 }

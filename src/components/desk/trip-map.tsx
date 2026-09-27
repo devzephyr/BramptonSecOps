@@ -2,7 +2,6 @@
 
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useEffect, useRef, useState } from "react";
-import { ROUTE } from "@/lib/tracking";
 
 export type MapTruck = {
   id: string;
@@ -33,32 +32,24 @@ function truckElement(label: string, live: boolean) {
   return el;
 }
 
-function pinElement(label: string) {
-  const el = document.createElement("div");
-  el.className = "rounded bg-zinc-900/85 px-1.5 py-0.5 text-[10px] font-medium text-white shadow";
-  el.textContent = label;
-  return el;
-}
+/** Greater Toronto Area, shown until there is a truck or trail to frame. */
+const GTA_CENTER: [number, number] = [-79.65, 43.68];
 
-/** Live trip map on Mapbox. Renders nothing when NEXT_PUBLIC_MAPBOX_TOKEN is unset. */
+/**
+ * Live map on Mapbox: real truck positions and the trail each one actually drove. It keeps every
+ * truck (and the trail) in view. Renders nothing when NEXT_PUBLIC_MAPBOX_TOKEN is unset.
+ */
 export function TripMap({
   trucks,
   trail,
   follow,
-  fitTrucks = false,
   className = "h-72",
-  depotLabel,
-  yardLabel,
 }: {
   trucks: MapTruck[];
-  /** Where the truck actually went, oldest first. Drawn solid over the dashed planned route. */
+  /** Where the truck actually went, oldest first. */
   trail?: { lat: number; lng: number }[];
   follow?: string | null;
-  /** Keep every truck in view: refit when trucks appear, disappear, or drive out of the frame. */
-  fitTrucks?: boolean;
   className?: string;
-  depotLabel: string;
-  yardLabel: string;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapInstance | null>(null);
@@ -80,11 +71,8 @@ export function TripMap({
           accessToken: TOKEN,
           container: container.current,
           style: STYLE_URL,
-          bounds: [
-            [Math.min(...ROUTE.map((p) => p.lng)), Math.min(...ROUTE.map((p) => p.lat))],
-            [Math.max(...ROUTE.map((p) => p.lng)), Math.max(...ROUTE.map((p) => p.lat))],
-          ],
-          fitBoundsOptions: { padding: 40 },
+          center: GTA_CENTER,
+          zoom: 9,
           cooperativeGestures: true,
           attributionControl: false,
         });
@@ -92,21 +80,6 @@ export function TripMap({
         instance.addControl(new mapbox.AttributionControl({ compact: true }));
         instance.on("error", () => setFailed((current) => current || !instance.isStyleLoaded()));
         instance.on("load", () => {
-          instance.addSource("route", {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              properties: {},
-              geometry: { type: "LineString", coordinates: ROUTE.map((p) => [p.lng, p.lat]) },
-            },
-          });
-          instance.addLayer({
-            id: "route",
-            type: "line",
-            source: "route",
-            layout: { "line-cap": "round", "line-join": "round" },
-            paint: { "line-color": "#2563eb", "line-width": 4, "line-opacity": 0.55, "line-dasharray": [2, 1.5] },
-          });
           instance.addSource("trail", {
             type: "geojson",
             data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [] } },
@@ -118,12 +91,6 @@ export function TripMap({
             layout: { "line-cap": "round", "line-join": "round" },
             paint: { "line-color": "#0d9488", "line-width": 4, "line-opacity": 0.9 },
           });
-          new mapbox.Marker({ element: pinElement(depotLabel), anchor: "bottom" })
-            .setLngLat([ROUTE[0].lng, ROUTE[0].lat])
-            .addTo(instance);
-          new mapbox.Marker({ element: pinElement(yardLabel), anchor: "bottom" })
-            .setLngLat([ROUTE[ROUTE.length - 1].lng, ROUTE[ROUTE.length - 1].lat])
-            .addTo(instance);
           setReady(true);
         });
         map.current = instance;
@@ -136,7 +103,7 @@ export function TripMap({
       map.current?.remove();
       map.current = null;
     };
-  }, [depotLabel, yardLabel]);
+  }, []);
 
   useEffect(() => {
     const instance = map.current;
@@ -165,24 +132,27 @@ export function TripMap({
     }
     const target = trucks.find((truck) => truck.id === follow);
     if (target) instance.easeTo({ center: [target.lng, target.lat], duration: 800 });
-    else if (fitTrucks && trucks.length > 0) {
-      const ids = trucks.map((truck) => truck.id).sort().join(",");
+    else {
+      // Frame every truck and the trail; refit when the set changes or something leaves the view.
+      const points = [...trucks, ...(trail ?? [])];
+      if (points.length === 0) return;
+      const ids = `${trucks.map((truck) => truck.id).sort().join(",")}|${trail?.length ?? 0}`;
       const view = instance.getBounds();
-      const outside = trucks.some((truck) => view && !view.contains([truck.lng, truck.lat]));
+      const outside = points.some((point) => view && !view.contains([point.lng, point.lat]));
       if (outside || ids !== fittedIds.current) {
         fittedIds.current = ids;
-        const lngs = [...trucks.map((truck) => truck.lng), ROUTE[0].lng, ROUTE[ROUTE.length - 1].lng];
-        const lats = [...trucks.map((truck) => truck.lat), ROUTE[0].lat, ROUTE[ROUTE.length - 1].lat];
+        const lngs = points.map((point) => point.lng);
+        const lats = points.map((point) => point.lat);
         instance.fitBounds(
           [
             [Math.min(...lngs), Math.min(...lats)],
             [Math.max(...lngs), Math.max(...lats)],
           ],
-          { padding: 60, maxZoom: 12, duration: 800 },
+          { padding: 60, maxZoom: 13, duration: 800 },
         );
       }
     }
-  }, [fitTrucks, follow, ready, trucks]);
+  }, [follow, ready, trail, trucks]);
 
   useEffect(() => {
     const source = map.current?.getSource("trail");

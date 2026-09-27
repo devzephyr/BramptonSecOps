@@ -13,7 +13,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   const scenario = await prisma.scenario.findFirst({ where: { id, orgId: user.orgId }, select: { createdById: true } });
   if (!scenario) return notFound();
   if (scenario.createdById !== user.id && !hasRole(user, MANAGERS)) {
-    return forbidden("Only the author or logistics can delete this scenario.");
+    return forbidden("Only the author or logistics can delete this template.");
   }
   await prisma.scenario.delete({ where: { id } });
   return json({ ok: true });

@@ -35,7 +35,7 @@ Org **Lake Ontario Cold Storage** (slug `lake-ontario-cold-storage`):
 
 Org **Brampton Cross-Dock Freight** (slug `brampton-cross-dock`): `noah` (logistics), `maya` (supplier), `omar` (driver). Sees none of org 1's data.
 
-Each account needs one passkey enrollment first. `npx prisma db seed` prints an enrollment code for every seeded account that has no passkey yet (24-hour expiry, one use each). Enter username + organization + that code, click **Create a passkey**, approve the browser prompt, then **Sign in with passkey**. (`DEMO_ENROLL=true` must be set.) Codes expired? Re-run the seed; it issues fresh ones and leaves enrolled accounts alone.
+Each account needs one passkey enrollment first. `npx prisma db seed` prints an enrollment code for every seeded account that has no passkey yet (24-hour expiry, one use each). Enter username + organization + that code, click **Create a passkey**, approve the browser prompt, then **Sign in with passkey**. Codes expired? Re-run the seed; it issues fresh ones and leaves enrolled accounts alone.
 
 Nobody can enroll on someone else's account. First-time setup needs an **enrollment code**: the org admin opens Team → Issue code next to the new member and reads it to them once (it never shows again). The member enters it in the Enrollment code field when creating their passkey. Codes expire after 24 hours and burn on use. Lost device? An admin revokes the old passkey from the same Team panel, issues a fresh code, and the member re-enrolls. If the org's only admin is the one locked out, anyone with database access can run `npx tsx --env-file=.env.local scripts/issue-code.ts <org-slug> <username> --revoke-passkeys`, which clears that account's passkeys and prints a fresh code.
 
@@ -45,7 +45,7 @@ Nobody can enroll on someone else's account. First-time setup needs an **enrollm
 2. As `amira`: logistics board now lists it → open → checklist → approve with passkey.
 3. As `colin`: second approval on the identical hash → partner receipt appears.
 4. Same case: Messages tab sends Signal-encrypted notes (both must open the case once first); Documents tab uploads hash-recorded files.
-5. As `devon`: **Start simulated trip**. As `elena`: watch the truck move on the map and the status steps advance. As `kai`: see the same yard traffic plus inventory on hand.
+5. As `devon` on a phone: **Share my location** on a load (the browser asks for location permission). As `elena`: watch the truck move on the map and the status steps advance. As `kai`: see the same yard traffic plus inventory on hand. To move a truck without driving, for a screen recording, run `npx tsx --env-file=.env.local scripts/drive-route.ts LO-4420` (it writes positions only; nothing in the app shows it).
 6. As `amira`: **New load** tab → fill it in and assign a driver. That driver sees it (and an alert) within 15 seconds. **New request** opens a bank change or other request from the logistics side, including the requested bank details; a different logistics approver approves it.
 7. As `amira`: **Fleet** tab shows every driver with photo, duty clock (driving since last break, against the 8-hour limit), their loads, and last position. **Journey** opens a load's GPS trail and chain of custody; **Duty log** opens the driver's log with its tamper check.
 8. As `samir`: set a duty status at the top of the driver screen, then **Drop at a warehouse or yard** on a load, typing the trailer seal. As `amira`, hand it to `devon` from **Journey → Hand off**; a seal that does not match the load's is flagged and alerts managers.
@@ -89,7 +89,6 @@ Use Chrome or Edge on desktop (Windows Hello) or Chrome on Android (Credential M
 | `RECEIPT_PRIVATE_KEY_B64` | Ed25519 private key (server only; never in the browser) |
 | `JEV_ENABLED` | Set `true` to classify sealed-note text; never auto-approves |
 | `S3_ENDPOINT`, `S3_REGION`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET` | Cloudflare R2 or MinIO for evidence uploads |
-| `DEMO_ENROLL` | Set `true` only in demo to allow passkey registration routes |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | Mapbox public token (`pk.…`) for the live trip map. Inlined at build time, so set it before `npm run build` (Vercel env or Docker build context). Without it the map hides and the rest of the tracking UI still works |
 
 Generate a receipt key once and keep it on the server (compose mounts it under `/data` in self-hosted stacks).
@@ -157,7 +156,7 @@ It fails if forbidden substrings (chat-app names, legacy auth wording, overclaim
 | `npx prisma db push` | Sync schema to the database (dev pattern; migration history has drift) |
 | `npx prisma db seed` | Seed two orgs, users, contacts, cases, loads |
 | `npx tsx scripts/signal-roundtrip.ts` | Signal crypto proof: Alice↔Bob encrypt, reply, matching safety numbers |
-| `npx tsx scripts/logic-check.ts` | Asserts evidence-key shape, enrollment-code normalization, payload patch sanitizing, simulated route |
+| `npx tsx scripts/logic-check.ts` | Asserts evidence-key shape, enrollment-code normalization, payload patch sanitizing, route replay, hours-of-service rule, warning-sign translation |
 | `node scripts/ban-list.mjs` | Copy gate: fails on chat-app names, legacy auth wording, overclaims |
 
 ## Architecture notes for contributors
@@ -169,5 +168,5 @@ It fails if forbidden substrings (chat-app names, legacy auth wording, overclaim
 - **Messaging crypto.** `libsignal-protocol-typescript` (GPL-3.0, hackathon-only license posture). Server stores public keys and ciphertext envelopes; private keys stay in browser localStorage. Pairwise Double Ratchet fan-out per case thread, no Sender Keys.
 - **Cases.** The preview store is a view over `/api/verify-cases`, not a local mock. Submit/checklist/approve all round-trip the server.
 - **Loads and handoffs.** Logistics edits loads and hands them to another driver (optional handoff location) from the load's Details dialog; every change and status tap lands in the load's history, and both drivers get an alert. Dock, destination, and seal lock once a load leaves "scheduled"; changing them mid-route goes through an approved request. Warehouse staff see yard traffic (pickup/dropoff) and inventory lots on hand.
-- **Tracking.** Positions on `Load` (`lat`/`lng`/`positionAt`). The driver sim follows a fixed depot→yard road route (Hwy 403/410, from Mapbox Directions, stored in `src/lib/tracking.ts`), posts Rolling, 15 minutes away, and Arrived on the way, and is labeled simulated everywhere. Maps render with Mapbox GL (`src/components/desk/trip-map.tsx`).
+- **Tracking.** Positions on `Load` (`lat`/`lng`/`positionAt`) come from the driver's phone (browser geolocation, sent every 5 s while **Share my location** is on); a trail point is kept every 10 s in `PositionPing`. Maps render with Mapbox GL (`src/components/desk/trip-map.tsx`) and show only real positions and trails. `scripts/drive-route.ts` replays a stored GTA route (`scripts/routes.ts`) for recordings.
 - **Copy gate.** `scripts/ban-list.mjs` runs on the repo (minus `.agents/`). Keep UI copy free of chat-app names, legacy auth wording, and overclaims.

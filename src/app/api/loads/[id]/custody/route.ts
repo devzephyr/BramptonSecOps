@@ -94,9 +94,16 @@ export async function POST(request: Request, { params }: Params) {
     const updated = await tx.load.update({
       where: { id },
       // A handoff ends the team: the co-driver seat is cleared and can be re-added from Edit.
+      // Into a facility the load is parked there; picked up from one, it is loaded on the new truck.
+      // Driver to driver keeps whatever the load was doing.
       data: toDriver
-        ? { driverUserId: toDriver.id, coDriverUserId: null, facility: null }
-        : { driverUserId: null, coDriverUserId: null, facility: toFacility },
+        ? {
+            driverUserId: toDriver.id,
+            coDriverUserId: null,
+            facility: null,
+            ...(load.facility ? { currentStatus: "loaded", lastKnown: load.facility } : {}),
+          }
+        : { driverUserId: null, coDriverUserId: null, facility: toFacility, currentStatus: "at_facility", lastKnown: toFacility },
     });
 
     const parts = [`${fromLabel} → ${toLabel}`];

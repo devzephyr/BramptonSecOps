@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LoadStatus } from "@/components/desk/load-status";
+import { PositionLine } from "@/components/desk/position-line";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,8 +12,8 @@ import { Select, SelectItem, SelectPopup, SelectTrigger, SelectValue } from "@/c
 import { toastManager } from "@/components/ui/toast";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DeskApiError, uploadEvidence } from "@/lib/desk-client";
-import { useI18n, loadStatusTitle } from "@/lib/i18n";
-import { isLive, updatedAgo } from "@/lib/tracking";
+import { useI18n } from "@/lib/i18n";
+import {isLive} from "@/lib/tracking";
 import { useDesk } from "@/preview/store";
 import { TripMap } from "@/components/desk/trip-map";
 import { TripSteps } from "@/components/desk/trip-steps";
@@ -62,9 +64,6 @@ export function ReceiverDesk() {
         </CardHeader>
         <CardPanel className="flex flex-col gap-3">
           <TripMap
-            fitTrucks
-            depotLabel={t.mapDepot}
-            yardLabel={t.mapYard}
             trucks={[...live, ...stale].map((load) => ({
               id: load.id,
               label: load.loadRef,
@@ -84,10 +83,7 @@ export function ReceiverDesk() {
                   <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                 </span>
                 <span className="text-sm font-medium">{load.loadRef}</span>
-                <Badge variant="outline">{t.simulated}</Badge>
-                <span className="text-xs text-muted-foreground">
-                  {load.lat?.toFixed(4)}, {load.lng?.toFixed(4)} · {updatedAgo(load.positionAt)}
-                </span>
+                <PositionLine lat={load.lat} lng={load.lng} at={load.positionAt} />
               </div>
               <TripSteps status={load.status} labels={stepLabels} />
             </div>
@@ -98,9 +94,7 @@ export function ReceiverDesk() {
                 <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40" />
                 <span className="text-sm font-medium">{load.loadRef}</span>
                 <Badge variant="secondary">{t.lastKnown}</Badge>
-                <span className="text-xs text-muted-foreground">
-                  {load.lat?.toFixed(4)}, {load.lng?.toFixed(4)} · {updatedAgo(load.positionAt)}
-                </span>
+                <PositionLine lat={load.lat} lng={load.lng} at={load.positionAt} />
               </div>
               <TripSteps status={load.status} labels={stepLabels} />
             </div>
@@ -131,9 +125,7 @@ export function ReceiverDesk() {
                   <TableCell>{load.eta}</TableCell>
                   <TableCell>{load.dock}</TableCell>
                   <TableCell>
-                    <Badge variant={load.status === "fifteen_min" ? "warning" : "secondary"}>
-                      {loadStatusTitle(load.status, t)}
-                    </Badge>
+                    <LoadStatus status={load.status} facility={load.facility} late={load.late} />
                   </TableCell>
                   <TableCell>
                     <Button size="sm" variant="outline" onClick={() => setOpenId(load.id)}>

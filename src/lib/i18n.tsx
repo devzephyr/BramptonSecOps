@@ -19,7 +19,6 @@ const STORAGE_KEY = "sc_lang";
 export type Messages = {
   brand: string;
   place: string;
-  demoOrg: string;
   sealedNote: string;
   flags: string;
   onFile: string;
@@ -171,7 +170,6 @@ export type Messages = {
   liveLocationHint: string;
   noLive: string;
   lastKnown: string;
-  simulated: string;
   startTrip: string;
   stopTrip: string;
   noLoads: string;
@@ -279,8 +277,6 @@ export type Messages = {
   dismiss: string;
   statusSent: string;
   saveFailed: string;
-  mapDepot: string;
-  mapYard: string;
   nextStep: string;
   reportDelay: string;
   delivered: string;
@@ -322,8 +318,6 @@ export type Messages = {
   eventHandoff: string;
   eventUpdated: string;
   fleet: string;
-  startFleetSim: string;
-  stopFleetSim: string;
   fleetHint: string;
   dutyStatus: string;
   dutyOff: string;
@@ -350,7 +344,6 @@ export type Messages = {
   sourceGps: string;
   sourceStatus: string;
   sourceManager: string;
-  sourceSim: string;
   dutyChanged: string;
   today: string;
   lastWeek: string;
@@ -395,12 +388,40 @@ export type Messages = {
   verifyPeopleHint: string;
   flagText: Record<string, string>;
   jevText: Record<string, string>;
+  updated: string;
+  locationDenied: string;
+  locationUnsupported: string;
+  locationUnavailable: string;
+  agoJustNow: string;
+  agoSeconds: string;
+  agoMinutes: string;
+  agoHours: string;
+  agoDays: string;
+  openInMaps: string;
+  noPosition: string;
+  showOnMap: string;
+  noTemplates: string;
+  notUsed: string;
+  received: string;
+  approvalsColumn: string;
+  approvalsOf: string;
+  yourRequests: string;
+  yourRequestsHint: string;
+  noRequestsYet: string;
+  loggedRequest: string;
+  loggedRequestHint: string;
+  late: string;
+  atWarehouse: string;
+  lotStored: string;
+  lotStaged: string;
+  lotOnHold: string;
+  alertOne: string;
+  receiptAuthentic: string;
 };
 
 const en: Messages = {
   brand: "SupplyChek",
   place: "Verified operations for food and cold-chain logistics",
-  demoOrg: "Demo organization: Lake Ontario Cold Storage",
   sealedNote: "Log a change request",
   flags: "Warning signs",
   onFile: "On file",
@@ -417,7 +438,7 @@ const en: Messages = {
   notGov: "Issued by SupplyChek. Not a government certification.",
   jevNote: "Suggested automatically to help you review. They don't approve anything.",
   empty: "Nothing here yet.",
-  dual: "Two different people must each approve with their passkey.",
+  dual: "High-risk changes need two different approvers. Each approves with their own passkey.",
   signIn: "Sign in",
   firstTime: "First time here",
   firstTimeHint: "Use the enrollment code from your admin to create a passkey on this device.",
@@ -430,8 +451,8 @@ const en: Messages = {
   receiptChange: "Bank change · Maple Malt",
   receiptOnFile: "Account on file",
   receiptRequested: "Requested",
-  receiptApprovals: "Passkey approvals",
-  receiptSignature: "Signature",
+  receiptApprovals: "Approvals",
+  receiptSignature: "Receipt",
   receiptStamp: "Verified",
   receiptCaption: "Every bank, dock and carrier change is checked against the number on file, then signed by two people before anyone acts on it.",
   signOut: "Sign out",
@@ -450,7 +471,7 @@ const en: Messages = {
   receiver: "Receiver",
   admin: "Admin",
   directory: "Directory",
-  scenarios: "Scenarios",
+  scenarios: "Templates",
   sendToManager: "Send to the logistics desk",
   reviewBytes: "Review the request",
   passkeyStopped: "The passkey request was cancelled or did not complete.",
@@ -464,15 +485,15 @@ const en: Messages = {
   incoming: "Incoming",
   pod: "Proof of delivery",
   partnerCheck: "Partner check",
-  dualControl: "Dual control",
+  dualControl: "Two approvers",
   print: "Print",
   copy: "Copy",
   copied: "Copied",
   skipToContent: "Skip to content",
   statusDraft: "Draft",
-  statusFlagged: "Flagged",
-  statusOob: "Waiting for call",
-  statusPending: "Ready to review",
+  statusFlagged: "Needs a call",
+  statusOob: "Call in progress",
+  statusPending: "Ready to approve",
   statusSecond: "Needs second approval",
   statusApproved: "Approved",
   statusRejected: "Rejected",
@@ -481,8 +502,8 @@ const en: Messages = {
   alerts: "alerts",
   noAlerts: "No alerts yet.",
   holdCall: "Complete each step and name who you spoke with to continue.",
-  notApproval: "Uploading a photo does not approve a change.",
-  signedInAs: "Signed in as",
+  notApproval: "Photos are proof of delivery. They don't approve any change.",
+  signedInAs: "Signed in:",
   signInWithPasskey: "Sign in with passkey",
   username: "Username",
   usernamePlaceholder: "First name, lower case",
@@ -515,7 +536,7 @@ const en: Messages = {
   accountHint: "Enter your own username and organization. Accounts are not listed here.",
   identityRequired: "Enter your username and organization first.",
   requests: "Requests",
-  who: "Who",
+  who: "Partner",
   type: "Type",
   status: "Status",
   hash: "Reference",
@@ -528,16 +549,15 @@ const en: Messages = {
   city: "City",
   domain: "Domain",
   numberOnFile: "Number on file",
-  savedScenarios: "Saved by your team",
-  scenarioName: "Scenario name",
-  saveScenario: "Save draft as scenario",
-  deleteScenario: "Delete scenario",
+  savedScenarios: "Shared with your team. Pick one to fill the form.",
+  scenarioName: "Template name",
+  saveScenario: "Save as template",
+  deleteScenario: "Delete template",
   sealedNoteHint: "Describe the change in your own words. Don't paste the email. Once sent, the request is locked; any change restarts approval.",
-  loadsHint: "Approved dock and seal stay on the board until an approved request changes them.",
-  incomingHint:
-    "You see the dock on the board. A destination change does not move it until it is fully approved.",
+  loadsHint: "Docks and seals shown here only change through an approved change request.",
+  incomingHint: "Loads on their way to you. A dock only changes after a change request is fully approved.",
   yardTraffic: "Yard traffic",
-  yardTrafficHint: "Drivers arriving for pickup or dropoff. Status comes from the driver — this is not an approval.",
+  yardTrafficHint: "Drivers arriving to pick up or drop off. Statuses are reported by the driver.",
   inventory: "Inventory on hand",
   inventoryHint: "Lots currently stored in this warehouse.",
   sku: "SKU",
@@ -550,11 +570,10 @@ const en: Messages = {
   podSaved: "Photo saved.",
   pickLoad: "Pick a load",
   liveLocation: "Live location",
-  liveLocationHint: "Driver positions update every few seconds while a trip runs.",
-  noLive: "No driver is sharing a live position right now.",
+  liveLocationHint: "Loads whose drivers are sharing their location right now.",
+  noLive: "No driver is sharing their location right now.",
   lastKnown: "Last known",
-  simulated: "simulated",
-  startTrip: "Start simulated trip",
+  startTrip: "Share my location",
   stopTrip: "Stop sharing",
   noLoads: "No loads assigned",
   noLoadsHint: "Dispatch assigns loads to your username. Nothing is assigned yet.",
@@ -606,7 +625,7 @@ const en: Messages = {
   date: "Date",
   file: "File",
   linkedTo: "Linked to",
-  toastTrip: "Simulated trip started. Your position is shared with the receiver.",
+  toastTrip: "Sharing your location for this load.",
   toastTripStopped: "Stopped sharing position.",
   directoryHint: "Numbers already on file. Do not use a number that arrives inside a request.",
   emptyManager: "New change requests from the supplier desk show up here.",
@@ -633,7 +652,7 @@ const en: Messages = {
   noCounterparty: "No partner matches.",
   onFileCount: "on file",
   pickCounterparty: "Pick a partner",
-  noteInOwnWords: "Describe the change in your own words. Do not paste email or links.",
+  noteInOwnWords: "What did they ask for, and how did they contact you?",
   sealPending: "not sent yet",
   sealed: "sent and locked",
   sealHint: "Once sent, the request is locked. Logistics checks it before anyone approves.",
@@ -671,18 +690,16 @@ const en: Messages = {
   dismiss: "Dismiss",
   statusSent: "Status sent",
   saveFailed: "Could not save",
-  mapDepot: "Depot",
-  mapYard: "Yard",
   nextStep: "Next step",
   reportDelay: "Report a delay",
   delivered: "Delivered",
   deliveredBody: "Hand the paperwork to receiving. Nothing else is needed from you for this load.",
   trailerPlate: "Trailer · plate",
-  sharingPosition: "Sharing position",
+  sharingPosition: "Sharing",
   yourLoads: "Your loads",
   showAllLoads: "Show all",
   correctStatus: "Correct the status",
-  tripHint: "The simulated trip follows the depot-to-yard route and sends In transit, 15 minutes away, and Arrived for you.",
+  tripHint: "Uses this phone's GPS. Keep this page open while you drive so logistics and the receiver can see where the load is.",
   newRequest: "New request",
   newRequestHint: "Log a request a partner made, in your own words. A different logistics approver must approve it.",
   newLoad: "New load",
@@ -714,9 +731,7 @@ const en: Messages = {
   eventHandoff: "Handoff",
   eventUpdated: "Edited",
   fleet: "Fleet",
-  startFleetSim: "Simulate fleet",
-  stopFleetSim: "Stop simulation",
-  fleetHint: "Every driver, their duty clock, and where their loads are. Refreshes every 5 seconds.",
+  fleetHint: "Every driver, their driving time, and where their loads are. Updates automatically.",
   dutyStatus: "Duty status",
   dutyOff: "Off duty",
   dutySleeper: "Sleeper berth",
@@ -742,7 +757,6 @@ const en: Messages = {
   sourceGps: "detected by GPS",
   sourceStatus: "from a trip step",
   sourceManager: "logistics note",
-  sourceSim: "simulated trip",
   dutyChanged: "Duty status updated",
   today: "Today",
   lastWeek: "Last 7 days",
@@ -808,12 +822,40 @@ const en: Messages = {
     "route-change": "Route change",
     "access-request": "Access request",
   },
+  updated: "Updated",
+  locationDenied: "Location is blocked. Allow location for this site in your phone's browser settings, then try again.",
+  locationUnsupported: "This browser can't share location. Open SupplyChek in Chrome or Safari on your phone.",
+  locationUnavailable: "Can't get a GPS fix right now. Sharing resumes when your phone finds a signal.",
+  agoJustNow: "just now",
+  agoSeconds: "{n}s ago",
+  agoMinutes: "{n} min ago",
+  agoHours: "{n} h ago",
+  agoDays: "{n} d ago",
+  openInMaps: "Open in Maps",
+  noPosition: "No location shared yet",
+  showOnMap: "Show on map",
+  noTemplates: "No templates yet. Fill in a request below, name it, and save it to reuse later.",
+  notUsed: "not used in this role",
+  received: "Received",
+  approvalsColumn: "Approvals",
+  approvalsOf: "{done} of {needed}",
+  yourRequests: "Your requests",
+  yourRequestsHint: "Everything you've sent to logistics, and where each one stands.",
+  noRequestsYet: "You haven't sent any requests yet.",
+  loggedRequest: "The request as logged",
+  loggedRequestHint: "What the partner asked for, in the words of the person who logged it.",
+  late: "Late",
+  atWarehouse: "At a warehouse",
+  lotStored: "Stored",
+  lotStaged: "Staged for pickup",
+  lotOnHold: "On hold",
+  alertOne: "alert",
+  receiptAuthentic: "Authentic",
 };
 
 const fr: Messages = {
   brand: "SupplyChek",
   place: "Opérations vérifiées pour la logistique alimentaire et la chaîne du froid",
-  demoOrg: "Organisation de démonstration : Lake Ontario Cold Storage",
   sealedNote: "Consigner une demande de changement",
   flags: "Signaux d'alerte",
   onFile: "Au dossier",
@@ -830,7 +872,7 @@ const fr: Messages = {
   notGov: "Émis par SupplyChek. Il ne s'agit pas d'une certification gouvernementale.",
   jevNote: "Suggérées automatiquement pour faciliter la revue. Elles n'approuvent rien.",
   empty: "Rien ici pour le moment.",
-  dual: "Deux personnes différentes doivent chacune approuver avec leur clé d'accès.",
+  dual: "Les changements à risque exigent deux approbateurs différents, chacun avec sa propre clé d'accès.",
   signIn: "Connexion",
   firstTime: "Première connexion",
   firstTimeHint: "Utilisez le code d’inscription de votre admin pour créer une clé d’accès sur cet appareil.",
@@ -843,8 +885,8 @@ const fr: Messages = {
   receiptChange: "Changement bancaire · Maple Malt",
   receiptOnFile: "Compte au dossier",
   receiptRequested: "Demandé",
-  receiptApprovals: "Approbations par clé",
-  receiptSignature: "Signature",
+  receiptApprovals: "Approbations",
+  receiptSignature: "Reçu",
   receiptStamp: "Vérifié",
   receiptCaption: "Chaque changement bancaire, de quai ou de transporteur est vérifié auprès du numéro au dossier, puis signé par deux personnes avant toute action.",
   signOut: "Déconnexion",
@@ -863,7 +905,7 @@ const fr: Messages = {
   receiver: "Réception",
   admin: "Administration",
   directory: "Répertoire",
-  scenarios: "Scénarios",
+  scenarios: "Modèles",
   sendToManager: "Envoyer au bureau de la logistique",
   reviewBytes: "Examiner la demande",
   passkeyStopped: "La demande de clé d’accès a été annulée ou n’a pas abouti.",
@@ -877,15 +919,15 @@ const fr: Messages = {
   incoming: "En arrivée",
   pod: "Preuve de livraison",
   partnerCheck: "Vérification partenaire",
-  dualControl: "Double contrôle",
+  dualControl: "Deux approbateurs",
   print: "Imprimer",
   copy: "Copier",
   copied: "Copié",
   skipToContent: "Aller au contenu",
   statusDraft: "Brouillon",
-  statusFlagged: "Signalé",
-  statusOob: "Appel à faire",
-  statusPending: "Prêt à examiner",
+  statusFlagged: "Appel requis",
+  statusOob: "Appel en cours",
+  statusPending: "Prête à approuver",
   statusSecond: "Deuxième approbation requise",
   statusApproved: "Approuvé",
   statusRejected: "Refusé",
@@ -894,8 +936,8 @@ const fr: Messages = {
   alerts: "alertes",
   noAlerts: "Aucune alerte pour l’instant.",
   holdCall: "Terminez chaque étape et indiquez à qui vous avez parlé pour continuer.",
-  notApproval: "Envoyer une photo n’approuve pas un changement.",
-  signedInAs: "Connecté en tant que",
+  notApproval: "Les photos servent de preuve de livraison. Elles n'approuvent aucun changement.",
+  signedInAs: "Connecté :",
   signInWithPasskey: "Connexion avec clé d’accès",
   username: "Nom d’utilisateur",
   usernamePlaceholder: "Prénom, en minuscules",
@@ -928,7 +970,7 @@ const fr: Messages = {
   accountHint: "Saisissez votre nom d’utilisateur et votre organisation. Aucun compte n’est listé ici.",
   identityRequired: "Saisissez d’abord votre nom d’utilisateur et votre organisation.",
   requests: "Demandes",
-  who: "Qui",
+  who: "Partenaire",
   type: "Type",
   status: "État",
   hash: "Référence",
@@ -941,18 +983,15 @@ const fr: Messages = {
   city: "Ville",
   domain: "Domaine",
   numberOnFile: "Numéro au dossier",
-  savedScenarios: "Enregistrés par votre équipe",
-  scenarioName: "Nom du scénario",
-  saveScenario: "Enregistrer le brouillon comme scénario",
-  deleteScenario: "Supprimer le scénario",
+  savedScenarios: "Partagés avec votre équipe. Choisissez-en un pour remplir le formulaire.",
+  scenarioName: "Nom du modèle",
+  saveScenario: "Enregistrer comme modèle",
+  deleteScenario: "Supprimer le modèle",
   sealedNoteHint: "Décrivez le changement dans vos mots. Ne collez pas le courriel. Une fois envoyée, la demande est verrouillée; toute modification relance l'approbation.",
-  loadsHint:
-    "Quai et sceau approuvés restent au tableau jusqu’à ce qu’une demande approuvée les change.",
-  incomingHint:
-    "Vous voyez le quai au tableau. Un changement de destination ne le déplace pas tant que tout n’est pas approuvé.",
+  loadsHint: "Les quais et scellés affichés ici ne changent que par une demande de changement approuvée.",
+  incomingHint: "Les chargements en route vers vous. Un quai ne change qu'après l'approbation complète d'une demande de changement.",
   yardTraffic: "Circulation à la cour",
-  yardTrafficHint:
-    "Chauffeurs qui arrivent pour un ramassage ou une livraison. L’état vient du chauffeur — ce n’est pas une approbation.",
+  yardTrafficHint: "Les chauffeurs qui arrivent pour un ramassage ou une livraison. Les statuts sont indiqués par le chauffeur.",
   inventory: "Inventaire sur place",
   inventoryHint: "Lots actuellement entreposés dans cet entrepôt.",
   sku: "UGS",
@@ -965,11 +1004,10 @@ const fr: Messages = {
   podSaved: "Photo enregistrée.",
   pickLoad: "Choisir un chargement",
   liveLocation: "Position en direct",
-  liveLocationHint: "Les positions du conducteur s’actualisent toutes les quelques secondes pendant un trajet.",
-  noLive: "Aucun conducteur ne partage sa position pour l’instant.",
+  liveLocationHint: "Les chargements dont le chauffeur partage sa position en ce moment.",
+  noLive: "Aucun chauffeur ne partage sa position en ce moment.",
   lastKnown: "Dernière position",
-  simulated: "simulé",
-  startTrip: "Démarrer un trajet simulé",
+  startTrip: "Partager ma position",
   stopTrip: "Arrêter le partage",
   noLoads: "Aucun chargement assigné",
   noLoadsHint: "La répartition assigne les chargements à votre nom d’utilisateur. Rien n’est assigné pour l’instant.",
@@ -1021,7 +1059,7 @@ const fr: Messages = {
   date: "Date",
   file: "Fichier",
   linkedTo: "Lié à",
-  toastTrip: "Trajet simulé démarré. Votre position est partagée avec le réceptionnaire.",
+  toastTrip: "Votre position est partagée pour ce chargement.",
   toastTripStopped: "Partage de position arrêté.",
   emptyManager: "Les nouvelles demandes de changement du poste fournisseur s'affichent ici.",
   directoryHint:
@@ -1049,7 +1087,7 @@ const fr: Messages = {
   noCounterparty: "Aucun partenaire ne correspond.",
   onFileCount: "au dossier",
   pickCounterparty: "Choisir un partenaire",
-  noteInOwnWords: "Décrivez le changement dans vos mots. Ne collez ni courriel ni lien.",
+  noteInOwnWords: "Qu'ont-ils demandé, et comment vous ont-ils joint?",
   sealPending: "pas encore envoyée",
   sealed: "envoyée et verrouillée",
   sealHint: "Une fois envoyée, la demande est verrouillée. La logistique la vérifie avant toute approbation.",
@@ -1087,18 +1125,16 @@ const fr: Messages = {
   dismiss: "Fermer",
   statusSent: "Statut envoyé",
   saveFailed: "Enregistrement impossible",
-  mapDepot: "Entrepôt",
-  mapYard: "Cour",
   nextStep: "Prochaine étape",
   reportDelay: "Signaler un retard",
   delivered: "Livré",
   deliveredBody: "Remettez les documents à la réception. Rien d’autre n’est requis pour ce chargement.",
   trailerPlate: "Remorque · plaque",
-  sharingPosition: "Position partagée",
+  sharingPosition: "Partagée",
   yourLoads: "Vos chargements",
   showAllLoads: "Tout afficher",
   correctStatus: "Corriger le statut",
-  tripHint: "Le trajet simulé suit la route entrepôt-cour et envoie les statuts à votre place.",
+  tripHint: "Utilise le GPS de ce téléphone. Gardez cette page ouverte pendant le trajet pour que la logistique et le réceptionnaire voient où se trouve le chargement.",
   newRequest: "Nouvelle demande",
   newRequestHint: "Consignez dans vos mots une demande faite par un partenaire. Un autre approbateur logistique doit l'approuver.",
   newLoad: "Nouveau chargement",
@@ -1120,7 +1156,7 @@ const fr: Messages = {
   handoffNoteHint: "ex. relais routier, Napanee (Ont.)",
   history: "Historique",
   noHistory: "Aucun changement pour l’instant.",
-  lockedMoving: "Le quai, la destination et le sceau sont verrouillés pendant le trajet. Ouvrez une demande pour les modifier.",
+  lockedMoving: "Le quai, la destination et le scellé sont verrouillés pendant le trajet. Ouvrez une demande pour les modifier.",
   loadUpdated: "Chargement mis à jour",
   jobTitle: "Poste",
   jobTitleHint: "Choisissez une suggestion ou saisissez la vôtre.",
@@ -1130,9 +1166,7 @@ const fr: Messages = {
   eventHandoff: "Transfert",
   eventUpdated: "Modifié",
   fleet: "Flotte",
-  startFleetSim: "Simuler la flotte",
-  stopFleetSim: "Arrêter la simulation",
-  fleetHint: "Chaque chauffeur, son temps de conduite et la position de ses chargements. Actualisé toutes les 5 secondes.",
+  fleetHint: "Chaque chauffeur, son temps de conduite et la position de ses chargements. Mise à jour automatique.",
   dutyStatus: "Statut de service",
   dutyOff: "Hors service",
   dutySleeper: "Couchette",
@@ -1158,7 +1192,6 @@ const fr: Messages = {
   sourceGps: "détecté par GPS",
   sourceStatus: "depuis une étape du trajet",
   sourceManager: "note de la logistique",
-  sourceSim: "trajet simulé",
   dutyChanged: "Statut de service mis à jour",
   today: "Aujourd'hui",
   lastWeek: "7 derniers jours",
@@ -1224,6 +1257,35 @@ const fr: Messages = {
     "route-change": "Changement d'itinéraire",
     "access-request": "Demande d'accès",
   },
+  updated: "Mise à jour",
+  locationDenied: "La localisation est bloquée. Autorisez-la pour ce site dans les réglages du navigateur, puis réessayez.",
+  locationUnsupported: "Ce navigateur ne peut pas partager la position. Ouvrez SupplyChek dans Chrome ou Safari sur votre téléphone.",
+  locationUnavailable: "Impossible d'obtenir une position GPS. Le partage reprend dès que le téléphone capte un signal.",
+  agoJustNow: "à l'instant",
+  agoSeconds: "il y a {n} s",
+  agoMinutes: "il y a {n} min",
+  agoHours: "il y a {n} h",
+  agoDays: "il y a {n} j",
+  openInMaps: "Ouvrir dans Maps",
+  noPosition: "Aucune position partagée",
+  showOnMap: "Voir sur la carte",
+  noTemplates: "Aucun modèle pour l'instant. Remplissez une demande, nommez-la et enregistrez-la pour la réutiliser.",
+  notUsed: "non utilisée pour ce rôle",
+  received: "Reçue",
+  approvalsColumn: "Approbations",
+  approvalsOf: "{done} sur {needed}",
+  yourRequests: "Vos demandes",
+  yourRequestsHint: "Tout ce que vous avez envoyé à la logistique, et où en est chaque demande.",
+  noRequestsYet: "Vous n'avez encore envoyé aucune demande.",
+  loggedRequest: "La demande telle que consignée",
+  loggedRequestHint: "Ce que le partenaire a demandé, dans les mots de la personne qui l'a consignée.",
+  late: "En retard",
+  atWarehouse: "À un entrepôt",
+  lotStored: "Entreposé",
+  lotStaged: "Prêt pour le ramassage",
+  lotOnHold: "En attente",
+  alertOne: "alerte",
+  receiptAuthentic: "Authentique",
 };
 
 const MAP = { en, fr } as const;
@@ -1347,6 +1409,8 @@ export function loadStatusTitle(status: string, t: Messages): string {
       return t.arrived;
     case "delayed":
       return t.delayed;
+    case "at_facility":
+      return t.atWarehouse;
     default:
       return status;
   }
@@ -1378,4 +1442,27 @@ export function flagTitle(flag: FlagView, t: Messages): string {
 
 export function jevTitle(label: string, t: Messages): string {
   return t.jevText[label] ?? label;
+}
+
+/** "2 min ago" / "il y a 2 min". */
+export function timeAgo(iso: string | null | undefined, t: Messages, now = Date.now()): string {
+  if (!iso) return "—";
+  const seconds = Math.max(0, Math.round((now - new Date(iso).getTime()) / 1000));
+  const say = (template: string, n: number) => template.replace("{n}", String(n));
+  if (seconds < 5) return t.agoJustNow;
+  if (seconds < 60) return say(t.agoSeconds, seconds);
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return say(t.agoMinutes, minutes);
+  const hours = Math.floor(minutes / 60);
+  return hours < 24 ? say(t.agoHours, hours) : say(t.agoDays, Math.floor(hours / 24));
+}
+
+/** Inventory lot status in plain words. Unknown values are shown in sentence case. */
+export function lotStatusTitle(status: string, t: Messages): string {
+  const key = status.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (key === "stored") return t.lotStored;
+  if (key === "staged_out" || key === "staged") return t.lotStaged;
+  if (key === "on_hold" || key === "hold") return t.lotOnHold;
+  const text = status.trim().toLowerCase();
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }

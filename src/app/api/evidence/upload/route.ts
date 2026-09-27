@@ -8,7 +8,7 @@ import {
   storeEvidence,
 } from "@/lib/evidence-storage";
 import { badRequest, forbidden, json, unauthorized } from "@/lib/http";
-import { CASE_STAFF, CURRENCIES, isDocType, parseAmountCents } from "@/lib/policy";
+import { CASE_STAFF, CURRENCIES, DRIVER_DOC_TYPES, FINANCIAL_DOC_TYPES, isDocType, parseAmountCents } from "@/lib/policy";
 
 const TOO_LARGE = "File is larger than 4 MB.";
 
@@ -30,8 +30,14 @@ export async function POST(request: Request) {
   const docNumber = params.get("docNumber")?.trim().slice(0, 80) || null;
   const otherType = docType === "other" ? params.get("otherType")?.trim().slice(0, 60) || null : null;
   if (docType === "other" && !otherType) return badRequest("Say what kind of document this is.");
+  if (user.role === "driver" && !DRIVER_DOC_TYPES.includes(docType)) {
+    return forbidden("Drivers file trip paperwork: bills of lading, proof of delivery, receipts, packing lists, customs forms.");
+  }
   const amountCents = parseAmountCents(params.get("amount"));
   if (amountCents === undefined) return badRequest("Amount must be a number like 1250.00.");
+  if (amountCents !== null && !FINANCIAL_DOC_TYPES.includes(docType)) {
+    return badRequest("Only invoices, receipts and rate confirmations carry an amount.");
+  }
   const currency = params.get("currency") ?? "CAD";
   if (!(CURRENCIES as readonly string[]).includes(currency)) return badRequest("Currency must be CAD or USD.");
 
