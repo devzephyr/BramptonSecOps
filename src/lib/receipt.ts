@@ -1,6 +1,6 @@
+import { createPrivateKey, createPublicKey } from "node:crypto";
 import {
   calculateJwkThumbprint,
-  exportJWK,
   importPKCS8,
   SignJWT,
   type JWK,
@@ -25,13 +25,10 @@ export async function receiptKey(): Promise<ReceiptKey> {
   }
   const pkcs8 = Buffer.from(b64, "base64").toString("utf8");
   const privateKey = await importPKCS8(pkcs8, "EdDSA");
-  const exported = await exportJWK(privateKey);
-  delete exported.d;
-  const publicJwk: JWK = {
-    ...exported,
-    alg: "EdDSA",
-    use: "sig",
-  };
+  // jose 6 imports keys as non-extractable, so exportJWK(privateKey) throws. Derive the public half
+  // with node:crypto instead; the private key never needs to leave its CryptoKey.
+  const { kty, crv, x } = createPublicKey(createPrivateKey(pkcs8)).export({ format: "jwk" });
+  const publicJwk: JWK = { kty, crv, x, alg: "EdDSA", use: "sig" };
   const kid = await calculateJwkThumbprint(publicJwk);
   publicJwk.kid = kid;
   cached = { privateKey, publicJwk, kid };

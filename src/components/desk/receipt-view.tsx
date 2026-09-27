@@ -1,5 +1,6 @@
 "use client";
 
+import { referenceCode } from "@/lib/reference";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
@@ -43,16 +44,18 @@ export function ReceiptView() {
       </CardHeader>
       <CardPanel className="flex flex-col gap-3 text-sm">
         <p>{item.counterparty}</p>
-        <p className="font-mono text-xs break-all">{item.payloadHash}</p>
+        <p>
+          {t.referenceCode}: <span className="font-mono font-semibold">{referenceCode(item.payloadHash)}</span>
+        </p>
         <div className="flex flex-wrap gap-2">
-          <CopyButton text={item.payloadHash} label={t.hash} />
+          <CopyButton text={referenceCode(item.payloadHash)} label={t.referenceCode} />
           <CopyButton
             text={typeof window !== "undefined" ? `${window.location.origin}/v/${item.token}` : `/v/${item.token}`}
             label={t.partnerCheck}
           />
         </div>
         <p>
-          {t.matches}: <strong>{t.yes}</strong>
+          {t.matches}: <strong>{item.matchesUploaded ? t.yes : t.no}</strong>
         </p>
         <Separator />
         {item.approvals.map((approval) => (

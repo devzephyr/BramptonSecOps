@@ -19,10 +19,7 @@ import { TeamDesk } from "@/components/desk/team-desk";
 import { useI18n, caseStatusTitle } from "@/lib/i18n";
 import { requestTitle } from "@/preview/data";
 import { useDesk } from "@/preview/store";
-
-function shortHash(hash: string) {
-  return `${hash.slice(0, 12)}…${hash.slice(-8)}`;
-}
+import { referenceCode } from "@/lib/reference";
 
 export function LogisticsDesk() {
   const desk = useDesk();
@@ -87,7 +84,7 @@ export function LogisticsDesk() {
                       <TableCell>
                         <Badge variant={item.status === "fully_approved" ? "success" : "warning"}>{caseStatusTitle(item.status, t)}</Badge>
                       </TableCell>
-                      <TableCell className="font-mono text-xs">{shortHash(item.payloadHash)}</TableCell>
+                      <TableCell className="font-mono text-xs">{referenceCode(item.payloadHash)}</TableCell>
                       <TableCell>
                         <Button size="sm" variant="outline" onClick={() => desk.openCase(item.id)}>
                           {t.open}

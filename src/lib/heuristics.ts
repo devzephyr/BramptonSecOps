@@ -4,7 +4,9 @@ import path from "node:path";
 export type Flag = {
   code: string;
   kind: "heuristic";
+  /** English sentence kept for older readers; the desks translate from `code` and `params`. */
   detail: string;
+  params: Record<string, string>;
 };
 
 type Catalog = {
@@ -22,10 +24,10 @@ function loadCatalog(): Catalog {
   return catalog;
 }
 
-function push(flags: Flag[], code: string, detail: string) {
+function push(flags: Flag[], code: string, detail: string, params: Record<string, string> = {}) {
   if (flags.some((flag) => flag.code === code && flag.detail === detail))
     return;
-  flags.push({ code, kind: "heuristic", detail });
+  flags.push({ code, kind: "heuristic", detail, params });
 }
 
 export function runHeuristics(input: {
@@ -44,7 +46,7 @@ export function runHeuristics(input: {
   for (const email of emails) {
     const domain = email.split("@")[1]?.toLowerCase() ?? "";
     if (freeEmailDomains.includes(domain)) {
-      push(flags, "FREE_EMAIL_DOMAIN", `${email} uses a free mailbox domain`);
+      push(flags, "FREE_EMAIL_DOMAIN", `${email} uses a free mailbox domain`, { email });
     }
     if (
       input.onFileDomain &&
@@ -64,12 +66,14 @@ export function runHeuristics(input: {
           flags,
           "LOOKALIKE_DOMAIN",
           `${domain} is not ${input.onFileDomain}. This is a spelling check, not a mail-authentication result.`,
+          { domain, onFile: input.onFileDomain },
         );
       } else if (domain !== input.onFileDomain.toLowerCase()) {
         push(
           flags,
           "DOMAIN_NOT_ON_FILE",
           `${domain} is not the domain on file (${input.onFileDomain}).`,
+          { domain, onFile: input.onFileDomain },
         );
       }
     }
@@ -117,6 +121,7 @@ export function runHeuristics(input: {
           flags,
           "ON_FILE_MISMATCH",
           `${key} on file does not match the request.`,
+          { field: key },
         );
       }
     }

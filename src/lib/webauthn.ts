@@ -217,7 +217,7 @@ export async function verifyAssertion(input: {
     throw new Error("Assertion could not be verified.");
   }
   if (!verification.authenticationInfo.userVerified) {
-    throw new Error("User verification is required.");
+    throw new Error("Confirm with your fingerprint, face, or device PIN to continue.");
   }
   await prisma.webAuthnCredential.update({
     where: { id: stored.id },

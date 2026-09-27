@@ -263,6 +263,12 @@ async function fetchBundles(peerUserId: string): Promise<PeerDevice[]> {
   return ((await res.json()) as { devices: PeerDevice[] }).devices;
 }
 
+/** True when this browser already has a session with that peer device. Never fetches keys. */
+export async function hasSession(userId: string, peerUserId: string, peerDeviceId: number): Promise<boolean> {
+  const cipher = new SessionCipher(storeFor(userId), addressOf(peerUserId, peerDeviceId));
+  return cipher.hasOpenSession();
+}
+
 export async function ensureSession(
   userId: string,
   peerUserId: string,
@@ -297,15 +303,16 @@ export async function encryptForPeers(
   userId: string,
   peers: { userId: string; deviceId: number }[],
   plaintext: string,
-): Promise<Record<string, { type: number; body: string }>> {
+): Promise<Record<string, { type: number; body: string; from: number }>> {
   const data = new TextEncoder().encode(plaintext).buffer;
-  const out: Record<string, { type: number; body: string }> = {};
+  const from = getDeviceId();
+  const out: Record<string, { type: number; body: string; from: number }> = {};
   for (const peer of peers) {
     await ensureSession(userId, peer.userId, peer.deviceId);
     const cipher = new SessionCipher(storeFor(userId), addressOf(peer.userId, peer.deviceId));
     const result = await cipher.encrypt(data.slice(0));
     if (!result.body) throw new Error("Encryption produced no body.");
-    out[envelopeId(peer.userId, peer.deviceId)] = { type: result.type, body: btoa(result.body) };
+    out[envelopeId(peer.userId, peer.deviceId)] = { type: result.type, body: btoa(result.body), from };
   }
   return out;
 }

@@ -12,7 +12,8 @@ async function orgCase(id: string, orgId: string) {
   });
 }
 
-function validEnvelopes(value: unknown): value is Record<string, { type: number; body: string }> {
+/** `from` is the sender's device, so readers decrypt with the right session instead of guessing. */
+function validEnvelopes(value: unknown): value is Record<string, { type: number; body: string; from?: number }> {
   if (typeof value !== "object" || value === null) return false;
   const entries = Object.entries(value as Record<string, unknown>);
   if (entries.length === 0 || entries.length > 25) return false;
@@ -23,7 +24,8 @@ function validEnvelopes(value: unknown): value is Record<string, { type: number;
       typeof row.body === "string" &&
       row.body.length > 0 &&
       row.body.length < 20000 &&
-      /^[A-Za-z0-9+/=]+$/.test(row.body)
+      /^[A-Za-z0-9+/=]+$/.test(row.body) &&
+      (row.from === undefined || (Number.isInteger(row.from) && (row.from as number) > 0))
     );
   });
 }
@@ -69,6 +71,15 @@ export async function POST(request: Request, { params }: Params) {
   }
   if (!validEnvelopes(body.envelopes)) {
     return badRequest("envelopes must map recipient ids to ciphertext.");
+  }
+  const senderDevices = new Set(
+    Object.values(body.envelopes).flatMap((env) => (env.from === undefined ? [] : [env.from])),
+  );
+  if (senderDevices.size > 1) return badRequest("All envelopes must come from one device.");
+  const [fromDevice] = [...senderDevices];
+  if (fromDevice !== undefined) {
+    const registered = await prisma.signalIdentity.count({ where: { userId: user.id, deviceId: fromDevice } });
+    if (!registered) return badRequest("This device is not set up for secure messaging. Reload the page and try again.");
   }
   const bodyHash = body.bodyHash;
   if (typeof bodyHash !== "string" || !/^[a-f0-9]{64}$/.test(bodyHash)) {

@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     : [];
   const ack = parseOobAck(row.oobAckJson, steps.length);
   if (!oobComplete(ack.steps, ack.note)) {
-    return forbidden("Finish the out-of-band checklist and note first.");
+    return forbidden("Finish the call steps and write who you spoke with first.");
   }
 
   const prior = await prisma.approvalAttestation.findMany({
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
   const approverIds = prior.map((item) => item.userId);
   if (sameUserAlreadyApproved(approverIds, user.id)) {
     return forbidden(
-      "You already attested this payload. A different person must sign.",
+      "You have already approved this request. A different person must approve it.",
     );
   }
 
@@ -64,14 +64,14 @@ export async function POST(request: Request) {
     approverIds,
   });
   if (progress === "complete") {
-    return forbidden("This payload already has enough approvers.");
+    return forbidden("This request already has all the approvals it needs.");
   }
 
   const credentials = await prisma.webAuthnCredential.findMany({
     where: { userId: user.id },
   });
   if (!credentials.length) {
-    return badRequest("Register a passkey for this user before approving.");
+    return badRequest("Set up a passkey on your account before approving.");
   }
 
   const nonce = randomBytes(16).toString("base64url");
