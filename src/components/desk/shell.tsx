@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { ComplianceBar } from "@/components/desk/compliance-bar";
 import { NotificationsMenu } from "@/components/desk/notifications-menu";
 import { ThemeToggle } from "@/components/desk/theme-toggle";
 import type { SessionUser } from "@/lib/desk-client";
@@ -25,6 +26,7 @@ export function DeskShell({
       >
         {t.skipToContent}
       </a>
+      <div className="sticky top-0 z-[60]">
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3 px-4 py-3">
           <div className="mr-auto min-w-0">
@@ -49,6 +51,8 @@ export function DeskShell({
           </Button>
         </div>
       </header>
+      <ComplianceBar />
+      </div>
       <main id="desk-content" className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-5">{children}</main>
     </div>
   );

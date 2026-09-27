@@ -38,7 +38,7 @@ export type DutyInput = {
   actorId: string;
   kind: "status" | "note";
   status?: DutyStatusName | null;
-  source: "driver" | "gps" | "status" | "manager" | "sim";
+  source: "driver" | "gps" | "status" | "manager" | "sim" | "step-up";
   lat?: number | null;
   lng?: number | null;
   loadId?: string | null;

@@ -1,4 +1,4 @@
-const CACHE = "supplychek-shell-v1";
+const CACHE = "supplychek-shell-v2";
 const SHELL_PATHS = new Set(["/", "/sign-in", "/driver", "/receiver"]);
 
 // Approve needs the network (WebAuthn + API). This worker only caches desk shell GETs.
@@ -48,15 +48,14 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const network = fetch(request).then((response) => {
+    fetch(request)
+      .then((response) => {
         if (response.ok) {
           const copy = response.clone();
           caches.open(CACHE).then((cache) => cache.put(request, copy));
         }
         return response;
-      });
-      return cached ?? network;
-    }),
+      })
+      .catch(() => caches.match(request)),
   );
 });

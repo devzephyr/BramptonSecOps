@@ -122,6 +122,24 @@ export const ROUTES: LatLng[][] = [
   ],
 ];
 
+/** Simplified 407/401 corridor from the Brampton cross-dock to North York. Not a live directions call. */
+export const BRAMPTON_TO_NORTH_YORK: LatLng[] = [
+  { lat: 43.73024, lng: -79.78657 },
+  { lat: 43.7374, lng: -79.762 },
+  { lat: 43.7482, lng: -79.69 },
+  { lat: 43.7588, lng: -79.61 },
+  { lat: 43.7664, lng: -79.52 },
+  { lat: 43.7612, lng: -79.45 },
+  { lat: 43.7614, lng: -79.411 },
+];
+
+/** Planned line for the focus map. Known city pairs use their corridor; every other load uses the depot route. */
+export function plannedRoute(origin: string, destination: string): LatLng[] {
+  const text = `${origin} ${destination}`.toLowerCase();
+  if (text.includes("brampton") && text.includes("north york")) return BRAMPTON_TO_NORTH_YORK;
+  return ROUTE;
+}
+
 export const SIM_STEPS = 40;
 export const SIM_TICK_MS = 3000;
 

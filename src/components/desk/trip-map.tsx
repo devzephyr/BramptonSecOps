@@ -1,8 +1,8 @@
 "use client";
 
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useEffect, useRef, useState } from "react";
-import { ROUTE } from "@/lib/tracking";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ROUTE, type LatLng } from "@/lib/tracking";
 
 export type MapTruck = {
   id: string;
@@ -13,6 +13,7 @@ export type MapTruck = {
 };
 
 const TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
+export const mapboxConfigured = TOKEN.length > 0;
 const STYLE_URL = "mapbox://styles/mapbox/streets-v12";
 
 type MapLib = (typeof import("mapbox-gl"))["default"];
@@ -40,25 +41,38 @@ function pinElement(label: string) {
   return el;
 }
 
-/** Live trip map on Mapbox. Renders nothing when NEXT_PUBLIC_MAPBOX_TOKEN is unset. */
+/** Live trip map on Mapbox. Without a token, renders `fallback` when one is passed, otherwise nothing. */
 export function TripMap({
   trucks,
   trail,
   follow,
+  focusDestination = false,
   fitTrucks = false,
   className = "h-72",
   depotLabel,
   yardLabel,
+  route,
+  routeColor = "#2563eb",
+  routeDashed = true,
+  fallback = null,
 }: {
   trucks: MapTruck[];
   /** Where the truck actually went, oldest first. Drawn solid over the dashed planned route. */
   trail?: { lat: number; lng: number }[];
   follow?: string | null;
+  /** Zoom the camera onto the destination pin and hold it there. */
+  focusDestination?: boolean;
   /** Keep every truck in view: refit when trucks appear, disappear, or drive out of the frame. */
   fitTrucks?: boolean;
   className?: string;
   depotLabel: string;
   yardLabel: string;
+  /** Planned line. Defaults to the depot-to-yard route. */
+  route?: LatLng[];
+  routeColor?: string;
+  routeDashed?: boolean;
+  /** Shown in place of the map when Mapbox is unavailable. */
+  fallback?: ReactNode;
 }) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapInstance | null>(null);
@@ -66,7 +80,11 @@ export function TripMap({
   const markers = useRef(new Map<string, { marker: MarkerInstance; look: string }>());
   const [ready, setReady] = useState(false);
   const fittedIds = useRef("");
+  const yardPin = useRef<HTMLDivElement | null>(null);
+  const wasFocused = useRef(false);
   const [failed, setFailed] = useState(!TOKEN);
+  const line = route && route.length > 1 ? route : ROUTE;
+  const routeKey = line.map((point) => `${point.lat.toFixed(5)},${point.lng.toFixed(5)}`).join(";");
 
   useEffect(() => {
     if (!TOKEN) return;
@@ -81,8 +99,8 @@ export function TripMap({
           container: container.current,
           style: STYLE_URL,
           bounds: [
-            [Math.min(...ROUTE.map((p) => p.lng)), Math.min(...ROUTE.map((p) => p.lat))],
-            [Math.max(...ROUTE.map((p) => p.lng)), Math.max(...ROUTE.map((p) => p.lat))],
+            [Math.min(...line.map((p) => p.lng)), Math.min(...line.map((p) => p.lat))],
+            [Math.max(...line.map((p) => p.lng)), Math.max(...line.map((p) => p.lat))],
           ],
           fitBoundsOptions: { padding: 40 },
           cooperativeGestures: true,
@@ -97,7 +115,7 @@ export function TripMap({
             data: {
               type: "Feature",
               properties: {},
-              geometry: { type: "LineString", coordinates: ROUTE.map((p) => [p.lng, p.lat]) },
+              geometry: { type: "LineString", coordinates: line.map((p) => [p.lng, p.lat]) },
             },
           });
           instance.addLayer({
@@ -105,7 +123,12 @@ export function TripMap({
             type: "line",
             source: "route",
             layout: { "line-cap": "round", "line-join": "round" },
-            paint: { "line-color": "#2563eb", "line-width": 4, "line-opacity": 0.55, "line-dasharray": [2, 1.5] },
+            paint: {
+              "line-color": routeColor,
+              "line-width": 4,
+              "line-opacity": routeDashed ? 0.55 : 0.95,
+              "line-dasharray": routeDashed ? [2, 1.5] : [1, 0],
+            },
           });
           instance.addSource("trail", {
             type: "geojson",
@@ -119,10 +142,12 @@ export function TripMap({
             paint: { "line-color": "#0d9488", "line-width": 4, "line-opacity": 0.9 },
           });
           new mapbox.Marker({ element: pinElement(depotLabel), anchor: "bottom" })
-            .setLngLat([ROUTE[0].lng, ROUTE[0].lat])
+            .setLngLat([line[0].lng, line[0].lat])
             .addTo(instance);
-          new mapbox.Marker({ element: pinElement(yardLabel), anchor: "bottom" })
-            .setLngLat([ROUTE[ROUTE.length - 1].lng, ROUTE[ROUTE.length - 1].lat])
+          const yard = pinElement(yardLabel);
+          yardPin.current = yard;
+          new mapbox.Marker({ element: yard, anchor: "bottom" })
+            .setLngLat([line[line.length - 1].lng, line[line.length - 1].lat])
             .addTo(instance);
           setReady(true);
         });
@@ -136,7 +161,7 @@ export function TripMap({
       map.current?.remove();
       map.current = null;
     };
-  }, [depotLabel, yardLabel]);
+  }, [depotLabel, line, routeColor, routeDashed, routeKey, yardLabel]);
 
   useEffect(() => {
     const instance = map.current;
@@ -164,15 +189,15 @@ export function TripMap({
       }
     }
     const target = trucks.find((truck) => truck.id === follow);
-    if (target) instance.easeTo({ center: [target.lng, target.lat], duration: 800 });
-    else if (fitTrucks && trucks.length > 0) {
+    if (!focusDestination && target) instance.easeTo({ center: [target.lng, target.lat], duration: 800 });
+    else if (!focusDestination && fitTrucks && trucks.length > 0) {
       const ids = trucks.map((truck) => truck.id).sort().join(",");
       const view = instance.getBounds();
       const outside = trucks.some((truck) => view && !view.contains([truck.lng, truck.lat]));
       if (outside || ids !== fittedIds.current) {
         fittedIds.current = ids;
-        const lngs = [...trucks.map((truck) => truck.lng), ROUTE[0].lng, ROUTE[ROUTE.length - 1].lng];
-        const lats = [...trucks.map((truck) => truck.lat), ROUTE[0].lat, ROUTE[ROUTE.length - 1].lat];
+        const lngs = [...trucks.map((truck) => truck.lng), line[0].lng, line[line.length - 1].lng];
+        const lats = [...trucks.map((truck) => truck.lat), line[0].lat, line[line.length - 1].lat];
         instance.fitBounds(
           [
             [Math.min(...lngs), Math.min(...lats)],
@@ -182,7 +207,33 @@ export function TripMap({
         );
       }
     }
-  }, [fitTrucks, follow, ready, trucks]);
+  }, [fitTrucks, focusDestination, follow, line, ready, trucks]);
+
+  useEffect(() => {
+    const instance = map.current;
+    const pin = yardPin.current;
+    if (pin) {
+      pin.className = focusDestination
+        ? "rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow ring-2 ring-white"
+        : "rounded bg-zinc-900/85 px-1.5 py-0.5 text-[10px] font-medium text-white shadow";
+    }
+    if (!ready || !instance) return;
+    const destination = line[line.length - 1];
+    if (focusDestination) {
+      wasFocused.current = true;
+      instance.easeTo({ center: [destination.lng, destination.lat], zoom: 14, duration: 700 });
+      return;
+    }
+    if (!wasFocused.current) return;
+    wasFocused.current = false;
+    instance.fitBounds(
+      [
+        [Math.min(...line.map((point) => point.lng)), Math.min(...line.map((point) => point.lat))],
+        [Math.max(...line.map((point) => point.lng)), Math.max(...line.map((point) => point.lat))],
+      ],
+      { padding: 40, duration: 700 },
+    );
+  }, [focusDestination, line, ready]);
 
   useEffect(() => {
     const source = map.current?.getSource("trail");
@@ -194,6 +245,9 @@ export function TripMap({
     });
   }, [ready, trail]);
 
-  if (failed) return null;
+  if (failed) {
+    if (!fallback) return null;
+    return <div className={`w-full overflow-hidden rounded-lg border ${className}`}>{fallback}</div>;
+  }
   return <div ref={container} className={`w-full overflow-hidden rounded-lg border ${className}`} />;
 }
