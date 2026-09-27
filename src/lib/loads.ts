@@ -3,6 +3,10 @@ import { prisma } from "@/lib/db";
 import { isLate } from "@/lib/normalize";
 import { MANAGERS } from "@/lib/policy";
 import type { PayloadFields } from "@/lib/payload";
+import { REQUEST_FIELDS } from "@/preview/data";
+
+/** A load change that can't be applied; the approval route shows its message as a 400. */
+export class LoadChangeError extends Error {}
 
 /** Once a load leaves "scheduled", these change only through an approved request. */
 export const LOCKED_WHEN_MOVING = ["scheduledDock", "destination", "sealNumber"] as const;
@@ -38,6 +42,17 @@ export function loadOnFile(load: {
 }
 
 /** Map requested case fields onto Load columns that floor desks read. */
+/**
+ * requestedJson also carries every on-file value, so keep only the fields this request type
+ * changes. Applying the rest would undo other approved changes to the same load.
+ */
+export function fieldsForRequestType(requestType: string, requestedJson: unknown): PayloadFields {
+  const allowed: readonly string[] = REQUEST_FIELDS[requestType] ?? [];
+  return Object.fromEntries(
+    Object.entries((requestedJson ?? {}) as PayloadFields).filter(([key]) => allowed.includes(key)),
+  );
+}
+
 export function loadUpdateFromRequested(requested: PayloadFields): {
   data: Prisma.LoadUpdateInput;
   summary: string[];
@@ -95,22 +110,24 @@ export async function applyApprovedCaseToLoad(
 ): Promise<void> {
   if (!isLoadAffectingType(input.requestType)) return;
   if (!input.loadId) {
-    throw new Error("This request type needs a load before it can be approved.");
+    throw new LoadChangeError("This request type needs a load before it can be approved.");
   }
 
   const locked = await tx.$queryRaw<{ id: string }[]>`
     SELECT id FROM "Load" WHERE id = ${input.loadId} AND "orgId" = ${input.orgId} FOR UPDATE`;
   if (locked.length !== 1) {
-    throw new Error("The load for this request was not found.");
+    throw new LoadChangeError("The load for this request was not found.");
   }
 
   const load = await tx.load.findUniqueOrThrow({ where: { id: input.loadId } });
   if (load.payloadHashOfLastApprovedChange === input.payloadHash) return;
+  if (load.currentStatus === "arrived") {
+    throw new LoadChangeError("This load is already delivered, so the change can't be applied.");
+  }
 
-  const requested = (input.requestedJson ?? {}) as PayloadFields;
-  const { data, summary } = loadUpdateFromRequested(requested);
+  const { data, summary } = loadUpdateFromRequested(fieldsForRequestType(input.requestType, input.requestedJson));
   if (Object.keys(data).length === 0) {
-    throw new Error("This approved request has no load fields to apply.");
+    throw new LoadChangeError("This approved request has no load fields to apply.");
   }
   data.payloadHashOfLastApprovedChange = input.payloadHash;
 

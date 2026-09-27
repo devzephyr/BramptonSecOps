@@ -7,7 +7,7 @@ import {
   redactValue,
   sameUserAlreadyApproved,
 } from "@/lib/policy";
-import { applyApprovedCaseToLoad, isLoadAffectingType } from "@/lib/loads";
+import { applyApprovedCaseToLoad, isLoadAffectingType, LoadChangeError } from "@/lib/loads";
 import { signReceipt } from "@/lib/receipt";
 import { randomToken } from "@/lib/tokens";
 import {
@@ -126,6 +126,12 @@ export async function POST(request: Request) {
         return forbidden("This request already has all the approvals it needs.");
       }
 
+      if (isLoadAffectingType(row.requestType) && !row.loadId) {
+        return badRequest(
+          "This request needs a load before it can be approved. Open a new change request and pick the load.",
+        );
+      }
+
       await tx.approvalAttestation.create({
         data: {
           orgId: user.orgId,
@@ -166,12 +172,6 @@ export async function POST(request: Request) {
           });
         }
         return { status, approverCount: distinctIds.length, receiptToken: null };
-      }
-
-      if (isLoadAffectingType(row.requestType) && !row.loadId) {
-        throw new Error(
-          "This request needs a load before it can be fully approved. Open a new change request and pick the load.",
-        );
       }
 
       await applyApprovedCaseToLoad(tx, {
@@ -224,14 +224,7 @@ export async function POST(request: Request) {
       { timeout: 15000 },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Approval failed.";
-    if (
-      message.includes("needs a load") ||
-      message.includes("load fields") ||
-      message.includes("load for this request")
-    ) {
-      return badRequest(message);
-    }
+    if (error instanceof LoadChangeError) return badRequest(error.message);
     throw error;
   }
 

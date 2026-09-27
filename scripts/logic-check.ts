@@ -77,7 +77,7 @@ async function main() {
   assert.deepEqual(toFlagView("something new"), { code: "OTHER", params: {}, text: "something new" });
   assert.equal(referenceCode("26e16a94fe7bbfcf9cf0e1aee8105490d0eb44c16e20b06fe3628667eb2101b0"), "26E1-6A94-FE7B");
 
-  const { isLoadAffectingType, loadUpdateFromRequested } = await import("../src/lib/loads");
+  const { fieldsForRequestType, isLoadAffectingType, loadUpdateFromRequested } = await import("../src/lib/loads");
   assert.equal(isLoadAffectingType("destination_change"), true);
   assert.equal(isLoadAffectingType("bol_pod_alter"), true);
   assert.equal(isLoadAffectingType("new_carrier"), true);
@@ -93,6 +93,11 @@ async function main() {
   });
   assert.deepEqual(loadUpdateFromRequested({ seal: "SL-9902" }).data, { sealNumber: "SL-9902" });
   assert.deepEqual(loadUpdateFromRequested({ carrier: "North Dock" }).data, { carrierName: "North Dock" });
+  const sealCase = { dock: "Door 2", destination: "Don Valley Frozen", seal: "SL-9902", carrier: "North Dock" };
+  assert.deepEqual(fieldsForRequestType("bol_pod_alter", sealCase), { seal: "SL-9902" });
+  assert.deepEqual(fieldsForRequestType("destination_change", sealCase), { dock: "Door 2", destination: "Don Valley Frozen" });
+  assert.deepEqual(fieldsForRequestType("bank_change", sealCase), {});
+  assert.deepEqual(fieldsForRequestType("new_carrier", null), {});
 
   console.log("checks ok");
 }
