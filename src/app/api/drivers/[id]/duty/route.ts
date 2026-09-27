@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/db";
 import { hasRole, requireUser, type AuthedUser } from "@/lib/auth";
 import { MANAGERS } from "@/lib/policy";
-import { appendDuty, BreakRequired, driverHos, serializeDuty, setDutyStatus, verifyDutyChain } from "@/lib/duty";
+import { appendDuty, driverHos, serializeDuty, verifyDutyChain } from "@/lib/duty";
+import { dutyPostNeedsStepUp } from "@/lib/focus-model";
 import { isDutyStatus } from "@/lib/hos";
 import { badRequest, forbidden, json, notFound, unauthorized } from "@/lib/http";
 
@@ -89,22 +90,14 @@ export async function POST(request: Request, { params }: Params) {
     if (!isDutyStatus(body.status)) {
       return badRequest("status must be one of off_duty, sleeper_berth, on_duty, driving.");
     }
-    try {
-      const { entry, summary } = await setDutyStatus({
-        orgId: user.orgId,
-        driverId: id,
-        actorId: user.id,
-        kind: "status",
-        status: body.status,
-        source: "driver",
-        loadId,
-        ...place,
-      });
-      return json({ entry: entry && serializeDuty(entry), hos: summary }, entry ? 201 : 200);
-    } catch (error) {
-      if (error instanceof BreakRequired) return json({ error: error.message, hos: error.summary }, 409);
-      throw error;
-    }
+    return json(
+      {
+        error: "Authenticate in Focus to change duty status. Your sign-in stays active.",
+        code: "step_up_required",
+        action: dutyPostNeedsStepUp(body.status),
+      },
+      409,
+    );
   }
 
   const note = typeof body.note === "string" ? body.note.trim().slice(0, 500) : "";

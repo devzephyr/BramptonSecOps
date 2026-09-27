@@ -280,6 +280,31 @@ export type Messages = {
   saveFailed: string;
   mapDepot: string;
   mapYard: string;
+  focusMode: string;
+  restartBreakSim: string;
+  hudBreakDue: string;
+  exitHud: string;
+  hudOffline: string;
+  hudStale: string;
+  hudAuthHint: string;
+  hudAuthenticate: string;
+  hudRestRecommended: string;
+  hudBreakRequired: string;
+  hudRestInProgress: string;
+  hudSleeperRecorded: string;
+  hudDrivingBank: string;
+  hudReefer: string;
+  hudConfirmRest: string;
+  hudEndRest: string;
+  hudResume: string;
+  hudDrop: string;
+  hudCorrect: string;
+  hudCompliance: string;
+  hudComplianceBody: string;
+  hudMapUnavailable: string;
+  hudNoFix: string;
+  hudNominal: string;
+  hudAuthenticateShort: string;
   nextStep: string;
   reportDelay: string;
   delivered: string;
@@ -656,6 +681,31 @@ const en: Messages = {
   saveFailed: "Could not save",
   mapDepot: "Depot",
   mapYard: "Yard",
+  focusMode: "Focus",
+  restartBreakSim: "Restart break sim",
+  hudBreakDue: "Break due in",
+  exitHud: "Exit HUD",
+  hudOffline: "Connection lost. Showing the last update. You are still signed in.",
+  hudStale: "Telemetry stale",
+  hudAuthHint: "Authentication is required to record this duty action. Your sign-in stays active.",
+  hudAuthenticate: "Authenticate to confirm rest",
+  hudRestRecommended: "Rest recommended",
+  hudBreakRequired: "Break required",
+  hudRestInProgress: "Rest period in progress",
+  hudSleeperRecorded: "Sleeper berth recorded",
+  hudDrivingBank: "Driving bank left",
+  hudReefer: "Reefer",
+  hudConfirmRest: "Authenticate to confirm rest",
+  hudEndRest: "Authenticate to end rest",
+  hudResume: "Authenticate to resume driving",
+  hudDrop: "Drop at destination",
+  hudCorrect: "Correct duty",
+  hudCompliance: "Compliance alert",
+  hudComplianceBody: "Confirm your rest or duty action.",
+  hudMapUnavailable: "Live map is off. Set NEXT_PUBLIC_MAPBOX_TOKEN and rebuild.",
+  hudNoFix: "No GPS fix",
+  hudNominal: "nominal",
+  hudAuthenticateShort: "Authenticate",
   nextStep: "Next step",
   reportDelay: "Report a delay",
   delivered: "Delivered",
@@ -1037,6 +1087,31 @@ const fr: Messages = {
   saveFailed: "Enregistrement impossible",
   mapDepot: "Entrepôt",
   mapYard: "Cour",
+  focusMode: "Focus",
+  restartBreakSim: "Relancer la pause",
+  hudBreakDue: "Pause dans",
+  exitHud: "Quitter",
+  hudOffline: "Connexion perdue. Dernière mise à jour affichée. Vous êtes toujours connecté.",
+  hudStale: "Télémétrie périmée",
+  hudAuthHint: "Une authentification est requise pour enregistrer cette action. Votre session reste active.",
+  hudAuthenticate: "Authentifier pour confirmer le repos",
+  hudRestRecommended: "Repos recommandé",
+  hudBreakRequired: "Pause requise",
+  hudRestInProgress: "Période de repos en cours",
+  hudSleeperRecorded: "Couchette enregistrée",
+  hudDrivingBank: "Conduite restante",
+  hudReefer: "Frigo",
+  hudConfirmRest: "Authentifier pour confirmer le repos",
+  hudEndRest: "Authentifier pour finir le repos",
+  hudResume: "Authentifier pour reprendre la route",
+  hudDrop: "Déposer à destination",
+  hudCorrect: "Corriger le service",
+  hudCompliance: "Alerte de conformité",
+  hudComplianceBody: "Confirmez le repos ou l'action de service.",
+  hudMapUnavailable: "Carte inactive. Définissez NEXT_PUBLIC_MAPBOX_TOKEN et reconstruisez.",
+  hudNoFix: "Pas de position GPS",
+  hudNominal: "nominal",
+  hudAuthenticateShort: "Authentifier",
   nextStep: "Prochaine étape",
   reportDelay: "Signaler un retard",
   delivered: "Livré",

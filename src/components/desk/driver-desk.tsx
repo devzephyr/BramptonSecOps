@@ -11,9 +11,10 @@ import { toastManager } from "@/components/ui/toast";
 import { CustodyForm } from "@/components/desk/custody";
 import { DocumentUpload } from "@/components/desk/document-upload";
 import { DutyPanel } from "@/components/desk/duty-panel";
+import { FocusHud } from "@/components/desk/focus-hud";
 import { TripMap } from "@/components/desk/trip-map";
 import { FLOW, TripSteps } from "@/components/desk/trip-steps";
-import { postPosition, swapDrivers } from "@/lib/desk-client";
+import { postPosition, restartBreakDemo, swapDrivers } from "@/lib/desk-client";
 import { loadStatusTitle, useI18n } from "@/lib/i18n";
 import { isLive, SIM_STEPS, SIM_TICK_MS, simPosition, updatedAgo } from "@/lib/tracking";
 import type { Load } from "@/preview/data";
@@ -49,6 +50,12 @@ export function DriverDesk() {
   const [error, setError] = useState<string | null>(null);
   const [posting, setPosting] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
+  const [hudLoadId, setHudLoadId] = useState<string | null>(null);
+  const [breakTick, setBreakTick] = useState(0);
+  const breakSkip = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (breakSkip.current) window.clearTimeout(breakSkip.current);
+  }, []);
   const timer = useRef<number | null>(null);
   const running = useRef<string | null>(null);
   const labels: Record<string, string> = {
@@ -207,6 +214,33 @@ export function DriverDesk() {
         return (
           <div key={load.id} className="flex flex-col gap-4">
             <Card>
+              {load.status !== "arrived" && (
+                <div className="px-6 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={busy}
+                    onClick={() => {
+                      setPosting(`${load.id}:break`);
+                      setError(null);
+                      if (breakSkip.current) window.clearTimeout(breakSkip.current);
+                      void restartBreakDemo(load.id, 10 * 60 * 1000)
+                        .then(async () => {
+                          await desk.refreshRemote();
+                          setBreakTick((tick) => tick + 1);
+                        })
+                        .catch((err: unknown) => setError(err instanceof Error ? err.message : "Could not restart the break sim."))
+                        .finally(() => setPosting(null));
+                      breakSkip.current = window.setTimeout(() => {
+                        void restartBreakDemo(load.id, 10 * 1000).then(() => desk.refreshRemote());
+                      }, 30_000);
+                    }}
+                  >
+                    {t.restartBreakSim}
+                  </Button>
+                </div>
+              )}
               <CardHeader>
                 <div className="flex flex-wrap items-center gap-2">
                   <TruckIcon className="size-5 text-muted-foreground" aria-hidden />
@@ -219,9 +253,20 @@ export function DriverDesk() {
                     {loadStatusTitle(load.status, t)}
                   </Badge>
                 </div>
-                <CardDescription className="flex flex-wrap items-center gap-1.5">
-                  <MapPinIcon className="size-3.5" aria-hidden />
-                  {load.origin} → {load.destination}
+                <CardDescription className="flex flex-col items-stretch gap-2">
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    <MapPinIcon className="size-3.5 shrink-0" aria-hidden />
+                    <span>{load.origin}</span>
+                    <span aria-hidden>→</span>
+                    <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-sm font-medium text-foreground">
+                      {load.destination}
+                    </span>
+                  </span>
+                  {load.status !== "arrived" && (
+                    <Button type="button" size="lg" className="min-h-14 w-full" onClick={() => setHudLoadId(load.id)}>
+                      {t.focusMode}
+                    </Button>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardPanel className="flex flex-col gap-4">
@@ -340,7 +385,7 @@ export function DriverDesk() {
                   <TripMap
                     className="h-56"
                     depotLabel={t.mapDepot}
-                    yardLabel={t.mapYard}
+                    yardLabel={load.destination || t.mapYard}
                     follow={simulating ? load.id : null}
                     trucks={
                       hasPosition
@@ -355,6 +400,9 @@ export function DriverDesk() {
           </div>
         );
       })}
+      {hudLoadId && (
+        <FocusHud key={`${hudLoadId}-${breakTick}`} driverId={desk.user.id} loadId={hudLoadId} onExit={() => setHudLoadId(null)} />
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import type { FocusAction, FocusState } from "@/lib/focus-model";
 import type { DutyStatusName, HosSummary } from "@/lib/hos";
 import type { DocTypeName } from "@/lib/policy";
 import {
@@ -545,6 +546,67 @@ export async function approveWithPasskey(caseId: string) {
     );
   }
   return parseJson(verifyRes);
+}
+
+export async function fetchFocusState(driverId: string, loadId: string): Promise<FocusState> {
+  const res = await fetch(
+    `/api/drivers/${encodeURIComponent(driverId)}/focus?loadId=${encodeURIComponent(loadId)}`,
+    { credentials: "include" },
+  );
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not load focus state"));
+  return (await parseJson(res)) as FocusState;
+}
+
+export async function performFocusAction(
+  driverId: string,
+  input: { loadId: string; action: FocusAction; targetStatus?: string; reason?: string; facility?: string },
+): Promise<FocusState> {
+  const optRes = await fetch(`/api/drivers/${encodeURIComponent(driverId)}/step-up/options`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+  if (!optRes.ok) {
+    throw new DeskApiError(optRes.status, await failMessage(optRes, "Could not start authentication"));
+  }
+  const issued = (await parseJson(optRes)) as { ceremonyId?: string; optionsJSON?: unknown } | null;
+  if (!issued?.ceremonyId || !issued.optionsJSON) {
+    throw new DeskApiError(400, "The server did not issue an authentication challenge.");
+  }
+  const authResp = await startAuthentication({
+    optionsJSON: issued.optionsJSON as Parameters<typeof startAuthentication>[0]["optionsJSON"],
+  });
+  const verifyRes = await fetch(`/api/drivers/${encodeURIComponent(driverId)}/step-up/verify`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ceremonyId: issued.ceremonyId, response: authResp }),
+  });
+  if (!verifyRes.ok) {
+    throw new DeskApiError(verifyRes.status, await failMessage(verifyRes, "The duty action was not recorded"));
+  }
+  return (await parseJson(verifyRes)) as FocusState;
+}
+
+export async function restartBreakDemo(loadId: string, remainingMs: number) {
+  const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/break-demo`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "restart", remainingMs }),
+  });
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not restart the break sim"));
+}
+
+export async function confirmBreakRest(loadId: string) {
+  const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/break-demo`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "confirm" }),
+  });
+  if (!res.ok) throw new DeskApiError(res.status, await failMessage(res, "Could not record the rest"));
 }
 
 export async function postPosition(loadId: string, lat: number, lng: number, simulated = false) {
