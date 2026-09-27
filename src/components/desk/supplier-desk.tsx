@@ -29,10 +29,26 @@ import { sha256Hex } from "@/preview/hash";
 import { useDesk } from "@/preview/store";
 import { CasesTable } from "@/components/desk/cases-table";
 
+function requestNeedsLoad(requestType: string): boolean {
+  const fields = REQUEST_FIELDS[requestType] ?? [];
+  return fields.some((f) => f === "dock" || f === "destination" || f === "seal" || f === "carrier");
+}
+
 export function SupplierDesk() {
   const desk = useDesk();
   const { lang, t } = useI18n();
   const selected = desk.contacts.find((contact) => contact.id === desk.draft.contactId) ?? null;
+  const selectedLoad = desk.loads.find((load) => load.id === desk.draft.loadId) ?? null;
+  const loadChoices = desk.loads.filter((load) => load.status !== "arrived");
+  const needsLoad = requestNeedsLoad(desk.draft.requestType);
+  const loadOnFile: Record<string, string> = selectedLoad
+    ? {
+        ...(selectedLoad.dock ? { dock: selectedLoad.dock } : {}),
+        ...(selectedLoad.destination ? { destination: selectedLoad.destination } : {}),
+        ...(selectedLoad.seal ? { seal: selectedLoad.seal } : {}),
+        ...(selectedLoad.carrier ? { carrier: selectedLoad.carrier } : {}),
+      }
+    : {};
   const [query, setQuery] = useState("");
   const [noteHash, setNoteHash] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -118,8 +134,13 @@ export function SupplierDesk() {
   const fieldLabel = { institution: t.institution, transit: t.transit, account: t.account, dock: t.dock, destination: t.destination, carrier: t.carrier, seal: t.seal };
   const changeComplete = changeFields.every((key) => (desk.draft.requested[key] ?? "").trim());
   const canSubmit =
-    Boolean(selected) && desk.draft.rawText.trim().length >= 8 && changeComplete && !submitting;
+    Boolean(selected) &&
+    (!needsLoad || Boolean(selectedLoad)) &&
+    desk.draft.rawText.trim().length >= 8 &&
+    changeComplete &&
+    !submitting;
   const request = REQUESTS.find((r) => r.id === desk.draft.requestType);
+  const fieldOnFile = (key: string) => (needsLoad ? loadOnFile[key] : selected?.onFile[key]);
 
   async function submit() {
     setSubmitting(true);
@@ -161,6 +182,7 @@ export function SupplierDesk() {
                   desk.setDraft({
                     requestType: scenario.requestType,
                     contactId: scenario.contactId ?? desk.draft.contactId,
+                    loadId: "",
                     rawText: scenario.rawText,
                     requested: scenario.requested,
                   });
@@ -208,7 +230,16 @@ export function SupplierDesk() {
               </AlertDescription>
             </Alert>
           )}
-          <Select value={desk.draft.requestType} onValueChange={(value) => desk.setDraft({ requestType: String(value) })}>
+          <Select
+            value={desk.draft.requestType}
+            onValueChange={(value) =>
+              desk.setDraft({
+                requestType: String(value),
+                loadId: requestNeedsLoad(String(value)) ? desk.draft.loadId : "",
+                requested: {},
+              })
+            }
+          >
             <SelectTrigger aria-label={t.type}>
               <SelectValue>
                 {(value) => REQUESTS.find((item) => item.id === value)?.[lang === "fr" ? "fr" : "en"] ?? t.type}
@@ -268,6 +299,36 @@ export function SupplierDesk() {
               )}
             </span>
           </div>
+          {needsLoad && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium">{t.load}</span>
+              <Select
+                value={desk.draft.loadId || undefined}
+                onValueChange={(value) => desk.setDraft({ loadId: String(value) })}
+              >
+                <SelectTrigger aria-label={t.load}>
+                  <SelectValue>
+                    {(value) => {
+                      const load = desk.loads.find((item) => item.id === value);
+                      return load
+                        ? `${load.loadRef} · ${load.origin} → ${load.destination}`
+                        : t.pickLoad;
+                    }}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectPopup>
+                  {loadChoices.map((load) => (
+                    <SelectItem key={load.id} value={load.id}>
+                      {load.loadRef} · {load.origin} → {load.destination}
+                    </SelectItem>
+                  ))}
+                </SelectPopup>
+              </Select>
+              <span className="text-xs text-muted-foreground">
+                {selectedLoad ? `${selectedLoad.loadRef} · ${selectedLoad.dock || t.notUsed}` : t.pickLoad}
+              </span>
+            </div>
+          )}
           {changeFields.length > 0 && (
             <fieldset className="flex flex-col gap-2 rounded-lg border p-3">
               <legend className="px-1 text-sm font-medium">{t.requestedChange}</legend>
@@ -277,9 +338,9 @@ export function SupplierDesk() {
                   <div key={key} className="flex flex-col gap-1.5">
                     <label className="text-sm" htmlFor={`req-${key}`}>
                       {fieldLabel[key]}
-                      {selected?.onFile[key] && (
+                      {fieldOnFile(key) && (
                         <span className="ml-1 font-mono text-xs text-muted-foreground">
-                          ({t.onFile}: {selected.onFile[key]})
+                          ({t.onFile}: {fieldOnFile(key)})
                         </span>
                       )}
                     </label>

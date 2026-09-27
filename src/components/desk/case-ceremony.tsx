@@ -156,6 +156,7 @@ export function CaseCeremony({ onBack }: { onBack?: () => void }) {
         </Button>
         <span className="text-sm font-semibold">
           {t.caseLabel} · {item.counterparty}
+          {item.loadRef ? ` · ${item.loadRef}` : ""}
         </span>
         <Badge variant="secondary">{requestTitle(item.requestType, lang)}</Badge>
         <Badge variant={approved ? "success" : "warning"}>{caseStatusTitle(item.status, t)}</Badge>

@@ -516,6 +516,7 @@ async function main() {
         seedKey: scenario.id,
         createdById: jordanId,
         contactId: contactBySeed.get(scenario.partnerId) ?? null,
+        loadId: null,
         requestType: scenario.requestType as RequestType,
         counterparty: partner.company,
         rawText: scenario.rawText,
@@ -541,6 +542,7 @@ async function main() {
         orgId: org.id,
         createdById: jordanId,
         contactId: contactBySeed.get(scenario.partnerId) ?? null,
+        loadId: null,
         requestType: scenario.requestType as RequestType,
         counterparty: partner.company,
         rawText: scenario.rawText,
@@ -558,6 +560,8 @@ async function main() {
         payloadHash: payload.payloadHash,
         status,
         dualControl: isDual(scenario.requestType),
+        matchesUploaded: false,
+        publicToken: null,
         jevJson: jevLabels(scenario.rawText, scenario.requestType),
       },
     });
@@ -700,6 +704,15 @@ async function main() {
         driverUserId: load.driverUserId,
         eta: load.eta,
       },
+    });
+  }
+
+  // Cases are seeded before loads (for payload hashes); attach load FKs once loads exist.
+  for (const scenario of SCENARIOS) {
+    if (!scenario.loadSeedKey) continue;
+    await prisma.verifyCase.updateMany({
+      where: { seedKey: scenario.id },
+      data: { loadId: `seed_${scenario.loadSeedKey}` },
     });
   }
 

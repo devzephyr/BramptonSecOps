@@ -21,7 +21,13 @@ import { REQUEST_FIELDS, type DeskCase, type Load, type Note, type Role } from "
 const CASE_STAFF: Role[] = ["supplier", "logistics", "admin"];
 
 type LogisticsTab = "board" | "request" | "load" | "directory" | "records" | "receipt" | "team";
-type Draft = { requestType: string; contactId: string; rawText: string; requested: Record<string, string> };
+type Draft = {
+  requestType: string;
+  contactId: string;
+  loadId: string;
+  rawText: string;
+  requested: Record<string, string>;
+};
 
 type Store = {
   user: SessionUser;
@@ -71,6 +77,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
   const [draft, setDraftState] = useState<Draft>({
     requestType: "bank_change",
     contactId: "",
+    loadId: "",
     rawText: "",
     requested: {},
   });
@@ -136,17 +143,25 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
           setSubmitError("Pick a counterparty from the directory first.");
           return null;
         }
+        const needsLoad = Boolean(REQUEST_FIELDS[draft.requestType]?.some((f) =>
+          f === "dock" || f === "destination" || f === "seal" || f === "carrier",
+        ));
+        if (needsLoad && !draft.loadId) {
+          setSubmitError("Pick the load this change applies to.");
+          return null;
+        }
         try {
           const created = await submitCase({
             requestType: draft.requestType,
             contactId: draft.contactId,
+            loadId: needsLoad ? draft.loadId : null,
             rawText: draft.rawText,
             requested: REQUEST_FIELDS[draft.requestType]
               ? Object.fromEntries(REQUEST_FIELDS[draft.requestType].map((key) => [key, draft.requested[key] ?? ""]))
               : draft.requested,
           });
           setCases((current) => [created, ...current.filter((item) => item.id !== created.id)]);
-          setDraftState((current) => ({ ...current, rawText: "", requested: {} }));
+          setDraftState((current) => ({ ...current, rawText: "", requested: {}, loadId: "" }));
           return created;
         } catch (err) {
           setSubmitError(messageOf(err, "Could not submit."));

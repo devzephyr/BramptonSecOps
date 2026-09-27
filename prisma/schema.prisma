@@ -159,6 +159,9 @@ model VerifyCase {
   createdById      String
   contactId        String?
   contact          DirectoryContact?     @relation(fields: [contactId], references: [id])
+  /// Load this request updates when fully approved (dock/destination/seal/carrier types).
+  loadId           String?
+  load             Load?                 @relation(fields: [loadId], references: [id])
   requestType      RequestType
   counterparty     String
   rawText          String
@@ -184,6 +187,7 @@ model VerifyCase {
   messages         Message[]
 
   @@index([orgId, status])
+  @@index([orgId, loadId])
 }
 
 model VerifyDecision {
@@ -354,6 +358,7 @@ model Load {
   events                          TrackingEvent[]
   custody                         CustodyTransfer[]
   pings                           PositionPing[]
+  cases                           VerifyCase[]
 
   @@unique([orgId, loadRef])
   @@index([orgId])

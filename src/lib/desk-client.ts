@@ -206,6 +206,7 @@ type ApiLoad = {
   currentStatus?: string;
   scheduledDock?: string | null;
   approvedDock?: string | null;
+  approvedDestination?: string | null;
   eta?: string | null;
   driverUserId?: string | null;
   coDriverUserId?: string | null;
@@ -463,7 +464,7 @@ export async function fetchLoads(): Promise<Load[]> {
     loadRef: row.loadRef,
     commodity: cleanCommodity(row.commodity),
     origin: row.origin,
-    destination: row.destination,
+    destination: row.approvedDestination || row.destination,
     dock: row.approvedDock || row.scheduledDock || "",
     scheduledDock: row.scheduledDock ?? "",
     etaIso: row.eta ?? "",
@@ -717,6 +718,8 @@ export type ApiCase = {
   requestType: string;
   counterparty: string;
   contactId: string | null;
+  loadId?: string | null;
+  loadRef?: string | null;
   createdById: string;
   numberOnFile: string | null;
   rawText?: string;
@@ -778,6 +781,8 @@ export function mapApiCase(row: ApiCase): DeskCase {
     requestType: row.requestType,
     counterparty: row.counterparty,
     contactId: row.contactId ?? "",
+    loadId: row.loadId ?? null,
+    loadRef: row.loadRef ?? null,
     createdById: row.createdById,
     numberOnFile: row.numberOnFile ?? "",
     rawText: row.rawText ?? "",
@@ -819,6 +824,7 @@ export async function fetchCase(id: string): Promise<DeskCase | null> {
 export async function submitCase(input: {
   requestType: string;
   contactId: string;
+  loadId?: string | null;
   rawText: string;
   requested: Record<string, string>;
 }): Promise<DeskCase> {

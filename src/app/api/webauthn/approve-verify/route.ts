@@ -7,6 +7,7 @@ import {
   redactValue,
   sameUserAlreadyApproved,
 } from "@/lib/policy";
+import { applyApprovedCaseToLoad, isLoadAffectingType } from "@/lib/loads";
 import { signReceipt } from "@/lib/receipt";
 import { randomToken } from "@/lib/tokens";
 import {
@@ -81,8 +82,10 @@ export async function POST(request: Request) {
     };
   };
 
-  const outcome = await prisma.$transaction(
-    async (tx) => {
+  let outcome: { status: string; approverCount: number; receiptToken: string | null } | Response;
+  try {
+    outcome = await prisma.$transaction(
+      async (tx) => {
       if (!(await lockCase(tx, ceremony.caseId, user.orgId))) return notFound();
 
       const now = new Date();
@@ -165,6 +168,23 @@ export async function POST(request: Request) {
         return { status, approverCount: distinctIds.length, receiptToken: null };
       }
 
+      if (isLoadAffectingType(row.requestType) && !row.loadId) {
+        throw new Error(
+          "This request needs a load before it can be fully approved. Open a new change request and pick the load.",
+        );
+      }
+
+      await applyApprovedCaseToLoad(tx, {
+        orgId: user.orgId,
+        loadId: row.loadId,
+        requestType: row.requestType,
+        requestedJson: row.requestedJson,
+        payloadHash: row.payloadHash,
+        counterparty: row.counterparty,
+        actorId: user.id,
+        actorName: user.name,
+      });
+
       const receiptToken = randomToken("v");
       const claims = {
         requestType: row.requestType,
@@ -198,10 +218,22 @@ export async function POST(request: Request) {
         where: { id: row.id },
         data: { status: "fully_approved", publicToken: receiptToken },
       });
+
       return { status: "fully_approved", approverCount: distinctIds.length, receiptToken };
     },
-    { timeout: 15000 },
-  );
+      { timeout: 15000 },
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Approval failed.";
+    if (
+      message.includes("needs a load") ||
+      message.includes("load fields") ||
+      message.includes("load for this request")
+    ) {
+      return badRequest(message);
+    }
+    throw error;
+  }
 
   if (outcome instanceof Response) return outcome;
   return json({ ok: true, ...outcome });
