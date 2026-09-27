@@ -7,6 +7,7 @@ import {
   redactValue,
   sameUserAlreadyApproved,
 } from "@/lib/policy";
+import { applyApprovedCaseToLoad, isLoadAffectingType, LoadChangeError } from "@/lib/loads";
 import { signReceipt } from "@/lib/receipt";
 import { randomToken } from "@/lib/tokens";
 import {
@@ -81,8 +82,10 @@ export async function POST(request: Request) {
     };
   };
 
-  const outcome = await prisma.$transaction(
-    async (tx) => {
+  let outcome: { status: string; approverCount: number; receiptToken: string | null } | Response;
+  try {
+    outcome = await prisma.$transaction(
+      async (tx) => {
       if (!(await lockCase(tx, ceremony.caseId, user.orgId))) return notFound();
 
       const now = new Date();
@@ -121,6 +124,12 @@ export async function POST(request: Request) {
       }
       if (approvalProgress({ dualControl: row.dualControl, approverIds: priorIds }) === "complete") {
         return forbidden("This request already has all the approvals it needs.");
+      }
+
+      if (isLoadAffectingType(row.requestType) && !row.loadId) {
+        return badRequest(
+          "This request needs a load before it can be approved. Open a new change request and pick the load.",
+        );
       }
 
       await tx.approvalAttestation.create({
@@ -165,6 +174,17 @@ export async function POST(request: Request) {
         return { status, approverCount: distinctIds.length, receiptToken: null };
       }
 
+      await applyApprovedCaseToLoad(tx, {
+        orgId: user.orgId,
+        loadId: row.loadId,
+        requestType: row.requestType,
+        requestedJson: row.requestedJson,
+        payloadHash: row.payloadHash,
+        counterparty: row.counterparty,
+        actorId: user.id,
+        actorName: user.name,
+      });
+
       const receiptToken = randomToken("v");
       const claims = {
         requestType: row.requestType,
@@ -198,10 +218,15 @@ export async function POST(request: Request) {
         where: { id: row.id },
         data: { status: "fully_approved", publicToken: receiptToken },
       });
+
       return { status: "fully_approved", approverCount: distinctIds.length, receiptToken };
     },
-    { timeout: 15000 },
-  );
+      { timeout: 15000 },
+    );
+  } catch (error) {
+    if (error instanceof LoadChangeError) return badRequest(error.message);
+    throw error;
+  }
 
   if (outcome instanceof Response) return outcome;
   return json({ ok: true, ...outcome });

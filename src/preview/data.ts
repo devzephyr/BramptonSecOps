@@ -7,6 +7,9 @@ export type DeskCase = {
   contactId: string;
   createdById: string;
   numberOnFile: string;
+  /** Load this request updates when fully approved (dock/destination/seal/carrier). */
+  loadId?: string | null;
+  loadRef?: string | null;
   rawText: string;
   onFile: Record<string, string>;
   requested: Record<string, string>;
@@ -245,6 +248,8 @@ export const SCENARIOS: {
   frTitle?: string;
   requestType: string;
   partnerId: string;
+  /** Seed load key (e.g. ld-malt) for load-affecting request types. */
+  loadSeedKey?: string;
   rawText: string;
   requested: Record<string, string>;
 }[] = [
@@ -264,6 +269,7 @@ export const SCENARIOS: {
     frTitle: "Détournement de quai",
     requestType: "destination_change",
     partnerId: "peel",
+    loadSeedKey: "ld-dairy",
     rawText:
       "From: dispatch@peel-produce.co\nUrgent: divert load PP-204 to the yard at 88 Intermodal Court, Brampton. Do not use Door 2. Driver is waiting.",
     requested: { dock: "88 Intermodal Court", destination: "Brampton yard" },
@@ -274,6 +280,7 @@ export const SCENARIOS: {
     frTitle: "Nouveau transporteur",
     requestType: "new_carrier",
     partnerId: "qew",
+    loadSeedKey: "ld-flour",
     rawText:
       "From: booking@northdock-shadow.com\nOur sister company can cover load QE-118 today at a lower rate. Send the dock code to the new driver.",
     requested: { carrier: "North Dock Shadow Logistics" },
@@ -304,6 +311,7 @@ export const SCENARIOS: {
     frTitle: "Changement d'arrêt en route",
     requestType: "destination_change",
     partnerId: "meats",
+    loadSeedKey: "ld-malt",
     rawText:
       "From: night@milton-meats.net\nChange the Milton delivery to a trailer drop in Vaughan. Confirm by reply. Do not call, the planner is driving.",
     requested: { dock: "Vaughan drop lot", destination: "Vaughan" },
@@ -314,6 +322,7 @@ export const SCENARIOS: {
     frTitle: "Correction de connaissement",
     requestType: "bol_pod_alter",
     partnerId: "halton",
+    loadSeedKey: "ld-poultry",
     rawText:
       "From: shipping@halton-poultry-docs.com\nThe seal on the BOL for load HP-311 was typed wrong. Please change it to SL-9902 before the receiver signs. No need to call, we are short staffed.",
     requested: { seal: "SL-9902" },

@@ -13,6 +13,7 @@ import {
 } from "@/lib/cases";
 import type { PayloadFields } from "@/lib/payload";
 import { contactOnFile } from "@/lib/directory";
+import { isLoadAffectingType, loadOnFile } from "@/lib/loads";
 import { REQUEST_FIELDS } from "@/preview/data";
 
 export async function GET() {
@@ -67,9 +68,26 @@ export async function POST(request: Request) {
   });
   if (!contact) return badRequest("Contact not found in your org.");
 
+  let loadId: string | null = null;
+  let loadFields: PayloadFields = {};
+  if (isLoadAffectingType(requestType)) {
+    if (typeof body.loadId !== "string" || !body.loadId.trim()) {
+      return badRequest("Pick the load this change applies to.");
+    }
+    const load = await prisma.load.findFirst({
+      where: { id: body.loadId, orgId: user.orgId },
+    });
+    if (!load) return badRequest("Load not found in your org.");
+    if (load.currentStatus === "arrived") {
+      return badRequest("That load is already delivered. Pick a load that is still open.");
+    }
+    loadId = load.id;
+    loadFields = loadOnFile(load);
+  }
+
   const counterparty = contact.company;
   const onFileDomain = contact.domain;
-  const onFile = contactOnFile(contact);
+  const onFile: PayloadFields = { ...contactOnFile(contact), ...loadFields };
   const requested: PayloadFields = { ...onFile };
   if (body.requested && typeof body.requested === "object") {
     for (const [key, value] of Object.entries(body.requested as Record<string, unknown>)) {
@@ -105,6 +123,7 @@ export async function POST(request: Request) {
       orgId: user.orgId,
       createdById: user.id,
       contactId,
+      loadId,
       requestType: requestType as RequestType,
       counterparty,
       rawText,

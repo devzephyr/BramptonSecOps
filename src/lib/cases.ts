@@ -144,6 +144,7 @@ export async function lockCase(
 export const caseInclude = {
   org: { select: { name: true } },
   contact: { select: { numberOnFile: true } },
+  load: { select: { id: true, loadRef: true } },
   attestations: {
     orderBy: { verifiedAt: "asc" },
     select: {
@@ -158,6 +159,7 @@ export function serializeCase(
   row: VerifyCase & {
     org?: { name: string };
     contact?: { numberOnFile: string } | null;
+    load?: { id: string; loadRef: string } | null;
     attestations?: {
       userId: string;
       verifiedAt: Date;
@@ -177,6 +179,8 @@ export function serializeCase(
     requestType: row.requestType,
     counterparty: row.counterparty,
     contactId: row.contactId,
+    loadId: row.loadId,
+    loadRef: row.load?.loadRef ?? null,
     createdById: row.createdById,
     numberOnFile: row.contact?.numberOnFile ?? null,
     rawText: opts?.includeRawText ? row.rawText : undefined,

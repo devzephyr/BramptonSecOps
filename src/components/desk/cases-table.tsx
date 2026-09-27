@@ -58,7 +58,14 @@ export function CasesTable({ cases, onOpen }: { cases: DeskCase[]; onOpen?: (id:
             const done = Math.min(item.approvals.length, needed);
             return (
               <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.counterparty}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex flex-col gap-0.5">
+                    <span>{item.counterparty}</span>
+                    {item.loadRef && (
+                      <span className="font-mono text-xs font-normal text-muted-foreground">{item.loadRef}</span>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>{requestTitle(item.requestType, lang)}</TableCell>
                 <TableCell>
                   <Badge variant={statusVariant(item.status)}>{caseStatusTitle(item.status, t)}</Badge>
