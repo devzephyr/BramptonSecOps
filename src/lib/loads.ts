@@ -1,5 +1,6 @@
 import type { Load, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { isLate } from "@/lib/normalize";
 
 /** Once a load leaves "scheduled", these change only through an approved request. */
 export const LOCKED_WHEN_MOVING = ["scheduledDock", "destination", "sealNumber"] as const;
@@ -28,6 +29,7 @@ export function serializeLoad(row: Load) {
     lng: row.lng,
     positionAt: row.positionAt,
     facility: row.facility,
+    late: isLate(row.eta, row.currentStatus),
     createdAt: row.createdAt,
   };
 }

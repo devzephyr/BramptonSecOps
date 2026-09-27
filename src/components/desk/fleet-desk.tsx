@@ -1,6 +1,8 @@
 "use client";
 
-import { MapPinIcon, PauseIcon, PlayIcon, WarehouseIcon } from "lucide-react";
+import { WarehouseIcon } from "lucide-react";
+import { LoadStatus } from "@/components/desk/load-status";
+import { PositionLine } from "@/components/desk/position-line";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,10 +24,9 @@ import {
   type Fleet,
   type FleetDriver,
   type FleetLoad,
-  postPosition,
 } from "@/lib/desk-client";
-import { loadStatusTitle, useI18n } from "@/lib/i18n";
-import { isLive, positionOn, ROUTES, SIM_STEPS, SIM_TICK_MS, updatedAgo } from "@/lib/tracking";
+import { useI18n } from "@/lib/i18n";
+import {isLive} from "@/lib/tracking";
 import { cn } from "@/lib/utils";
 import { useDesk } from "@/preview/store";
 
@@ -144,9 +145,7 @@ function DriverCard({
                 <li key={load.id} className="flex flex-col gap-1 rounded-lg border px-3 py-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-sm font-semibold">{load.loadRef}</span>
-                    <Badge variant={load.currentStatus === "fifteen_min" ? "warning" : "outline"}>
-                      {loadStatusTitle(load.currentStatus, t)}
-                    </Badge>
+                    <LoadStatus status={load.currentStatus} facility={load.facility} late={load.late} />
                     {live && <Badge variant="success">{t.liveLocation}</Badge>}
                     {load.coDriverUserId === driver.id && <Badge variant="secondary">{t.coDriver}</Badge>}
                     <Button size="sm" variant="outline" className="ml-auto" onClick={() => onOpenLoad(load.id)}>
@@ -156,15 +155,19 @@ function DriverCard({
                   <span className="truncate text-xs text-muted-foreground">
                     {load.commodity} · {load.origin} → {load.destination}
                   </span>
-                  {load.lat != null && load.lng != null && (
-                    <button
-                      type="button"
-                      className="flex items-center gap-1 self-start font-mono text-xs text-muted-foreground underline-offset-2 hover:underline"
-                      onClick={() => onFocus(load.id)}
-                    >
-                      <MapPinIcon className="size-3" aria-hidden />
-                      {load.lat.toFixed(4)}, {load.lng.toFixed(4)} · {updatedAgo(load.positionAt)}
-                    </button>
+                  {load.lat != null && load.lng != null ? (
+                    <span className="flex flex-wrap items-center gap-2">
+                      <PositionLine lat={load.lat} lng={load.lng} at={load.positionAt} />
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
+                        onClick={() => onFocus(load.id)}
+                      >
+                        {t.showOnMap}
+                      </button>
+                    </span>
+                  ) : (
+                    <PositionLine lat={null} lng={null} at={null} />
                   )}
                 </li>
               );
@@ -198,44 +201,6 @@ export function FleetDesk() {
     const timer = window.setInterval(() => void refresh(), 5000);
     return () => window.clearInterval(timer);
   }, [refresh]);
-
-  // Demo: move every active load along its own GTA route at once, posting as logistics
-  // (not as the driver), so no driver's duty log is touched.
-  const [simulating, setSimulating] = useState(false);
-  const simStep = useRef(0);
-  const fleetRef = useRef<Fleet | null>(null);
-  fleetRef.current = fleet;
-
-  useEffect(() => {
-    if (!simulating) return;
-    let inFlight = false;
-    const tick = async () => {
-      if (inFlight) return;
-      inFlight = true;
-      try {
-        const seen = new Set<string>();
-        const active = (fleetRef.current?.drivers ?? [])
-          .flatMap((driver) => driver.loads)
-          .filter((load) => ACTIVE(load) && !seen.has(load.id) && seen.add(load.id))
-          .sort((a, b) => a.id.localeCompare(b.id));
-        simStep.current += 1;
-        await Promise.all(
-          active.map((load, index) => {
-            // Each load gets its own corridor and starting point, and drives back and forth along it.
-            const lap = (simStep.current / SIM_STEPS + index * 0.17) % 2;
-            const point = positionOn(ROUTES[index % ROUTES.length], lap > 1 ? 2 - lap : lap);
-            return postPosition(load.id, point.lat, point.lng, true).catch(() => undefined);
-          }),
-        );
-        await refresh();
-      } finally {
-        inFlight = false;
-      }
-    };
-    void tick();
-    const timer = window.setInterval(() => void tick(), SIM_TICK_MS);
-    return () => window.clearInterval(timer);
-  }, [refresh, simulating]);
 
   const trucks = useMemo(
     () =>
@@ -273,23 +238,11 @@ export function FleetDesk() {
     <div className="flex flex-col gap-4">
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-center gap-2">
-            <CardTitle>{t.fleet}</CardTitle>
-            <Button
-              size="sm"
-              variant={simulating ? "default" : "outline"}
-              className="ml-auto"
-              aria-pressed={simulating}
-              onClick={() => setSimulating((on) => !on)}
-            >
-              {simulating ? <PauseIcon aria-hidden /> : <PlayIcon aria-hidden />}
-              {simulating ? t.stopFleetSim : t.startFleetSim}
-            </Button>
-          </div>
+          <CardTitle>{t.fleet}</CardTitle>
           <CardDescription>{t.fleetHint}</CardDescription>
         </CardHeader>
         <CardPanel>
-          <TripMap className="h-96" depotLabel={t.mapDepot} yardLabel={t.mapYard} trucks={trucks} follow={follow} fitTrucks />
+          <TripMap className="h-96" trucks={trucks} follow={follow} />
         </CardPanel>
       </Card>
 

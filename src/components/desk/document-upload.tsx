@@ -16,7 +16,8 @@ import {
   type CaseDocument,
 } from "@/lib/desk-client";
 import { useI18n } from "@/lib/i18n";
-import { CURRENCIES, DOC_TYPES, type DocTypeName } from "@/lib/policy";
+import { CURRENCIES, DOC_TYPES, DRIVER_DOC_TYPES, FINANCIAL_DOC_TYPES, type DocTypeName } from "@/lib/policy";
+import { useDesk } from "@/preview/store";
 
 const ALL = "all";
 
@@ -68,6 +69,9 @@ export function DocumentUpload({
   const needsName = docType === "other" && !otherType.trim();
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState<string>("CAD");
+  const desk = useDesk();
+  const choices = desk.user.role === "driver" ? DRIVER_DOC_TYPES : DOC_TYPES;
+  const hasAmount = FINANCIAL_DOC_TYPES.includes(docType);
 
   const money = useCallback(
     (cents: number, code: string) =>
@@ -135,7 +139,7 @@ export function DocumentUpload({
   }
 
   function exportCsv() {
-    const header = [t.date, t.docType, t.docNumber, t.amount, t.currency, t.linkedTo, t.file, t.uploadedBy, "sha256"];
+    const header = [t.date, t.docType, t.docNumber, t.amount, t.currency, t.linkedTo, t.file, t.uploadedBy, "SHA-256"];
     const lines = docs.map((doc) =>
       [
         doc.createdAt.slice(0, 10),
@@ -179,13 +183,21 @@ export function DocumentUpload({
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        <div className="grid gap-2 sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_6rem]">
-          <Select value={docType} onValueChange={(value) => setDocType(value as DocTypeName)}>
+        <div
+          className={`grid gap-2 ${hasAmount ? "sm:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_6rem]" : "sm:grid-cols-2"}`}
+        >
+          <Select
+            value={docType}
+            onValueChange={(value) => {
+              setDocType(value as DocTypeName);
+              if (!FINANCIAL_DOC_TYPES.includes(value as DocTypeName)) setAmount("");
+            }}
+          >
             <SelectTrigger aria-label={t.docType}>
               <SelectValue>{(value: DocTypeName) => t.docTypes[value]}</SelectValue>
             </SelectTrigger>
             <SelectPopup>
-              {DOC_TYPES.map((type) => (
+              {choices.map((type) => (
                 <SelectItem key={type} value={type}>
                   {t.docTypes[type]}
                 </SelectItem>
@@ -199,6 +211,7 @@ export function DocumentUpload({
             maxLength={80}
             onChange={(event) => setDocNumber(event.target.value)}
           />
+          {hasAmount && (
           <Input
             aria-label={t.amount}
             placeholder={t.amount}
@@ -206,6 +219,8 @@ export function DocumentUpload({
             value={amount}
             onChange={(event) => setAmount(event.target.value)}
           />
+          )}
+          {hasAmount && (
           <Select value={currency} onValueChange={(value) => setCurrency(String(value))}>
             <SelectTrigger aria-label={t.currency} className="min-w-0">
               <SelectValue />
@@ -218,6 +233,7 @@ export function DocumentUpload({
               ))}
             </SelectPopup>
           </Select>
+          )}
         </div>
         {docType === "other" && (
           <Input

@@ -1,29 +1,25 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardPanel, CardTitle } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@/components/ui/tabs";
 import { CaseCeremony } from "@/components/desk/case-ceremony";
 import { DirectoryDesk } from "@/components/desk/directory-desk";
 import { DocumentUpload } from "@/components/desk/document-upload";
 import { FleetDesk } from "@/components/desk/fleet-desk";
 import { LoadForm } from "@/components/desk/load-form";
+import { CasesTable } from "@/components/desk/cases-table";
 import { LoadsTable } from "@/components/desk/loads-table";
 import { ReceiptView } from "@/components/desk/receipt-view";
 import { SupplierDesk } from "@/components/desk/supplier-desk";
 import { TeamDesk } from "@/components/desk/team-desk";
-import { useI18n, caseStatusTitle } from "@/lib/i18n";
-import { requestTitle } from "@/preview/data";
+import { useI18n } from "@/lib/i18n";
 import { useDesk } from "@/preview/store";
-import { referenceCode } from "@/lib/reference";
 
 export function LogisticsDesk() {
   const desk = useDesk();
-  const { lang, t } = useI18n();
+  const { t } = useI18n();
 
   if (desk.caseId) {
     return <CaseCeremony />;
@@ -65,36 +61,7 @@ export function LogisticsDesk() {
                 </EmptyHeader>
               </Empty>
             ) : (
-              <div className="overflow-x-auto">
-              <Table variant="card">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t.who}</TableHead>
-                    <TableHead>{t.type}</TableHead>
-                    <TableHead>{t.status}</TableHead>
-                    <TableHead>{t.hash}</TableHead>
-                    <TableHead />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {desk.cases.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.counterparty}</TableCell>
-                      <TableCell>{requestTitle(item.requestType, lang)}</TableCell>
-                      <TableCell>
-                        <Badge variant={item.status === "fully_approved" ? "success" : "warning"}>{caseStatusTitle(item.status, t)}</Badge>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">{referenceCode(item.payloadHash)}</TableCell>
-                      <TableCell>
-                        <Button size="sm" variant="outline" onClick={() => desk.openCase(item.id)}>
-                          {t.open}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              </div>
+              <CasesTable cases={desk.cases} onOpen={desk.openCase} />
             )}
           </CardPanel>
         </Card>

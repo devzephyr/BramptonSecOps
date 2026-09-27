@@ -16,7 +16,7 @@ import {
   type Contact,
   type SessionUser,
 } from "@/lib/desk-client";
-import { REQUEST_FIELDS, SCENARIOS, type DeskCase, type Load, type Note, type Role } from "@/preview/data";
+import { REQUEST_FIELDS, type DeskCase, type Load, type Note, type Role } from "@/preview/data";
 
 const CASE_STAFF: Role[] = ["supplier", "logistics", "admin"];
 
@@ -34,7 +34,6 @@ type Store = {
   closeCase: () => void;
   receiptToken: string | null;
   openReceipt: (token: string) => void;
-  fillScenario: (id: string) => void;
   draft: Draft;
   setDraft: (patch: Partial<Draft>) => void;
   submitDraft: () => Promise<DeskCase | null>;
@@ -43,7 +42,7 @@ type Store = {
   approve: (caseId: string) => Promise<string | null>;
   revoke: (caseId: string) => Promise<string | null>;
   passkeyError: string | null;
-  pushStatus: (loadId: string, status: string, simulated?: boolean) => Promise<string | null>;
+  pushStatus: (loadId: string, status: string) => Promise<string | null>;
   dismissNote: (id: string) => Promise<void>;
   refreshRemote: () => Promise<void>;
   refreshDirectory: () => Promise<void>;
@@ -70,7 +69,7 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
   const [logisticsTab, setLogisticsTab] = useState<LogisticsTab>("board");
   const [ready, setReady] = useState(false);
   const [draft, setDraftState] = useState<Draft>({
-    requestType: SCENARIOS[0].requestType,
+    requestType: "bank_change",
     contactId: "",
     rawText: "",
     requested: {},
@@ -127,17 +126,6 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
         setReceiptToken(token);
         setCaseId(null);
         setLogisticsTab("receipt");
-      },
-      fillScenario: (id) => {
-        const scenario = SCENARIOS.find((item) => item.id === id);
-        if (!scenario) return;
-        const contact = contacts.find((item) => item.seedKey === scenario.partnerId);
-        setDraftState((current) => ({
-          requestType: scenario.requestType,
-          contactId: contact?.id ?? current.contactId,
-          rawText: scenario.rawText,
-          requested: scenario.requested,
-        }));
       },
       draft,
       setDraft: (patch) => setDraftState((current) => ({ ...current, ...patch })),
@@ -225,10 +213,10 @@ export function StoreProvider({ user, children }: { user: SessionUser; children:
         return null;
       },
       passkeyError,
-      pushStatus: async (loadId, status, simulated = false) => {
+      pushStatus: async (loadId, status) => {
         if (role !== "driver") return "Only a driver can post status.";
         try {
-          await postLoadStatus(loadId, status, simulated);
+          await postLoadStatus(loadId, status);
         } catch (err) {
           return messageOf(err, "Could not update load status.");
         }

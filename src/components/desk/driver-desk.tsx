@@ -1,7 +1,8 @@
 "use client";
 
 import { CheckIcon, MapPinIcon, NavigationIcon, TruckIcon, ArrowLeftRightIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { LoadStatus } from "@/components/desk/load-status";
+import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,13 +14,13 @@ import { DocumentUpload } from "@/components/desk/document-upload";
 import { DutyPanel } from "@/components/desk/duty-panel";
 import { TripMap } from "@/components/desk/trip-map";
 import { FLOW, TripSteps } from "@/components/desk/trip-steps";
-import { postPosition, swapDrivers } from "@/lib/desk-client";
-import { loadStatusTitle, useI18n } from "@/lib/i18n";
-import { isLive, SIM_STEPS, SIM_TICK_MS, simPosition, updatedAgo } from "@/lib/tracking";
+import { swapDrivers } from "@/lib/desk-client";
+import { useI18n, timeAgo } from "@/lib/i18n";
+import {isLive} from "@/lib/tracking";
+import { useLocationSharing } from "@/lib/use-location-sharing";
 import type { Load } from "@/preview/data";
 import { useDesk } from "@/preview/store";
 
-const FIFTEEN_MIN_STEP = SIM_STEPS - 8;
 const SHOW_ALL = "all";
 
 function nextStatus(status: string): string | null {
@@ -45,12 +46,9 @@ export function DriverDesk() {
   const mine = desk.loads
     .filter((load) => load.driverId === desk.user.id || load.coDriverId === desk.user.id)
     .sort((a, b) => Number(a.status === "arrived") - Number(b.status === "arrived"));
-  const [sim, setSim] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [posting, setPosting] = useState<string | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
-  const timer = useRef<number | null>(null);
-  const running = useRef<string | null>(null);
   const labels: Record<string, string> = {
     loaded: t.loaded,
     rolling: t.rolling,
@@ -59,22 +57,45 @@ export function DriverDesk() {
     delayed: t.delayed,
   };
 
-  useEffect(
-    () => () => {
-      if (timer.current !== null) window.clearInterval(timer.current);
-    },
-    [],
-  );
+  const { refreshRemote } = desk;
+  const location = useLocationSharing(refreshRemote);
+  const sharingId = location.sharingLoadId;
+  const stopSharing = location.stop;
 
-  async function send(loadId: string, status: string, simulated = false) {
+  // Delivered or handed off: the phone stops reporting for that load.
+  useEffect(() => {
+    if (!sharingId) return;
+    const load = desk.loads.find((item) => item.id === sharingId);
+    const stillMine = load && (load.driverId === desk.user.id || load.coDriverId === desk.user.id);
+    if (!stillMine || load.status === "arrived") stopSharing();
+  }, [desk.loads, desk.user.id, sharingId, stopSharing]);
+
+  async function send(loadId: string, status: string) {
     setPosting(`${loadId}:${status}`);
     setError(null);
-    const failure = await desk.pushStatus(loadId, status, simulated);
+    const failure = await desk.pushStatus(loadId, status);
     setPosting(null);
     if (failure) setError(failure);
-    else if (!simulated) toastManager.add({ type: "success", title: t.statusSent, description: labels[status] });
+    else toastManager.add({ type: "success", title: t.statusSent, description: labels[status] });
     return failure === null;
   }
+
+  async function startSharing(load: Load) {
+    // Moving with the load means driving: the server refuses that while a break is owed.
+    if (load.status !== "rolling" && load.status !== "fifteen_min" && !(await send(load.id, "rolling"))) return;
+    location.start(load.id);
+    toastManager.add({ type: "info", title: t.toastTrip });
+  }
+
+  const locationError = location.error
+    ? location.error.kind === "denied"
+      ? t.locationDenied
+      : location.error.kind === "unsupported"
+        ? t.locationUnsupported
+        : location.error.kind === "unavailable"
+          ? t.locationUnavailable
+          : (location.error.message ?? t.locationUnavailable)
+    : null;
 
   async function swap(loadId: string) {
     setPosting(`${loadId}:swap`);
@@ -88,57 +109,6 @@ export function DriverDesk() {
     } finally {
       setPosting(null);
     }
-  }
-
-  function stopSim(silent = false) {
-    if (timer.current !== null) window.clearInterval(timer.current);
-    timer.current = null;
-    if (running.current !== null && !silent) toastManager.add({ type: "info", title: t.toastTripStopped });
-    running.current = null;
-    setSim(null);
-  }
-
-  function startSim(load: Load) {
-    stopSim(true);
-    setError(null);
-    let step = 0;
-    let inFlight = false;
-    const tick = async () => {
-      // A slow tick must not overlap the next one: both would read the same
-      // step and post the same status twice.
-      if (inFlight) return;
-      inFlight = true;
-      try {
-        await advance();
-      } finally {
-        inFlight = false;
-      }
-    };
-    const advance = async () => {
-      const point = simPosition(step);
-      try {
-        // Refused (e.g. a break is owed): the truck does not move, so stop before sending any position.
-        if (step === 0 && load.status !== "rolling" && load.status !== "fifteen_min" && !(await send(load.id, "rolling", true))) {
-          stopSim(true);
-          return;
-        }
-        await postPosition(load.id, point.lat, point.lng, true);
-        if (step === FIFTEEN_MIN_STEP) await send(load.id, "fifteen_min", true);
-        if (step === SIM_STEPS) await send(load.id, "arrived", true);
-        await desk.refreshRemote();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Could not share position.");
-        stopSim(true);
-        return;
-      }
-      step += 1;
-      if (step > SIM_STEPS) stopSim(true);
-    };
-    running.current = load.id;
-    setSim(load.id);
-    toastManager.add({ type: "info", title: t.toastTrip });
-    void tick();
-    timer.current = window.setInterval(() => void tick(), SIM_TICK_MS);
   }
 
   const activeLoad = mine.find((load) => load.status !== "arrived");
@@ -202,8 +172,8 @@ export function DriverDesk() {
         const next = nextStatus(load.status);
         const hasPosition = load.lat != null && load.lng != null;
         const live = hasPosition && isLive(load.positionAt);
-        const simulating = sim === load.id;
-        const busy = posting !== null || simulating;
+        const sharing = sharingId === load.id;
+        const busy = posting !== null;
         return (
           <div key={load.id} className="flex flex-col gap-4">
             <Card>
@@ -211,13 +181,7 @@ export function DriverDesk() {
                 <div className="flex flex-wrap items-center gap-2">
                   <TruckIcon className="size-5 text-muted-foreground" aria-hidden />
                   <CardTitle className="font-mono text-xl">{load.loadRef}</CardTitle>
-                  <Badge
-                    variant={
-                      load.status === "arrived" ? "success" : load.status === "delayed" ? "warning" : "secondary"
-                    }
-                  >
-                    {loadStatusTitle(load.status, t)}
-                  </Badge>
+                  <LoadStatus status={load.status} facility={load.facility} late={load.late} />
                 </div>
                 <CardDescription className="flex flex-wrap items-center gap-1.5">
                   <MapPinIcon className="size-3.5" aria-hidden />
@@ -314,22 +278,22 @@ export function DriverDesk() {
                 <div className="flex flex-col gap-2 border-t pt-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-sm font-medium">{t.liveLocation}</span>
-                    <Badge variant="outline">{t.simulated}</Badge>
+                    {sharing && <Badge variant="success">{t.sharingPosition}</Badge>}
                     {hasPosition && (
                       <span className="text-xs text-muted-foreground">
-                        {live ? t.sharingPosition : t.lastKnown} · {updatedAgo(load.positionAt)}
+                        {live ? t.updated : t.lastKnown} {timeAgo(load.positionAt, t)}
                       </span>
                     )}
                     <span className="ml-auto">
-                      {simulating ? (
-                        <Button size="sm" variant="outline" onClick={() => stopSim()}>
+                      {sharing ? (
+                        <Button size="sm" variant="outline" onClick={() => stopSharing()}>
                           {t.stopTrip}
                         </Button>
                       ) : (
                         <Button
                           size="sm"
-                          disabled={posting !== null || sim !== null || load.status === "arrived"}
-                          onClick={() => startSim(load)}
+                          disabled={posting !== null || sharingId !== null || load.status === "arrived"}
+                          onClick={() => void startSharing(load)}
                         >
                           {t.startTrip}
                         </Button>
@@ -337,11 +301,14 @@ export function DriverDesk() {
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground">{t.tripHint}</p>
+                  {sharing && locationError && (
+                    <Alert variant="warning">
+                      <AlertDescription>{locationError}</AlertDescription>
+                    </Alert>
+                  )}
                   <TripMap
                     className="h-56"
-                    depotLabel={t.mapDepot}
-                    yardLabel={t.mapYard}
-                    follow={simulating ? load.id : null}
+                    follow={sharing ? load.id : null}
                     trucks={
                       hasPosition
                         ? [{ id: load.id, label: load.loadRef, lat: load.lat!, lng: load.lng!, live }]

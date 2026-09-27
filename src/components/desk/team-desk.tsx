@@ -283,8 +283,12 @@ export function TeamDesk() {
                       <Badge variant="outline">{roleTitle(member.role, t)}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={member.hasKeys ? "success" : "warning"}>
-                        {member.hasKeys ? t.keysReady : t.noKeys}
+                      <Badge
+                        variant={
+                          member.messaging === "not_used" ? "outline" : member.hasKeys ? "success" : "warning"
+                        }
+                      >
+                        {member.messaging === "not_used" ? t.notUsed : member.hasKeys ? t.keysReady : t.noKeys}
                         {member.devices > 1 ? ` · ${member.devices}` : ""}
                       </Badge>
                     </TableCell>

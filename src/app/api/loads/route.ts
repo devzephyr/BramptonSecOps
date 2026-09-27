@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { hasRole, requireUser } from "@/lib/auth";
 import { MANAGERS, normalizeLoadRef } from "@/lib/policy";
 import { badRequest, forbidden, isUniqueViolation, json, unauthorized } from "@/lib/http";
+import { cleanCommodity, formatSetpoint } from "@/lib/normalize";
 import { serializeLoad } from "@/lib/loads";
 
 export async function GET() {
@@ -84,10 +85,10 @@ export async function POST(request: Request) {
         trailer: text("trailer", 20),
         origin: text("origin"),
         destination: text("destination"),
-        commodity: text("commodity", 80),
+        commodity: cleanCommodity(text("commodity", 80)),
         currentStatus: "scheduled",
         lastKnown: text("lastKnown", 200) || text("origin"),
-        reeferSetpoint: optional("reeferSetpoint", 20),
+        reeferSetpoint: formatSetpoint(text("reeferSetpoint", 20)) || null,
         sealNumber: optional("sealNumber", 40),
         scheduledDock: optional("scheduledDock", 40),
         driverUserId,

@@ -11,6 +11,8 @@ export type DeskCase = {
   onFile: Record<string, string>;
   requested: Record<string, string>;
   flags: FlagView[];
+  /** When the request was logged (ISO). */
+  createdAt?: string;
   /** A supporting document was uploaded to the case. */
   matchesUploaded?: boolean;
   oobSteps: string[];
@@ -49,6 +51,8 @@ export type Load = {
   positionAt?: string | null;
   /** Warehouse or yard holding the load when no driver has it. */
   facility?: string;
+  /** ETA passed and not delivered (computed by the server). */
+  late?: boolean;
 };
 
 export type Note = {
@@ -126,7 +130,7 @@ export const REQUESTS: { id: string; dual: boolean; en: string; fr: string }[] =
       id: "bol_pod_alter",
       dual: false,
       en: "Bill or seal change",
-      fr: "Changement de connaissement ou de sceau",
+      fr: "Changement de connaissement ou de scellé",
     },
   ];
 

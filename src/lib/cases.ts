@@ -24,8 +24,10 @@ export function parseOobAck(json: unknown, stepCount: number): OobAck {
   return { steps, note: typeof raw?.note === "string" ? raw.note : "" };
 }
 
+/** Nothing done: needs a call. Some steps or a note: call in progress. All steps and a note: ready to approve. */
 export function statusFromOob(ack: OobAck): CaseStatus {
-  return oobComplete(ack.steps, ack.note) ? "pending_approval" : "flagged";
+  if (oobComplete(ack.steps, ack.note)) return "pending_approval";
+  return ack.steps.some(Boolean) || ack.note.trim().length > 0 ? "oob_pending" : "flagged";
 }
 
 const FORBIDDEN_CLIENT_DECISION =

@@ -3,6 +3,7 @@
 import type { DutyStatusName, HosSummary } from "@/lib/hos";
 import type { DocTypeName } from "@/lib/policy";
 import { toFlagView } from "@/lib/flags";
+import { cleanCommodity, formatSetpoint } from "@/lib/normalize";
 import {
   startAuthentication,
   startRegistration,
@@ -212,6 +213,7 @@ type ApiLoad = {
   lng?: number | null;
   positionAt?: string | null;
   facility?: string | null;
+  late?: boolean;
 };
 
 export type NewLoad = {
@@ -329,7 +331,7 @@ export type DutyEntryRow = {
   lng: number | null;
   loadId: string | null;
   note: string | null;
-  source: "driver" | "gps" | "status" | "manager" | "sim";
+  source: "driver" | "gps" | "status" | "manager" | string;
   refId: string | null;
   actor: string;
   hash: string;
@@ -416,6 +418,7 @@ export type FleetLoad = {
   lat: number | null;
   lng: number | null;
   positionAt: string | null;
+  late?: boolean;
 };
 
 export type FleetDriver = {
@@ -432,7 +435,13 @@ export type Fleet = { now: string; drivers: FleetDriver[]; atFacilities: FleetLo
 export async function fetchFleet(): Promise<Fleet | null> {
   const res = await fetch("/api/fleet", { credentials: "include" });
   if (!res.ok) return null;
-  return (await parseJson(res)) as Fleet;
+  const fleet = (await parseJson(res)) as Fleet;
+  const tidy = (load: FleetLoad) => ({ ...load, commodity: cleanCommodity(load.commodity) });
+  return {
+    ...fleet,
+    drivers: fleet.drivers.map((driver) => ({ ...driver, loads: driver.loads.map(tidy) })),
+    atFacilities: fleet.atFacilities.map(tidy),
+  };
 }
 
 export async function markNotificationRead(id: string) {
@@ -452,7 +461,7 @@ export async function fetchLoads(): Promise<Load[]> {
   return (body?.loads ?? []).map((row) => ({
     id: row.id,
     loadRef: row.loadRef,
-    commodity: row.commodity,
+    commodity: cleanCommodity(row.commodity),
     origin: row.origin,
     destination: row.destination,
     dock: row.approvedDock || row.scheduledDock || "",
@@ -462,7 +471,7 @@ export async function fetchLoads(): Promise<Load[]> {
     plate: row.plate,
     trailer: row.trailer,
     seal: row.sealNumber ?? "",
-    setpoint: row.reeferSetpoint ?? "",
+    setpoint: formatSetpoint(row.reeferSetpoint),
     status: row.currentStatus ?? "scheduled",
     eta: row.eta
       ? new Date(row.eta).toLocaleString("en-CA", {
@@ -477,6 +486,7 @@ export async function fetchLoads(): Promise<Load[]> {
     lng: row.lng ?? null,
     positionAt: row.positionAt ?? null,
     facility: row.facility ?? "",
+    late: row.late === true,
   }));
 }
 
@@ -499,12 +509,12 @@ export async function fetchInventory(): Promise<InventoryLot[]> {
   return body?.lots ?? [];
 }
 
-export async function postLoadStatus(loadId: string, status: string, simulated = false) {
+export async function postLoadStatus(loadId: string, status: string) {
   const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/status`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ eventType: status, simulated }),
+    body: JSON.stringify({ eventType: status }),
   });
   if (!res.ok) {
     throw new DeskApiError(res.status, await failMessage(res, "Could not update load status"));
@@ -548,12 +558,12 @@ export async function approveWithPasskey(caseId: string) {
   return parseJson(verifyRes);
 }
 
-export async function postPosition(loadId: string, lat: number, lng: number, simulated = false) {
+export async function postPosition(loadId: string, lat: number, lng: number) {
   const res = await fetch(`/api/loads/${encodeURIComponent(loadId)}/position`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lat, lng, simulated }),
+    body: JSON.stringify({ lat, lng }),
   });
   if (!res.ok) {
     throw new DeskApiError(res.status, await failMessage(res, "Could not update position"));
@@ -723,6 +733,7 @@ export type ApiCase = {
   jev: unknown;
   approvals: { userId: string; name: string; role: string; at: string }[] | null;
   matchesUploaded?: boolean;
+  createdAt?: string;
 };
 
 export type DeskCaseShape = DeskCase;
@@ -770,6 +781,7 @@ export function mapApiCase(row: ApiCase): DeskCase {
     createdById: row.createdById,
     numberOnFile: row.numberOnFile ?? "",
     rawText: row.rawText ?? "",
+    createdAt: row.createdAt ?? "",
     onFile: stringRecord(row.onFile),
     requested: stringRecord(row.requested),
     flags: Array.isArray(row.flags) ? row.flags.map(toFlagView) : [],
@@ -924,6 +936,7 @@ export type TeamMember = {
   role: string;
   title: string | null;
   hasKeys: boolean;
+  messaging?: "ready" | "not_set_up" | "not_used";
   devices: number;
   createdAt: string;
 };

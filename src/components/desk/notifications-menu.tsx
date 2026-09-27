@@ -20,10 +20,10 @@ export function NotificationsMenu() {
   return (
     <Popover>
       <PopoverTrigger
-        render={<Button size="sm" variant={unread ? "default" : "outline"} aria-label={`${unread} ${t.alerts}`} />}
+        render={<Button size="sm" variant={unread ? "default" : "outline"} aria-label={`${unread} ${unread === 1 ? t.alertOne : t.alerts}`} />}
       >
         <BellIcon aria-hidden />
-        {unread} {t.alerts}
+        {unread} {unread === 1 ? t.alertOne : t.alerts}
       </PopoverTrigger>
       <PopoverPopup align="end" className="w-[min(24rem,calc(100vw-2rem))]">
         {notes.length === 0 ? (

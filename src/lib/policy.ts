@@ -23,6 +23,19 @@ export const DOC_TYPES = [
 ] as const;
 export type DocTypeName = (typeof DOC_TYPES)[number];
 
+/** Only these carry a money amount. */
+export const FINANCIAL_DOC_TYPES: readonly DocTypeName[] = ["invoice", "receipt", "rate_confirmation"];
+
+/** What a driver files from the road; billing paperwork stays with the office. */
+export const DRIVER_DOC_TYPES: readonly DocTypeName[] = [
+  "bill_of_lading",
+  "proof_of_delivery",
+  "receipt",
+  "packing_list",
+  "customs",
+  "other",
+];
+
 export function isDocType(value: string | null): value is DocTypeName {
   return value !== null && (DOC_TYPES as readonly string[]).includes(value);
 }

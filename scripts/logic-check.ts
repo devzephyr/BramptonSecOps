@@ -5,7 +5,7 @@ async function main() {
   const { evidenceKey } = await import("../src/lib/evidence-storage");
   const { hashEnrollmentCode, newEnrollmentCode } = await import("../src/lib/auth");
   const { mergeRequestedPatch } = await import("../src/lib/cases");
-  const { ROUTE, SIM_STEPS, simPosition } = await import("../src/lib/tracking");
+  const { ROUTE, SIM_STEPS, simPosition } = await import("./routes");
   const { DOC_TYPES, isDocType, parseAmountCents } = await import("../src/lib/policy");
   const { DocType } = await import("@prisma/client");
   const org = "org123";

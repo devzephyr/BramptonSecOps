@@ -21,12 +21,13 @@ import { CallLink } from "@/components/desk/call-link";
 import { deleteScenario, fetchScenarios, saveScenario, type Contact, type SavedScenario } from "@/lib/desk-client";
 import { flagTitle, useI18n } from "@/lib/i18n";
 import { flagKey } from "@/lib/flags";
-import { NEW_REQUEST_TYPES, REQUEST_FIELDS, REQUESTS, SCENARIOS, deskFlags } from "@/preview/data";
+import { NEW_REQUEST_TYPES, REQUEST_FIELDS, REQUESTS, deskFlags } from "@/preview/data";
 import { MANAGERS } from "@/lib/policy";
 import type { Role } from "@prisma/client";
 import { Input } from "@/components/ui/input";
 import { sha256Hex } from "@/preview/hash";
 import { useDesk } from "@/preview/store";
+import { CasesTable } from "@/components/desk/cases-table";
 
 export function SupplierDesk() {
   const desk = useDesk();
@@ -40,11 +41,12 @@ export function SupplierDesk() {
   const [scenarioName, setScenarioName] = useState("");
   const [scenarioError, setScenarioError] = useState<string | null>(null);
   const canDeleteAny = MANAGERS.includes(desk.user.role as Role);
+  const mine = desk.cases.filter((item) => item.createdById === desk.user.id);
 
   useEffect(() => {
     void fetchScenarios()
       .then(setSaved)
-      .catch((err: unknown) => setScenarioError(err instanceof Error ? err.message : "Could not load scenarios."));
+      .catch((err: unknown) => setScenarioError(err instanceof Error ? err.message : null));
   }, []);
 
   async function onSaveScenario() {
@@ -60,7 +62,7 @@ export function SupplierDesk() {
       setSaved((current) => [created, ...current]);
       setScenarioName("");
     } catch (err) {
-      setScenarioError(err instanceof Error ? err.message : "Could not save scenario.");
+      setScenarioError(err instanceof Error ? err.message : t.saveFailed);
     }
   }
 
@@ -70,7 +72,7 @@ export function SupplierDesk() {
       await deleteScenario(id);
       setSaved((current) => current.filter((item) => item.id !== id));
     } catch (err) {
-      setScenarioError(err instanceof Error ? err.message : "Could not delete scenario.");
+      setScenarioError(err instanceof Error ? err.message : t.saveFailed);
     }
   }
 
@@ -145,22 +147,10 @@ export function SupplierDesk() {
       <Card>
         <CardHeader>
           <CardTitle>{t.scenarios}</CardTitle>
+          <CardDescription>{t.savedScenarios}</CardDescription>
         </CardHeader>
         <CardPanel className="flex flex-col gap-2">
-          {SCENARIOS.map((scenario) => (
-            <Button
-              key={scenario.id}
-              variant="outline"
-              className="justify-start"
-              onClick={() => {
-                setSentTo(null);
-                desk.fillScenario(scenario.id);
-              }}
-            >
-              {lang === "fr" && scenario.frTitle ? scenario.frTitle : scenario.title}
-            </Button>
-          ))}
-          {saved.length > 0 && <p className="pt-2 text-xs font-medium text-muted-foreground">{t.savedScenarios}</p>}
+          {saved.length === 0 && <p className="text-xs text-muted-foreground">{t.noTemplates}</p>}
           {saved.map((scenario) => (
             <div key={scenario.id} className="flex gap-1">
               <Button
@@ -353,6 +343,21 @@ export function SupplierDesk() {
           )}
         </CardPanel>
       </Card>
+      {desk.user.role === "supplier" && (
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>{t.yourRequests}</CardTitle>
+            <CardDescription>{t.yourRequestsHint}</CardDescription>
+          </CardHeader>
+          <CardPanel>
+            {mine.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t.noRequestsYet}</p>
+            ) : (
+              <CasesTable cases={mine} />
+            )}
+          </CardPanel>
+        </Card>
+      )}
     </div>
   );
 }

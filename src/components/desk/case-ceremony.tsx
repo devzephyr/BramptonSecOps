@@ -28,6 +28,7 @@ import { referenceCode } from "@/lib/reference";
 import { requestTitle } from "@/preview/data";
 import { sha256Hex } from "@/preview/hash";
 import { useDesk } from "@/preview/store";
+import { fetchCase } from "@/lib/desk-client";
 import { DocumentUpload } from "@/components/desk/document-upload";
 import { MessageThread } from "@/components/desk/message-thread";
 import { CallLink } from "@/components/desk/call-link";
@@ -48,6 +49,18 @@ export function CaseCeremony({ onBack }: { onBack?: () => void }) {
   const storedHash = item?.payloadHash ?? "";
   const itemId = item?.id;
   const savedNote = item?.oobNote;
+
+  const [rawText, setRawText] = useState<string | null>(null);
+  useEffect(() => {
+    setRawText(null);
+    if (!itemId) return;
+    let live = true;
+    // The list omits the logged text; the case itself carries it.
+    void fetchCase(itemId).then((full) => live && setRawText(full?.rawText ?? ""));
+    return () => {
+      live = false;
+    };
+  }, [itemId]);
 
   const [noteFor, setNoteFor] = useState(itemId);
   if (noteFor !== itemId) {
@@ -212,6 +225,17 @@ export function CaseCeremony({ onBack }: { onBack?: () => void }) {
             {item.jev.map((label) => jevTitle(label, t)).join(" · ")}. {t.jevNote}
           </AlertDescription>
         </Alert>
+      )}
+      {rawText && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t.loggedRequest}</CardTitle>
+            <CardDescription>{t.loggedRequestHint}</CardDescription>
+          </CardHeader>
+          <CardPanel>
+            <p className="whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm">{rawText}</p>
+          </CardPanel>
+        </Card>
       )}
       <Card>
         <CardHeader>

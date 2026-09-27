@@ -14,7 +14,7 @@ import {
   postMessage,
   type CaseMessage,
 } from "@/lib/desk-client";
-import { roleTitle, useI18n } from "@/lib/i18n";
+import { roleTitle, useI18n, timeAgo } from "@/lib/i18n";
 import {
   cachedPlaintext,
   cachePlaintext,
@@ -29,7 +29,7 @@ import {
   peerKeyChanged,
   resetSignalKeys,
 } from "@/lib/signal-client";
-import { updatedAgo } from "@/lib/tracking";
+
 import { sha256Hex } from "@/preview/hash";
 
 type Props = {
@@ -234,7 +234,7 @@ export function MessageThread({ caseId, userId }: Props) {
               ) : (
                 <p className="text-sm whitespace-pre-wrap">{row.text}</p>
               )}
-              <span className="text-[11px] text-muted-foreground">{updatedAgo(row.createdAt)}</span>
+              <span className="text-[11px] text-muted-foreground">{timeAgo(row.createdAt, t)}</span>
             </div>
           ))}
         </div>

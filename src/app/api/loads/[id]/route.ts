@@ -9,6 +9,7 @@ import {
   notFound,
   unauthorized,
 } from "@/lib/http";
+import { cleanCommodity, formatSetpoint } from "@/lib/normalize";
 import { LOCKED_WHEN_MOVING, serializeLoad } from "@/lib/loads";
 
 type Params = { params: Promise<{ id: string }> };
@@ -124,7 +125,9 @@ export async function PATCH(request: Request, { params }: Params) {
     const value = (raw ?? "").trim().slice(0, max);
     if (!value && REQUIRED.includes(key))
       return badRequest(`${key} is required.`);
-    changes[key] = value || null;
+    const cleaned =
+      key === "commodity" ? cleanCommodity(value) : key === "reeferSetpoint" ? formatSetpoint(value) : value;
+    changes[key] = cleaned || null;
   }
   if ("eta" in body) {
     if (body.eta === null || body.eta === "") changes.eta = null;
@@ -213,7 +216,12 @@ export async function PATCH(request: Request, { params }: Params) {
     for (const key of changed) data[key] = changes[key];
     if (driverChanged) {
       data.driverUserId = newDriver?.id ?? null;
-      if (newDriver) data.facility = null;
+      // Same rule as a custody transfer: picked up from a facility, the load is loaded on the new truck.
+      if (newDriver && load.facility) {
+        data.facility = null;
+        data.currentStatus = "loaded";
+        data.lastKnown = load.facility;
+      }
     }
     if (coDriverChanged) data.coDriverUserId = newCoDriver?.id ?? null;
     const updated = await tx.load.update({ where: { id }, data: data as Prisma.LoadUncheckedUpdateInput });
